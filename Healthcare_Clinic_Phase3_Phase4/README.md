@@ -30,3 +30,5 @@ Mọi thành viên phải làm việc trên nhánh riêng và mở Pull Request;
 | `04.../`–`07.../` | Vận hành, báo cáo cuối, demo/defense và đóng gói |
 
 Cây module và ứng dụng đã có code chạy thật. Báo cáo cuối theo template, slides, đánh giá đóng góp và nghiệm thu của ba thành viên vẫn cần hoàn tất; không coi toàn bộ đồ án đã đạt 100% chỉ từ số file hoặc kết quả test. `.env`, `.venv`, `.local`, dữ liệu máy chủ và credentials local được loại khỏi Git.
+
+Bản nội dung Phase 2 chính thức được theo dõi tại `01_Reference_and_Baseline/Phase2_DB_Project_RP2_BASELINE_READ_ONLY.docx`; verifier khóa SHA-256 để ngăn chỉnh sửa ngoài ý muốn.

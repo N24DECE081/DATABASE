@@ -26,3 +26,4 @@ Quyết định cấu trúc thuộc yêu cầu chia module. BASELINE-01 là ngo�
 | REPORT-01 | Giữ mô tả PATIENT và bỏ mục bổ sung follow-up | PATIENT baseline đã có định nghĩa; không nhân đôi. BR32/FK follow-up hiện hữu vẫn thi hành | docs/report_changes.md; không ghi đè báo cáo nguồn |
 | EER-01 | DOCTOR Disjoint + Total | Giữ nguyên toàn bộ EER Phase 1; DOT/SVG chỉ là hình phóng to giải thích D/T đã có | EER gốc là sơ đồ chính thức, hash được khóa; hình phụ không thay EER |
 | BASELINE-02 | DDL từng có hai UNIQUE tổng hợp không nằm trong dictionary | Gỡ `uq_schedule_natural` và `uq_prescription_medication` | Không thay candidate key/cardinality Phase 1–2; overlap vẫn thi hành bằng rule/trigger/service |
+| BASELINE-03 | DOCX Phase 2 đã dùng local nhưng chưa có trên `main` | Theo dõi bản `BASELINE_READ_ONLY` trùng SHA-256 với file người dùng cung cấp | Có nguồn Phase 2 kiểm chứng được trong Git; verifier tiếp tục khóa hash |
