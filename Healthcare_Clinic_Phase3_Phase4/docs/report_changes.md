@@ -8,19 +8,25 @@ Giữ nội dung cũ trong báo cáo. Định nghĩa PATIENT đã có trong báo
 
 Trong ứng dụng, bệnh nhân tìm bác sĩ/chuyên khoa ở `/doctors/`, xem ca làm và giờ khả dụng ở `/schedules/`, hoặc nhập thời gian mong muốn trong ca đã chọn ở `/appointments/new`. Khi hai người đặt cùng giờ, DB/service chặn lịch chồng nhau.
 
-## ER DOCTOR
+## EER gốc Phase 1 được giữ nguyên
+
+Sơ đồ chính thức của đồ án vẫn là [Healthcare_EER.png](../../Healthcare_EER.png) đã nộp ở Phase 1. File này không bị sửa, thay thế hoặc vẽ lại; SHA-256 được khóa trong `module_manifest.json` và kiểm tra bởi `scripts/verify_structure.py`.
+
+Không thêm hoặc xóa entity, attribute, relationship, cardinality hay specialization trên EER. Hình DOCTOR bên dưới chỉ là hình phóng to để giải thích đúng phần đã có trong EER gốc; không phải EER mới và không dùng để thay EER gốc trong báo cáo.
+
+## Hình giải thích DOCTOR (không thay EER gốc)
 
 DOCTOR là supertype; GENERAL_PRACTITIONER và SPECIALIST là hai subtype Disjoint + Total, dùng PK/FK DoctorID theo joined-table/Option 8A. Chỉ SPECIALIST tham chiếu SPECIALTY.
 
 ![DOCTOR specialization](diagrams/doctor_specialization.svg)
 
-Mã DOT: [doctor_specialization.dot](diagrams/doctor_specialization.dot). Biểu diễn SVG được cung cấp để đọc trực tiếp mà không cần cài Graphviz. Mã DOT và SVG cùng thể hiện D/T và đường nối kép từ DOCTOR tới specialization.
+Mã DOT: [doctor_specialization.dot](diagrams/doctor_specialization.dot). Biểu diễn SVG được cung cấp để đọc trực tiếp mà không cần cài Graphviz. Mã DOT và SVG chỉ diễn giải D/T và đường nối kép từ DOCTOR tới specialization đã tồn tại trên EER gốc.
 
 ## EndTime cho phép NULL
 
 Theo quyết định của người dùng ngày 2026-10-05, CONSULTATION_SESSION.EndTime cho phép NULL khi phiên khám đang diễn ra. Khi kết thúc, EndTime phải sau StartTime; ActualDurationMinutes được tính theo số phút giữa hai mốc và phải nằm trong 5–120 phút. ActualDurationMinutes vẫn NOT NULL theo baseline; với phiên mở, bác sĩ nhập thời lượng đã ghi nhận trong domain này.
 
-Metadata gốc Phase 2 vẫn được giữ trong `module_manifest.json`; `approved_overrides` ghi quyết định EndTime nullable và default NULL. DDL và entity áp dụng override. Bản báo cáo nguồn không bị ghi đè.
+Metadata gốc Phase 2 vẫn được giữ trong `module_manifest.json`; `approved_overrides` chỉ có đúng một mục cho EndTime nullable và default NULL. DDL và entity áp dụng ngoại lệ này. Bản báo cáo và EER nguồn không bị ghi đè.
 
 ## Mục bổ sung về follow-up đã bỏ
 

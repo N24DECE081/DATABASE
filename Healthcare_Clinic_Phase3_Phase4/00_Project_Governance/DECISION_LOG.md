@@ -24,4 +24,5 @@ Quyết định cấu trúc thuộc yêu cầu chia module. BASELINE-01 là ngo�
 | IMPLEMENTATION-01 | Người dùng yêu cầu triển khai cây thành đồ án chạy thật | Flask 3.1.3, Python 3.11.9, MySQL 26.7.0; DB riêng localhost:3307 | Code thật, dependencies pin, bootstrap giữ dữ liệu hiện có |
 | SECURITY-01 | App DB privileges | clinic_application chỉ SELECT/INSERT/UPDATE; DELETE probe bị từ chối | Flask không dùng root, password/secret ở .env local |
 | REPORT-01 | Giữ mô tả PATIENT và bỏ mục bổ sung follow-up | PATIENT baseline đã có định nghĩa; không nhân đôi. BR32/FK follow-up hiện hữu vẫn thi hành | docs/report_changes.md; không ghi đè báo cáo nguồn |
-| EER-01 | DOCTOR Disjoint + Total | DOT/SVG dùng D/T, joined-table, chỉ SPECIALIST nối SPECIALTY | Sơ đồ để đưa vào báo cáo mới |
+| EER-01 | DOCTOR Disjoint + Total | Giữ nguyên toàn bộ EER Phase 1; DOT/SVG chỉ là hình phóng to giải thích D/T đã có | EER gốc là sơ đồ chính thức, hash được khóa; hình phụ không thay EER |
+| BASELINE-02 | DDL từng có hai UNIQUE tổng hợp không nằm trong dictionary | Gỡ `uq_schedule_natural` và `uq_prescription_medication` | Không thay candidate key/cardinality Phase 1–2; overlap vẫn thi hành bằng rule/trigger/service |

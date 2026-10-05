@@ -96,6 +96,7 @@ Healthcare_Clinic_Phase3_Phase4/
 │   ├── modules.md
 │   ├── module_manifest.json
 │   ├── setup.md
+│   ├── eer_baseline_audit.md
 │   ├── report_changes.md
 │   ├── diagrams/doctor_specialization.{dot,svg}
 │   └── verification/                      # JSON/JUnit/screenshots/RESULTS

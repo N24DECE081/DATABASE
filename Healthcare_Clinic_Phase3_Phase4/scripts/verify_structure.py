@@ -66,10 +66,16 @@ def main():
     require(source.is_file(), f"Retained baseline missing: {source}")
     require(hashlib.sha256(source.read_bytes()).hexdigest() == manifest["baseline"]["sha256"],
             "Phase 2 baseline hash differs from the recorded source")
+    eer_source = ROOT / manifest["baseline"]["eer_path"]
+    require(eer_source.is_file(), f"Phase 1 EER missing: {eer_source}")
+    require(hashlib.sha256(eer_source.read_bytes()).hexdigest() == manifest["baseline"]["eer_sha256"],
+            "Phase 1 EER hash differs from the approved original image")
     baseline = read_baseline(source)
     require(set(baseline) == EXPECTED, "Phase 2 must contain exactly the 13 approved relations")
     entities = manifest["entities"]
     overrides = {(o["entity"], o["field"]): o for o in manifest.get("approved_overrides", [])}
+    require(set(overrides) == {("CONSULTATION_SESSION", "EndTime")},
+            "EndTime must be the only approved baseline override")
     require(Counter(e["logical_name"] for e in entities) == Counter(EXPECTED),
             "Manifest contains missing, extra or duplicate entities")
     assignment = Counter(e for m in manifest["modules"] for e in m["entities"])
@@ -131,8 +137,11 @@ def main():
     python_files = [p for p in python_files if ".venv" not in p.parts]
     for path in python_files:
         compile(path.read_text(encoding="utf-8"), str(path), "exec")
+    ddl = (ROOT / "database/migrations/001_initial_schema.sql").read_text(encoding="utf-8")
+    require("uq_schedule_natural" not in ddl and "uq_prescription_medication" not in ddl,
+            "DDL contains an extra UNIQUE constraint absent from the Phase 2 dictionary")
     print(f"PASS: {len(modules)} modules, {len(entities)} entities, {count} baseline fields, "
-          f"{len(python_files)} Python files; retained Phase 2 hash unchanged.")
+          f"{len(python_files)} Python files; Phase 1 EER and Phase 2 dictionary hashes unchanged.")
     for conflict in manifest["conflicts"]:
         prefix = "RESOLVED" if conflict["status"].startswith("Resolved") else "PENDING"
         print(f"{prefix}: {conflict['id']} {conflict['entity']}.{conflict['field']}: {conflict['status']}")

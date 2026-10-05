@@ -1,6 +1,6 @@
 # Healthcare Clinic & Telemedicine Portal
 
-Đồ án Phase 3/4 đã triển khai bằng Flask và MySQL: 10 module chức năng, 13 lớp entity và 77 thuộc tính theo thiết kế Phase 1/2. `CONSULTATION_SESSION.EndTime` cho phép NULL theo quyết định của người dùng ngày 2026-10-05; các file baseline nguồn được giữ nguyên.
+Đồ án Phase 3/4 đã triển khai bằng Flask và MySQL: 10 module chức năng, 13 lớp entity và 77 thuộc tính theo thiết kế Phase 1/2. EER Phase 1 được giữ nguyên và khóa hash; không thêm/bớt entity, attribute, relationship, cardinality hoặc key thiết kế. Ngoại lệ duy nhất là `CONSULTATION_SESSION.EndTime` cho phép NULL theo quyết định của người dùng ngày 2026-10-05.
 
 Ứng dụng local: **http://127.0.0.1:5000**. MySQL riêng của dự án chạy tại `127.0.0.1:3307`, schema `healthcare_clinic_portal`.
 
@@ -14,7 +14,7 @@ Mật khẩu chung cho dữ liệu giả lập: `ClinicDemo!2026`.
 
 Patient tìm bác sĩ/chuyên khoa, xem ca và giờ khả dụng, đặt hoặc hủy lịch của mình, cập nhật hồ sơ và xem kết quả khám/đơn thuốc. Doctor quản lý ca, xem lịch được phân công, tạo lịch tái khám, bắt đầu/kết thúc phiên khám, bổ sung bệnh sử và kê đơn. Admin quản lý tài khoản, hồ sơ, danh mục và lịch hẹn; quyền đọc hồ sơ lâm sàng được giới hạn cho Patient/Doctor theo phạm vi sở hữu.
 
-Xem [hướng dẫn chạy](docs/setup.md), [module và entity](docs/modules.md), [cây thư mục](00_Project_Governance/FOLDER_STRUCTURE.md), [bằng chứng kiểm thử](docs/verification/RESULTS.md) và [thay đổi báo cáo/sơ đồ DOCTOR](docs/report_changes.md).
+Xem [hướng dẫn chạy](docs/setup.md), [module và entity](docs/modules.md), [khóa EER Phase 1–2](docs/eer_baseline_audit.md), [cây thư mục](00_Project_Governance/FOLDER_STRUCTURE.md), [bằng chứng kiểm thử](docs/verification/RESULTS.md) và [ghi chú báo cáo](docs/report_changes.md).
 
 | Nguồn | Nội dung |
 |---|---|
