@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% from 'shared/macros.html' import field_row %}
+{% block title %}Đăng nhập · TiTiMi Clinic{% endblock %}
+{% block content %}<div class="login-layout">
+<section class="login-story"><a class="brand" href="{{ url_for('index') }}"><span class="brand-mark">+</span><span>TiTiMi<span class="brand-sub">CLINIC & TELEMEDICINE</span></span></a><div><p class="eyebrow">CHĂM SÓC KẾT NỐI</p><h1>Gần hơn với<br>sức khỏe của bạn.</h1><p>Tìm bác sĩ phù hợp, chọn thời gian mong muốn và theo dõi hành trình chăm sóc trong một không gian.</p><div class="story-tags"><span>Khám tại phòng khám</span><span>Tư vấn từ xa</span></div></div><small>Healthcare Clinic & Telemedicine Portal</small></section>
+<section class="login-card"><p class="eyebrow">CHÀO MỪNG TRỞ LẠI</p><h2>Đăng nhập</h2><p>Truy cập không gian chăm sóc của bạn.</p><form method="post">{{ form.hidden_tag() }}{{ field_row(form.username) }}{{ field_row(form.password) }}{{ form.submit(class_='button full') }}</form><p class="login-note">Tài khoản được phòng khám cấp theo vai trò.<br>Liên hệ quản trị nếu bạn cần hỗ trợ truy cập.</p></section>
+</div>{% endblock %}

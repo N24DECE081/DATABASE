@@ -1,0 +1,44 @@
+[
+  {
+    "page": "login-desktop",
+    "viewport": "1440x1000",
+    "title": "Đăng nhập · TiTiMi Clinic",
+    "bodyOverflow": false,
+    "status": "PASS"
+  },
+  {
+    "page": "patient-desktop",
+    "viewport": "1440x1000",
+    "title": "TiTiMi Clinic",
+    "bodyOverflow": false,
+    "status": "PASS"
+  },
+  {
+    "page": "patient-mobile",
+    "viewport": "390x844",
+    "title": "TiTiMi Clinic",
+    "bodyOverflow": false,
+    "status": "PASS"
+  },
+  {
+    "page": "doctor-desktop",
+    "viewport": "1440x1000",
+    "title": "TiTiMi Clinic",
+    "bodyOverflow": false,
+    "status": "PASS"
+  },
+  {
+    "page": "admin-desktop",
+    "viewport": "1440x1000",
+    "title": "TiTiMi Clinic",
+    "bodyOverflow": false,
+    "status": "PASS"
+  },
+  {
+    "page": "diagram-doctor",
+    "viewport": "1000x840",
+    "title": "DOCTOR specialization Disjoint and Total",
+    "bodyOverflow": false,
+    "status": "PASS"
+  }
+]

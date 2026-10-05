@@ -1,0 +1,25 @@
+﻿__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+*.sql.gz
+.local/
+
+# Retain baseline binaries and local delivery artifacts; track governance and handoff docs.
+/01_Reference_and_Baseline/
+/02_Phase3_MySQL_Implementation/*
+!/02_Phase3_MySQL_Implementation/README.md
+!/02_Phase3_MySQL_Implementation/SQL_DELIVERY_CONTRACT.md
+/03_Phase4_Python_Flask_Integration/*
+!/03_Phase4_Python_Flask_Integration/README.md
+!/03_Phase4_Python_Flask_Integration/APPLICATION_ARCHITECTURE.md
+/04_DataGrip_and_Database_Operations/
+/05_Documentation_and_Report/
+/06_Demo_and_Defense/
+/07_Submission_Package/

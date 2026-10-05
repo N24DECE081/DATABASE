@@ -1,0 +1,988 @@
+{
+  "schema_version": 1,
+  "baseline": {
+    "path": "01_Reference_and_Baseline/Phase2_DB_Project_RP2_BASELINE_READ_ONLY.docx",
+    "sha256": "c61e01650630cba70f956e42efdf7fbf128e88bc8d7eb38a2c1a0cbf2e50168f"
+  },
+  "status": "Functional implementation running on local MySQL; automated evidence available; team review pending",
+  "conflicts": [
+    {
+      "id": "BASELINE-01",
+      "entity": "CONSULTATION_SESSION",
+      "field": "EndTime",
+      "eer_nullable": true,
+      "phase2_nullable": false,
+      "status": "Resolved by user 2026-10-05: EndTime may be NULL",
+      "python_representation": "datetime | None; NULL means ongoing consultation"
+    }
+  ],
+  "modules": [
+    {
+      "name": "auth",
+      "entities": [
+        "USER_ACCOUNT"
+      ],
+      "owner": "Tuyền",
+      "reviewer": "Tiến",
+      "url_prefix": "/auth",
+      "paths": {
+        "blueprint": "backend/app/blueprints/auth/__init__.py",
+        "service": "backend/app/services/auth/__init__.py",
+        "repository": "backend/app/repositories/auth/__init__.py",
+        "forms": "backend/app/forms/auth/__init__.py",
+        "templates": "backend/app/templates/auth",
+        "unit_tests": "backend/tests/unit/auth",
+        "integration_tests": "backend/tests/integration/auth",
+        "sql_queries": "database/queries/auth",
+        "sql_seeds": "database/seeds/auth",
+        "sql_tests": "database/tests/auth"
+      },
+      "status": "Implemented; MySQL integration verified; team review pending"
+    },
+    {
+      "name": "patients",
+      "entities": [
+        "PATIENT"
+      ],
+      "owner": "Tiến",
+      "reviewer": "Tuyền",
+      "url_prefix": "/patients",
+      "paths": {
+        "blueprint": "backend/app/blueprints/patients/__init__.py",
+        "service": "backend/app/services/patients/__init__.py",
+        "repository": "backend/app/repositories/patients/__init__.py",
+        "forms": "backend/app/forms/patients/__init__.py",
+        "templates": "backend/app/templates/patients",
+        "unit_tests": "backend/tests/unit/patients",
+        "integration_tests": "backend/tests/integration/patients",
+        "sql_queries": "database/queries/patients",
+        "sql_seeds": "database/seeds/patients",
+        "sql_tests": "database/tests/patients"
+      },
+      "status": "Implemented; MySQL integration verified; team review pending"
+    },
+    {
+      "name": "doctors",
+      "entities": [
+        "DOCTOR",
+        "GENERAL_PRACTITIONER",
+        "SPECIALIST",
+        "SPECIALTY"
+      ],
+      "owner": "Tiến",
+      "reviewer": "Mai",
+      "url_prefix": "/doctors",
+      "paths": {
+        "blueprint": "backend/app/blueprints/doctors/__init__.py",
+        "service": "backend/app/services/doctors/__init__.py",
+        "repository": "backend/app/repositories/doctors/__init__.py",
+        "forms": "backend/app/forms/doctors/__init__.py",
+        "templates": "backend/app/templates/doctors",
+        "unit_tests": "backend/tests/unit/doctors",
+        "integration_tests": "backend/tests/integration/doctors",
+        "sql_queries": "database/queries/doctors",
+        "sql_seeds": "database/seeds/doctors",
+        "sql_tests": "database/tests/doctors"
+      },
+      "status": "Implemented; MySQL integration verified; team review pending"
+    },
+    {
+      "name": "schedules",
+      "entities": [
+        "DOCTOR_SCHEDULE"
+      ],
+      "owner": "Mai",
+      "reviewer": "Tiến",
+      "url_prefix": "/schedules",
+      "paths": {
+        "blueprint": "backend/app/blueprints/schedules/__init__.py",
+        "service": "backend/app/services/schedules/__init__.py",
+        "repository": "backend/app/repositories/schedules/__init__.py",
+        "forms": "backend/app/forms/schedules/__init__.py",
+        "templates": "backend/app/templates/schedules",
+        "unit_tests": "backend/tests/unit/schedules",
+        "integration_tests": "backend/tests/integration/schedules",
+        "sql_queries": "database/queries/schedules",
+        "sql_seeds": "database/seeds/schedules",
+        "sql_tests": "database/tests/schedules"
+      },
+      "status": "Implemented; MySQL integration verified; team review pending"
+    },
+    {
+      "name": "appointments",
+      "entities": [
+        "APPOINTMENT"
+      ],
+      "owner": "Mai",
+      "reviewer": "Tiến",
+      "url_prefix": "/appointments",
+      "paths": {
+        "blueprint": "backend/app/blueprints/appointments/__init__.py",
+        "service": "backend/app/services/appointments/__init__.py",
+        "repository": "backend/app/repositories/appointments/__init__.py",
+        "forms": "backend/app/forms/appointments/__init__.py",
+        "templates": "backend/app/templates/appointments",
+        "unit_tests": "backend/tests/unit/appointments",
+        "integration_tests": "backend/tests/integration/appointments",
+        "sql_queries": "database/queries/appointments",
+        "sql_seeds": "database/seeds/appointments",
+        "sql_tests": "database/tests/appointments"
+      },
+      "status": "Implemented; MySQL integration verified; team review pending"
+    },
+    {
+      "name": "consultations",
+      "entities": [
+        "CONSULTATION_SESSION"
+      ],
+      "owner": "Mai",
+      "reviewer": "Tiến",
+      "url_prefix": "/consultations",
+      "paths": {
+        "blueprint": "backend/app/blueprints/consultations/__init__.py",
+        "service": "backend/app/services/consultations/__init__.py",
+        "repository": "backend/app/repositories/consultations/__init__.py",
+        "forms": "backend/app/forms/consultations/__init__.py",
+        "templates": "backend/app/templates/consultations",
+        "unit_tests": "backend/tests/unit/consultations",
+        "integration_tests": "backend/tests/integration/consultations",
+        "sql_queries": "database/queries/consultations",
+        "sql_seeds": "database/seeds/consultations",
+        "sql_tests": "database/tests/consultations"
+      },
+      "status": "Implemented; MySQL integration verified; team review pending"
+    },
+    {
+      "name": "medical_history",
+      "entities": [
+        "MEDICAL_HISTORY"
+      ],
+      "owner": "Mai",
+      "reviewer": "Tiến",
+      "url_prefix": "/medical-history",
+      "paths": {
+        "blueprint": "backend/app/blueprints/medical_history/__init__.py",
+        "service": "backend/app/services/medical_history/__init__.py",
+        "repository": "backend/app/repositories/medical_history/__init__.py",
+        "forms": "backend/app/forms/medical_history/__init__.py",
+        "templates": "backend/app/templates/medical_history",
+        "unit_tests": "backend/tests/unit/medical_history",
+        "integration_tests": "backend/tests/integration/medical_history",
+        "sql_queries": "database/queries/medical_history",
+        "sql_seeds": "database/seeds/medical_history",
+        "sql_tests": "database/tests/medical_history"
+      },
+      "status": "Implemented; MySQL integration verified; team review pending"
+    },
+    {
+      "name": "prescriptions",
+      "entities": [
+        "PRESCRIPTION",
+        "PRESCRIPTION_ITEM"
+      ],
+      "owner": "Mai",
+      "reviewer": "Tiến",
+      "url_prefix": "/prescriptions",
+      "paths": {
+        "blueprint": "backend/app/blueprints/prescriptions/__init__.py",
+        "service": "backend/app/services/prescriptions/__init__.py",
+        "repository": "backend/app/repositories/prescriptions/__init__.py",
+        "forms": "backend/app/forms/prescriptions/__init__.py",
+        "templates": "backend/app/templates/prescriptions",
+        "unit_tests": "backend/tests/unit/prescriptions",
+        "integration_tests": "backend/tests/integration/prescriptions",
+        "sql_queries": "database/queries/prescriptions",
+        "sql_seeds": "database/seeds/prescriptions",
+        "sql_tests": "database/tests/prescriptions"
+      },
+      "status": "Implemented; MySQL integration verified; team review pending"
+    },
+    {
+      "name": "medications",
+      "entities": [
+        "MEDICATION"
+      ],
+      "owner": "Tiến",
+      "reviewer": "Mai",
+      "url_prefix": "/medications",
+      "paths": {
+        "blueprint": "backend/app/blueprints/medications/__init__.py",
+        "service": "backend/app/services/medications/__init__.py",
+        "repository": "backend/app/repositories/medications/__init__.py",
+        "forms": "backend/app/forms/medications/__init__.py",
+        "templates": "backend/app/templates/medications",
+        "unit_tests": "backend/tests/unit/medications",
+        "integration_tests": "backend/tests/integration/medications",
+        "sql_queries": "database/queries/medications",
+        "sql_seeds": "database/seeds/medications",
+        "sql_tests": "database/tests/medications"
+      },
+      "status": "Implemented; MySQL integration verified; team review pending"
+    },
+    {
+      "name": "admin",
+      "entities": [],
+      "owner": "Tuyền",
+      "reviewer": "Tiến",
+      "url_prefix": "/admin",
+      "paths": {
+        "blueprint": "backend/app/blueprints/admin/__init__.py",
+        "service": "backend/app/services/admin/__init__.py",
+        "repository": "backend/app/repositories/admin/__init__.py",
+        "forms": "backend/app/forms/admin/__init__.py",
+        "templates": "backend/app/templates/admin",
+        "unit_tests": "backend/tests/unit/admin",
+        "integration_tests": "backend/tests/integration/admin",
+        "sql_queries": "database/queries/admin",
+        "sql_seeds": "database/seeds/admin",
+        "sql_tests": "database/tests/admin"
+      },
+      "status": "Implemented; MySQL integration verified; team review pending"
+    }
+  ],
+  "entities": [
+    {
+      "logical_name": "USER_ACCOUNT",
+      "table": "user_account",
+      "class_name": "UserAccount",
+      "module": "auth",
+      "path": "backend/app/entities/user_account.py",
+      "columns": [
+        {
+          "logical_name": "UserID",
+          "field": "user_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK . Unique alphanumeric user identifier."
+        },
+        {
+          "logical_name": "Username",
+          "field": "username",
+          "sql_type": "VARCHAR(50)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Unique . System login username."
+        },
+        {
+          "logical_name": "PasswordHash",
+          "field": "password_hash",
+          "sql_type": "VARCHAR(255)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Cryptographic password hash (e.g., Argon2/Bcrypt)."
+        },
+        {
+          "logical_name": "Role",
+          "field": "role",
+          "sql_type": "VARCHAR(10)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "CHECK (Role IN ('ADMIN', 'DOCTOR', 'PATIENT')) ."
+        },
+        {
+          "logical_name": "AccountStatus",
+          "field": "account_status",
+          "sql_type": "VARCHAR(15)",
+          "nullable": false,
+          "default": "'Active'",
+          "constraints": "CHECK (AccountStatus IN ('Active', 'Locked', 'Suspended')) ."
+        },
+        {
+          "logical_name": "CreatedAt",
+          "field": "created_at",
+          "sql_type": "DATETIME",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "constraints": "Account provisioning audit timestamp."
+        }
+      ]
+    },
+    {
+      "logical_name": "PATIENT",
+      "table": "patient",
+      "class_name": "Patient",
+      "module": "patients",
+      "path": "backend/app/entities/patient.py",
+      "columns": [
+        {
+          "logical_name": "PatientID",
+          "field": "patient_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK . Unique patient master identifier."
+        },
+        {
+          "logical_name": "UserID",
+          "field": "user_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK ,  Unique . References  USER_ACCOUNT(UserID) ."
+        },
+        {
+          "logical_name": "FullName",
+          "field": "full_name",
+          "sql_type": "VARCHAR(100)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Legal full name of patient."
+        },
+        {
+          "logical_name": "DateOfBirth",
+          "field": "date_of_birth",
+          "sql_type": "DATE",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Date of birth (must be ≤ CURRENT_DATE)."
+        },
+        {
+          "logical_name": "Gender",
+          "field": "gender",
+          "sql_type": "VARCHAR(10)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "CHECK (Gender IN ('Male', 'Female', 'Other')) ."
+        },
+        {
+          "logical_name": "Phone",
+          "field": "phone",
+          "sql_type": "VARCHAR(15)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Primary mobile phone number."
+        },
+        {
+          "logical_name": "Email",
+          "field": "email",
+          "sql_type": "VARCHAR(100)",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Personal email address."
+        },
+        {
+          "logical_name": "Address",
+          "field": "address",
+          "sql_type": "VARCHAR(255)",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Residential address."
+        },
+        {
+          "logical_name": "BloodType",
+          "field": "blood_type",
+          "sql_type": "VARCHAR(5)",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "CHECK (BloodType IN ('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-')) ."
+        },
+        {
+          "logical_name": "Allergies",
+          "field": "allergies",
+          "sql_type": "TEXT",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Baseline drug/food allergy history."
+        },
+        {
+          "logical_name": "ChronicDiseases",
+          "field": "chronic_diseases",
+          "sql_type": "TEXT",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Pre-existing chronic diseases."
+        },
+        {
+          "logical_name": "EmergencyContactName",
+          "field": "emergency_contact_name",
+          "sql_type": "VARCHAR(100)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Contact name for medical emergencies."
+        },
+        {
+          "logical_name": "EmergencyContactPhone",
+          "field": "emergency_contact_phone",
+          "sql_type": "VARCHAR(15)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Primary phone number of emergency contact."
+        }
+      ]
+    },
+    {
+      "logical_name": "DOCTOR",
+      "table": "doctor",
+      "class_name": "Doctor",
+      "module": "doctors",
+      "path": "backend/app/entities/doctor.py",
+      "columns": [
+        {
+          "logical_name": "DoctorID",
+          "field": "doctor_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK . Unique doctor identifier."
+        },
+        {
+          "logical_name": "UserID",
+          "field": "user_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK ,  Unique . References  USER_ACCOUNT(UserID) ."
+        },
+        {
+          "logical_name": "FullName",
+          "field": "full_name",
+          "sql_type": "VARCHAR(100)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Full professional name of physician."
+        },
+        {
+          "logical_name": "Phone",
+          "field": "phone",
+          "sql_type": "VARCHAR(15)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Official contact telephone number."
+        },
+        {
+          "logical_name": "Email",
+          "field": "email",
+          "sql_type": "VARCHAR(100)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Unique . Professional institutional email."
+        },
+        {
+          "logical_name": "LicenseNumber",
+          "field": "license_number",
+          "sql_type": "VARCHAR(50)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Unique . Government medical practice license code."
+        }
+      ]
+    },
+    {
+      "logical_name": "GENERAL_PRACTITIONER",
+      "table": "general_practitioner",
+      "class_name": "GeneralPractitioner",
+      "module": "doctors",
+      "path": "backend/app/entities/general_practitioner.py",
+      "columns": [
+        {
+          "logical_name": "DoctorID",
+          "field": "doctor_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK ,  FK . References  DOCTOR(DoctorID)  on delete cascade."
+        }
+      ]
+    },
+    {
+      "logical_name": "SPECIALTY",
+      "table": "specialty",
+      "class_name": "Specialty",
+      "module": "doctors",
+      "path": "backend/app/entities/specialty.py",
+      "columns": [
+        {
+          "logical_name": "SpecialtyID",
+          "field": "specialty_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK . Unique specialty identifier."
+        },
+        {
+          "logical_name": "SpecialtyName",
+          "field": "specialty_name",
+          "sql_type": "VARCHAR(100)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Unique . Official title of clinical specialty."
+        },
+        {
+          "logical_name": "Description",
+          "field": "description",
+          "sql_type": "TEXT",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Detailed clinical scope description."
+        }
+      ]
+    },
+    {
+      "logical_name": "SPECIALIST",
+      "table": "specialist",
+      "class_name": "Specialist",
+      "module": "doctors",
+      "path": "backend/app/entities/specialist.py",
+      "columns": [
+        {
+          "logical_name": "DoctorID",
+          "field": "doctor_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK ,  FK . References  DOCTOR(DoctorID)  on delete cascade."
+        },
+        {
+          "logical_name": "SpecialtyID",
+          "field": "specialty_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK . References  SPECIALTY(SpecialtyID) ."
+        }
+      ]
+    },
+    {
+      "logical_name": "DOCTOR_SCHEDULE",
+      "table": "doctor_schedule",
+      "class_name": "DoctorSchedule",
+      "module": "schedules",
+      "path": "backend/app/entities/doctor_schedule.py",
+      "columns": [
+        {
+          "logical_name": "ScheduleID",
+          "field": "schedule_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK . Unique shift schedule identifier."
+        },
+        {
+          "logical_name": "DoctorID",
+          "field": "doctor_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK . References  DOCTOR(DoctorID) ."
+        },
+        {
+          "logical_name": "ScheduleDate",
+          "field": "schedule_date",
+          "sql_type": "DATE",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Shift duty date."
+        },
+        {
+          "logical_name": "StartTime",
+          "field": "start_time",
+          "sql_type": "TIME",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Shift start time."
+        },
+        {
+          "logical_name": "EndTime",
+          "field": "end_time",
+          "sql_type": "TIME",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Shift end time ( EndTime > StartTime )."
+        },
+        {
+          "logical_name": "AvailabilityStatus",
+          "field": "availability_status",
+          "sql_type": "VARCHAR(15)",
+          "nullable": false,
+          "default": "'Available'",
+          "constraints": "CHECK (AvailabilityStatus IN ('Available', 'Busy', 'On Leave')) ."
+        }
+      ]
+    },
+    {
+      "logical_name": "APPOINTMENT",
+      "table": "appointment",
+      "class_name": "Appointment",
+      "module": "appointments",
+      "path": "backend/app/entities/appointment.py",
+      "columns": [
+        {
+          "logical_name": "AppointmentID",
+          "field": "appointment_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK . Unique appointment reservation identifier."
+        },
+        {
+          "logical_name": "PatientID",
+          "field": "patient_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK . References  PATIENT(PatientID) ."
+        },
+        {
+          "logical_name": "DoctorID",
+          "field": "doctor_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK . References  DOCTOR(DoctorID) ."
+        },
+        {
+          "logical_name": "ScheduleID",
+          "field": "schedule_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK . References  DOCTOR_SCHEDULE(ScheduleID) ."
+        },
+        {
+          "logical_name": "BookedByUserID",
+          "field": "booked_by_user_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK . References  USER_ACCOUNT(UserID)  (Patient, Doctor, Admin)."
+        },
+        {
+          "logical_name": "FollowUpFromApptID",
+          "field": "follow_up_from_appt_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "FK . Recursive reference to preceding  APPOINTMENT(AppointmentID) . FollowUpFromApptID is NULL if the appointment is not a follow-up. If non-NULL, it must reference an existing valid preceding APPOINTMENT(AppointmentID)."
+        },
+        {
+          "logical_name": "AppointmentDateTime",
+          "field": "appointment_date_time",
+          "sql_type": "DATETIME",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Scheduled consultation date and time."
+        },
+        {
+          "logical_name": "EstimatedDurationMinutes",
+          "field": "estimated_duration_minutes",
+          "sql_type": "INT",
+          "nullable": false,
+          "default": "30",
+          "constraints": "CHECK (EstimatedDurationMinutes IN (15, 30, 45, 60)) ."
+        },
+        {
+          "logical_name": "AppointmentType",
+          "field": "appointment_type",
+          "sql_type": "VARCHAR(15)",
+          "nullable": false,
+          "default": "'In-person'",
+          "constraints": "CHECK (AppointmentType IN ('In-person', 'Telemedicine')) ."
+        },
+        {
+          "logical_name": "Status",
+          "field": "status",
+          "sql_type": "VARCHAR(15)",
+          "nullable": false,
+          "default": "'Scheduled'",
+          "constraints": "CHECK (Status IN ('Scheduled', 'Checked-In', 'Completed', 'Cancelled', 'No-show')) ."
+        },
+        {
+          "logical_name": "Reason",
+          "field": "reason",
+          "sql_type": "TEXT",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Chief medical complaint or booking rationale."
+        }
+      ]
+    },
+    {
+      "logical_name": "CONSULTATION_SESSION",
+      "table": "consultation_session",
+      "class_name": "ConsultationSession",
+      "module": "consultations",
+      "path": "backend/app/entities/consultation_session.py",
+      "columns": [
+        {
+          "logical_name": "SessionID",
+          "field": "session_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK . Unique clinical consultation session identifier."
+        },
+        {
+          "logical_name": "AppointmentID",
+          "field": "appointment_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK ,  Unique . References  APPOINTMENT(AppointmentID) ."
+        },
+        {
+          "logical_name": "StartTime",
+          "field": "start_time",
+          "sql_type": "DATETIME",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Actual timestamp when consultation commenced."
+        },
+        {
+          "logical_name": "EndTime",
+          "field": "end_time",
+          "sql_type": "DATETIME",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Actual timestamp when consultation concluded ( EndTime > StartTime )."
+        },
+        {
+          "logical_name": "ActualDurationMinutes",
+          "field": "actual_duration_minutes",
+          "sql_type": "INT",
+          "nullable": false,
+          "default": "None",
+          "constraints": "CHECK (ActualDurationMinutes BETWEEN 5 AND 120) ."
+        },
+        {
+          "logical_name": "SessionType",
+          "field": "session_type",
+          "sql_type": "VARCHAR(15)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "CHECK (SessionType IN ('In-person', 'Virtual')) ."
+        },
+        {
+          "logical_name": "MeetingURL",
+          "field": "meeting_url",
+          "sql_type": "VARCHAR(255)",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Secure teleconference link (Telemedicine sessions)."
+        },
+        {
+          "logical_name": "DiagnosisNotes",
+          "field": "diagnosis_notes",
+          "sql_type": "TEXT",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Attending physician's clinical notes."
+        }
+      ]
+    },
+    {
+      "logical_name": "MEDICAL_HISTORY",
+      "table": "medical_history",
+      "class_name": "MedicalHistory",
+      "module": "medical_history",
+      "path": "backend/app/entities/medical_history.py",
+      "columns": [
+        {
+          "logical_name": "MedicalHistoryID",
+          "field": "medical_history_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK . Unique clinical diagnostic record code."
+        },
+        {
+          "logical_name": "SessionID",
+          "field": "session_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK . References  CONSULTATION_SESSION(SessionID) ."
+        },
+        {
+          "logical_name": "RecordDate",
+          "field": "record_date",
+          "sql_type": "DATETIME",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "constraints": "Official clinical diagnosis date and time."
+        },
+        {
+          "logical_name": "Diagnosis",
+          "field": "diagnosis",
+          "sql_type": "VARCHAR(255)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Established diagnosis title/code."
+        },
+        {
+          "logical_name": "Symptoms",
+          "field": "symptoms",
+          "sql_type": "TEXT",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Observed clinical signs and symptoms."
+        },
+        {
+          "logical_name": "ProgressNotes",
+          "field": "progress_notes",
+          "sql_type": "TEXT",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Physician's longitudinal assessment notes."
+        }
+      ]
+    },
+    {
+      "logical_name": "MEDICATION",
+      "table": "medication",
+      "class_name": "Medication",
+      "module": "medications",
+      "path": "backend/app/entities/medication.py",
+      "columns": [
+        {
+          "logical_name": "MedicationID",
+          "field": "medication_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK . Unique drug identifier code."
+        },
+        {
+          "logical_name": "MedicationName",
+          "field": "medication_name",
+          "sql_type": "VARCHAR(100)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Unique . Generic or brand formulation title."
+        },
+        {
+          "logical_name": "Description",
+          "field": "description",
+          "sql_type": "TEXT",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Pharmacological summary and contraindications."
+        }
+      ]
+    },
+    {
+      "logical_name": "PRESCRIPTION",
+      "table": "prescription",
+      "class_name": "Prescription",
+      "module": "prescriptions",
+      "path": "backend/app/entities/prescription.py",
+      "columns": [
+        {
+          "logical_name": "PrescriptionID",
+          "field": "prescription_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK . Unique digital prescription identifier."
+        },
+        {
+          "logical_name": "SessionID",
+          "field": "session_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK . References  CONSULTATION_SESSION(SessionID) ."
+        },
+        {
+          "logical_name": "DiagnosisICD",
+          "field": "diagnosis_icd",
+          "sql_type": "VARCHAR(20)",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "ICD-10 diagnostic code."
+        },
+        {
+          "logical_name": "PrescriptionDate",
+          "field": "prescription_date",
+          "sql_type": "DATETIME",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "constraints": "Issuance timestamp."
+        },
+        {
+          "logical_name": "Instructions",
+          "field": "instructions",
+          "sql_type": "TEXT",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Overall physician instructions to patient."
+        }
+      ]
+    },
+    {
+      "logical_name": "PRESCRIPTION_ITEM",
+      "table": "prescription_item",
+      "class_name": "PrescriptionItem",
+      "module": "prescriptions",
+      "path": "backend/app/entities/prescription_item.py",
+      "columns": [
+        {
+          "logical_name": "PrescriptionItemID",
+          "field": "prescription_item_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "PK . Unique line item identifier."
+        },
+        {
+          "logical_name": "PrescriptionID",
+          "field": "prescription_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK . References  PRESCRIPTION(PrescriptionID) ."
+        },
+        {
+          "logical_name": "MedicationID",
+          "field": "medication_id",
+          "sql_type": "VARCHAR(20)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "FK . References  MEDICATION(MedicationID) ."
+        },
+        {
+          "logical_name": "Dosage",
+          "field": "dosage",
+          "sql_type": "VARCHAR(50)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Prescribed strength (e.g.,  '500 mg' )."
+        },
+        {
+          "logical_name": "Frequency",
+          "field": "frequency",
+          "sql_type": "VARCHAR(50)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Administration schedule (e.g.,  'Twice daily' )."
+        },
+        {
+          "logical_name": "Duration",
+          "field": "duration",
+          "sql_type": "VARCHAR(50)",
+          "nullable": false,
+          "default": "None",
+          "constraints": "Course of treatment (e.g.,  '7 days' )."
+        },
+        {
+          "logical_name": "SpecialInstructions",
+          "field": "special_instructions",
+          "sql_type": "VARCHAR(255)",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Intake guidelines (e.g.,  'Take after meals' )."
+        }
+      ]
+    }
+  ],
+  "approved_overrides": [
+    {
+      "id": "BASELINE-01",
+      "entity": "CONSULTATION_SESSION",
+      "field": "EndTime",
+      "nullable": true,
+      "default": "NULL",
+      "source": "User instruction 2026-10-05: cho phép NULL"
+    }
+  ]
+}

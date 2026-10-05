@@ -1,0 +1,14 @@
+{
+  "health": {
+    "http_status": 200,
+    "body": {
+      "status": "ok"
+    }
+  },
+  "ready": {
+    "http_status": 200,
+    "body": {
+      "status": "ready"
+    }
+  }
+}
