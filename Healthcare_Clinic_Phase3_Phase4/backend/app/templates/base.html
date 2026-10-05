@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}TiTiMi Clinic{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static',filename='css/app.css') }}">
+  <script src="{{ url_for('static',filename='js/app.js') }}" defer></script>
+</head>
+<body class="{% if not g.user %}guest{% endif %}">
+{% if g.user %}
+<aside class="sidebar">
+  <a class="brand" href="{{ url_for('index') }}"><span class="brand-mark">+</span><span>TiTiMi<span class="brand-sub">CLINIC & TELEMEDICINE</span></span></a>
+  <div class="nav-caption">KHÔNG GIAN CỦA BẠN</div>
+  <nav aria-label="Điều hướng chính">
+    <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint in ('patients.dashboard','admin.dashboard') else '' }}">Tổng quan</a>
+    <a href="{{ url_for('doctors.index') }}" class="{{ 'active' if request.blueprint == 'doctors' else '' }}">Bác sĩ & chuyên khoa</a>
+    <a href="{{ url_for('schedules.index') }}" class="{{ 'active' if request.blueprint == 'schedules' else '' }}">Lịch làm việc</a>
+    <a href="{{ url_for('appointments.index') }}" class="{{ 'active' if request.blueprint == 'appointments' else '' }}">Lịch hẹn</a>
+    {% if g.user.role in ('PATIENT','DOCTOR') %}
+    <a href="{{ url_for('consultations.index') }}" class="{{ 'active' if request.blueprint == 'consultations' else '' }}">Phiên khám</a>
+    <a href="{{ url_for('medical_history.index') }}" class="{{ 'active' if request.blueprint == 'medical_history' else '' }}">Bệnh sử</a>
+    <a href="{{ url_for('prescriptions.index') }}" class="{{ 'active' if request.blueprint == 'prescriptions' else '' }}">Đơn thuốc</a>
+    {% endif %}
+    {% if g.user.role in ('ADMIN','DOCTOR') %}<a href="{{ url_for('medications.index') }}" class="{{ 'active' if request.blueprint == 'medications' else '' }}">Danh mục thuốc</a>{% endif %}
+    {% if g.user.role == 'PATIENT' %}<a href="{{ url_for('patients.profile') }}">Hồ sơ cá nhân</a>{% endif %}
+  </nav>
+  <div class="sidebar-note"><span class="status-dot"></span> Chăm sóc kết nối<br><small>Tại phòng khám và từ xa</small></div>
+</aside>
+{% endif %}
+<div class="workspace">
+{% if g.user %}<header class="topbar"><span>Healthcare Clinic & Telemedicine Portal</span><div class="user-menu"><span class="avatar">{{ g.user.username[0]|upper }}</span><div><strong>{{ g.user.username }}</strong><small>{{ {'PATIENT':'Bệnh nhân','DOCTOR':'Bác sĩ','ADMIN':'Quản trị'}[g.user.role] }}</small></div><form method="post" action="{{ url_for('auth.logout') }}">{{ logout_form.hidden_tag() }}<button class="link-button" type="submit">Đăng xuất</button></form></div></header>{% endif %}
+<main id="main-content">
+{% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="notice {{ category }}" role="status">{{ message }}</div>{% endfor %}{% endwith %}
+{% block content %}{% endblock %}
+</main>
+</div>
+</body></html>

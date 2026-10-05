@@ -1,0 +1,221 @@
+{
+  "scope": "DBA read of isolated project database object inventory; credentials not recorded",
+  "triggers": [
+    {
+      "name": "account_before_update",
+      "event": "UPDATE",
+      "table_name": "user_account",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "appointment_before_insert",
+      "event": "INSERT",
+      "table_name": "appointment",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "appointment_before_update",
+      "event": "UPDATE",
+      "table_name": "appointment",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "doctor_before_insert",
+      "event": "INSERT",
+      "table_name": "doctor",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "doctor_before_update",
+      "event": "UPDATE",
+      "table_name": "doctor",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "gp_before_delete",
+      "event": "DELETE",
+      "table_name": "general_practitioner",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "gp_before_insert",
+      "event": "INSERT",
+      "table_name": "general_practitioner",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "gp_before_update",
+      "event": "UPDATE",
+      "table_name": "general_practitioner",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "history_before_delete",
+      "event": "DELETE",
+      "table_name": "medical_history",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "history_before_insert",
+      "event": "INSERT",
+      "table_name": "medical_history",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "history_before_update",
+      "event": "UPDATE",
+      "table_name": "medical_history",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "patient_before_insert",
+      "event": "INSERT",
+      "table_name": "patient",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "patient_before_update",
+      "event": "UPDATE",
+      "table_name": "patient",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "prescription_before_insert",
+      "event": "INSERT",
+      "table_name": "prescription",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "prescription_before_update",
+      "event": "UPDATE",
+      "table_name": "prescription",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "prescription_item_before_delete",
+      "event": "DELETE",
+      "table_name": "prescription_item",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "schedule_before_insert",
+      "event": "INSERT",
+      "table_name": "doctor_schedule",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "schedule_before_update",
+      "event": "UPDATE",
+      "table_name": "doctor_schedule",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "session_before_insert",
+      "event": "INSERT",
+      "table_name": "consultation_session",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "session_before_update",
+      "event": "UPDATE",
+      "table_name": "consultation_session",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "specialist_before_delete",
+      "event": "DELETE",
+      "table_name": "specialist",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "specialist_before_insert",
+      "event": "INSERT",
+      "table_name": "specialist",
+      "timing": "BEFORE"
+    },
+    {
+      "name": "specialist_before_update",
+      "event": "UPDATE",
+      "table_name": "specialist",
+      "timing": "BEFORE"
+    }
+  ],
+  "routines": [
+    {
+      "name": "validate_appointment",
+      "kind": "PROCEDURE"
+    },
+    {
+      "name": "validate_completed_session",
+      "kind": "PROCEDURE"
+    },
+    {
+      "name": "validate_schedule",
+      "kind": "PROCEDURE"
+    },
+    {
+      "name": "validate_session",
+      "kind": "PROCEDURE"
+    }
+  ],
+  "schema": {
+    "charset": "utf8mb4",
+    "collation_name": "utf8mb4_0900_ai_ci"
+  },
+  "engines": [
+    {
+      "name": "appointment",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "consultation_session",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "doctor",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "doctor_schedule",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "general_practitioner",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "medical_history",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "medication",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "patient",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "prescription",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "prescription_item",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "specialist",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "specialty",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "user_account",
+      "engine": "InnoDB"
+    }
+  ],
+  "test_schemas_remaining": 0,
+  "test_users_remaining": 0
+}

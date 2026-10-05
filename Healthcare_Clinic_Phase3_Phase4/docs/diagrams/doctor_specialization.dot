@@ -1,0 +1,17 @@
+// Doctor EER specialization. D = Disjoint; T = Total. Joined tables / Option 8A.
+digraph DoctorSpecialization {
+  graph [rankdir=TB, bgcolor="white", nodesep=1.1, ranksep=0.65, pad=0.3,
+         label="DOCTOR SPECIALIZATION\nDisjoint and Total", labelloc=t, fontsize=20, fontname="Arial"];
+  node [shape=record, fontname="Arial", fontsize=12, color="#38766f", style=filled, fillcolor="#eff7f2"];
+  edge [dir=none, color="#547370", fontname="Arial", fontsize=11];
+  DOCTOR [label="{DOCTOR|PK DoctorID\lFK UserID (UNIQUE)\lFullName\lPhone\lEmail\lLicenseNumber\l}"];
+  DT [shape=circle, label="D / T", width=0.65, fixedsize=true, fillcolor="white"];
+  GENERAL_PRACTITIONER [label="{GENERAL_PRACTITIONER|PK / FK DoctorID\l}"];
+  SPECIALIST [label="{SPECIALIST|PK / FK DoctorID\lFK SpecialtyID\l}"];
+  SPECIALTY [label="{SPECIALTY|PK SpecialtyID\lSpecialtyName\lDescription\l}"];
+  DOCTOR -> DT [color="#547370:#547370"];
+  DT -> GENERAL_PRACTITIONER;
+  DT -> SPECIALIST;
+  {rank=same; GENERAL_PRACTITIONER; SPECIALIST;}
+  SPECIALIST -> SPECIALTY [taillabel="N", headlabel="1", label="belongs to"];
+}

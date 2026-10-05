@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% from 'shared/macros.html' import appointment_table %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">KHÔNG GIAN BỆNH NHÂN</p><h1>Xin chào, {{ profile.full_name }}.</h1><p>Lịch khám và hồ sơ sức khỏe của bạn, trong một nơi.</p></div><a class="button" href="{{ url_for('appointments.create') }}">+ Đặt lịch khám</a></div>
+<div class="stats"><div class="stat"><span>Lịch hẹn của bạn</span><strong>{{ appointments|length }}</strong><small>Tổng số lịch hẹn đã ghi nhận</small></div><div class="stat"><span>Bệnh sử</span><strong>{{ history_count }}</strong><a href="{{ url_for('medical_history.index') }}">Xem hồ sơ →</a></div><div class="stat"><span>Đơn thuốc</span><strong>{{ prescription_count }}</strong><a href="{{ url_for('prescriptions.index') }}">Xem đơn thuốc →</a></div></div>
+<section class="hero-strip"><div><p class="eyebrow">CHỦ ĐỘNG CHĂM SÓC</p><h2>Chọn bác sĩ. Chọn thời gian.</h2><p>Tra cứu bác sĩ và các ca làm khả dụng để đặt lịch phù hợp với bạn.</p></div><a class="button secondary" href="{{ url_for('doctors.index') }}">Tìm bác sĩ →</a></section>
+<section class="panel"><div class="panel-heading"><h2>Lịch hẹn của bạn</h2><a href="{{ url_for('appointments.index') }}">Xem tất cả →</a></div>{{ appointment_table(appointments[:5]) }}</section>
+{% endblock %}

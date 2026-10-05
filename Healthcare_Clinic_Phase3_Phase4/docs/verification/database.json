@@ -1,0 +1,1171 @@
+{
+  "database": "healthcare_clinic_portal",
+  "fields_checked": 77,
+  "queries": [
+    {
+      "id": "q01",
+      "file": "database/queries/appointments/q01_daily_appointments.sql",
+      "rows": 5,
+      "output": [
+        {
+          "appointment_id": "A_GP",
+          "patient_name": "Demo Patient 1",
+          "doctor_name": "Demo General Practitioner",
+          "specialty_name": "General Practitioner",
+          "appointment_date_time": "2026-10-06 09:00:00",
+          "start_time": "8:00:00",
+          "end_time": "17:00:00",
+          "status": "Scheduled"
+        },
+        {
+          "appointment_id": "A_VIRTUAL",
+          "patient_name": "Demo Patient 2",
+          "doctor_name": "Demo Specialist",
+          "specialty_name": "Demo Specialty",
+          "appointment_date_time": "2026-10-06 10:00:00",
+          "start_time": "8:00:00",
+          "end_time": "17:00:00",
+          "status": "Scheduled"
+        },
+        {
+          "appointment_id": "A_FOLLOWUP",
+          "patient_name": "Demo Patient 1",
+          "doctor_name": "Demo General Practitioner",
+          "specialty_name": "General Practitioner",
+          "appointment_date_time": "2026-10-06 11:00:00",
+          "start_time": "8:00:00",
+          "end_time": "17:00:00",
+          "status": "Scheduled"
+        },
+        {
+          "appointment_id": "A_CANCELLED",
+          "patient_name": "Demo Patient 1",
+          "doctor_name": "Demo General Practitioner",
+          "specialty_name": "General Practitioner",
+          "appointment_date_time": "2026-10-06 12:00:00",
+          "start_time": "8:00:00",
+          "end_time": "17:00:00",
+          "status": "Cancelled"
+        },
+        {
+          "appointment_id": "A_SP",
+          "patient_name": "Demo Patient 1",
+          "doctor_name": "Demo Specialist",
+          "specialty_name": "Demo Specialty",
+          "appointment_date_time": "2026-10-06 13:00:00",
+          "start_time": "8:00:00",
+          "end_time": "17:00:00",
+          "status": "Scheduled"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "q02",
+      "file": "database/queries/appointments/q02_doctor_status_counts.sql",
+      "rows": 5,
+      "output": [
+        {
+          "doctor_id": "D_GP",
+          "full_name": "Demo General Practitioner",
+          "status": "Cancelled",
+          "appointment_count": 1
+        },
+        {
+          "doctor_id": "D_GP",
+          "full_name": "Demo General Practitioner",
+          "status": "Completed",
+          "appointment_count": 1
+        },
+        {
+          "doctor_id": "D_GP",
+          "full_name": "Demo General Practitioner",
+          "status": "Scheduled",
+          "appointment_count": 2
+        },
+        {
+          "doctor_id": "D_SP",
+          "full_name": "Demo Specialist",
+          "status": "No-show",
+          "appointment_count": 1
+        },
+        {
+          "doctor_id": "D_SP",
+          "full_name": "Demo Specialist",
+          "status": "Scheduled",
+          "appointment_count": 2
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "q03",
+      "file": "database/queries/appointments/q03_patients_completed_having.sql",
+      "rows": 1,
+      "output": [
+        {
+          "patient_id": "P1",
+          "full_name": "Demo Patient 1",
+          "completed_visits": 1
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "q04",
+      "file": "database/queries/appointments/q04_doctors_not_exists.sql",
+      "rows": 2,
+      "output": [
+        {
+          "doctor_id": "D_GP",
+          "full_name": "Demo General Practitioner"
+        },
+        {
+          "doctor_id": "D_SP",
+          "full_name": "Demo Specialist"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "q05",
+      "file": "database/queries/appointments/q05_available_shift_starts.sql",
+      "rows": 58,
+      "output": [
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 08:00:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 08:15:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 08:30:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 09:30:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 09:45:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 10:00:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 10:15:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 10:30:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 11:30:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 11:45:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 12:00:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 12:15:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 12:30:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 12:45:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 13:00:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 13:15:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 13:30:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 13:45:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 14:00:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 14:15:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 14:30:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 14:45:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 15:00:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 15:15:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 15:30:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 15:45:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 16:00:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 16:15:00"
+        },
+        {
+          "schedule_id": "S_D_GP_1",
+          "doctor_id": "D_GP",
+          "starts": "2026-10-06 16:30:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 08:00:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 08:15:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 08:30:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 08:45:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 09:00:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 09:15:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 09:30:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 10:30:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 10:45:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 11:00:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 11:15:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 11:30:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 11:45:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 12:00:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 12:15:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 12:30:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 13:30:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 13:45:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 14:00:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 14:15:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 14:30:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 14:45:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 15:00:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 15:15:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 15:30:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 15:45:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 16:00:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 16:15:00"
+        },
+        {
+          "schedule_id": "S_D_SP_1",
+          "doctor_id": "D_SP",
+          "starts": "2026-10-06 16:30:00"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "q06",
+      "file": "database/queries/appointments/q06_recursive_followups.sql",
+      "rows": 7,
+      "output": [
+        {
+          "appointment_id": "A_CANCELLED",
+          "follow_up_from_appt_id": null,
+          "patient_id": "P1",
+          "depth": 0
+        },
+        {
+          "appointment_id": "A_COMPLETED",
+          "follow_up_from_appt_id": null,
+          "patient_id": "P1",
+          "depth": 0
+        },
+        {
+          "appointment_id": "A_GP",
+          "follow_up_from_appt_id": null,
+          "patient_id": "P1",
+          "depth": 0
+        },
+        {
+          "appointment_id": "A_SP",
+          "follow_up_from_appt_id": null,
+          "patient_id": "P1",
+          "depth": 0
+        },
+        {
+          "appointment_id": "A_FOLLOWUP",
+          "follow_up_from_appt_id": "A_COMPLETED",
+          "patient_id": "P1",
+          "depth": 1
+        },
+        {
+          "appointment_id": "A_MISSED",
+          "follow_up_from_appt_id": null,
+          "patient_id": "P2",
+          "depth": 0
+        },
+        {
+          "appointment_id": "A_VIRTUAL",
+          "follow_up_from_appt_id": null,
+          "patient_id": "P2",
+          "depth": 0
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "q07",
+      "file": "database/queries/medical_history/q07_patient_history.sql",
+      "rows": 1,
+      "output": [
+        {
+          "patient_id": "P1",
+          "full_name": "Demo Patient 1",
+          "record_date": "2026-10-04 09:30:00",
+          "diagnosis": "Synthetic diagnosis",
+          "symptoms": "Synthetic symptoms",
+          "doctor_name": "Demo General Practitioner"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "q08",
+      "file": "database/queries/prescriptions/q08_prescription_medications.sql",
+      "rows": 2,
+      "output": [
+        {
+          "prescription_id": "R_DEMO",
+          "patient_id": "P1",
+          "prescription_date": "2026-10-04 09:30:00",
+          "medication_name": "Demo Formulary A",
+          "dosage": "Demo dose",
+          "frequency": "Demo frequency",
+          "duration": "Demo course",
+          "special_instructions": "Not for clinical use"
+        },
+        {
+          "prescription_id": "R_DEMO",
+          "patient_id": "P1",
+          "prescription_date": "2026-10-04 09:30:00",
+          "medication_name": "Demo Formulary B",
+          "dosage": "Demo dose",
+          "frequency": "Demo frequency",
+          "duration": "Demo course",
+          "special_instructions": "Not for clinical use"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "q09",
+      "file": "database/queries/prescriptions/q09_monthly_medication_usage.sql",
+      "rows": 2,
+      "output": [
+        {
+          "prescription_month": "2026-10",
+          "medication_id": "M_A",
+          "medication_name": "Demo Formulary A",
+          "usage_count": 1
+        },
+        {
+          "prescription_month": "2026-10",
+          "medication_id": "M_B",
+          "medication_name": "Demo Formulary B",
+          "usage_count": 1
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "q10",
+      "file": "database/queries/appointments/q10_above_average_workload.sql",
+      "rows": 1,
+      "output": [
+        {
+          "doctor_id": "D_GP",
+          "full_name": "Demo General Practitioner",
+          "active_visits": 3
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "q11",
+      "file": "database/queries/appointments/q11_doctor_status_ratios.sql",
+      "rows": 2,
+      "output": [
+        {
+          "doctor_id": "D_GP",
+          "full_name": "Demo General Practitioner",
+          "total_visits": 4,
+          "completed_visits": "1",
+          "cancelled_visits": "1",
+          "missed_visits": "0",
+          "completion_ratio": "0.250"
+        },
+        {
+          "doctor_id": "D_SP",
+          "full_name": "Demo Specialist",
+          "total_visits": 3,
+          "completed_visits": "0",
+          "cancelled_visits": "0",
+          "missed_visits": "1",
+          "completion_ratio": "0.000"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "q12",
+      "file": "database/queries/consultations/q12_telemedicine_audit.sql",
+      "rows": 0,
+      "output": [],
+      "status": "PASS"
+    }
+  ],
+  "plans": {
+    "q01": {
+      "query": "/* select#1 */ select `a`.`appointment_id` AS `appointment_id`,`p`.`full_name` AS `patient_name`,`d`.`full_name` AS `doctor_name`,coalesce(`sp`.`specialty_name`,'General Practitioner') AS `specialty_name`,`a`.`appointment_date_time` AS `appointment_date_time`,`ds`.`start_time` AS `start_time`,`ds`.`end_time` AS `end_time`,`a`.`status` AS `status` from `healthcare_clinic_portal`.`appointment` `a` join `healthcare_clinic_portal`.`patient` `p` join `healthcare_clinic_portal`.`doctor` `d` join `healthcare_clinic_portal`.`doctor_schedule` `ds` left join `healthcare_clinic_portal`.`specialist` `st` on((`st`.`doctor_id` = `d`.`doctor_id`)) left join `healthcare_clinic_portal`.`specialty` `sp` on((`sp`.`specialty_id` = `st`.`specialty_id`)) where ((`p`.`patient_id` = `a`.`patient_id`) and (`a`.`doctor_id` = `d`.`doctor_id`) and (`ds`.`schedule_id` = `a`.`schedule_id`) and (cast(`a`.`appointment_date_time` as date) = <cache>((@`report_date`)))) order by `a`.`appointment_date_time`",
+      "query_plan": {
+        "inputs": [
+          {
+            "inputs": [
+              {
+                "inputs": [
+                  {
+                    "inputs": [
+                      {
+                        "inputs": [
+                          {
+                            "inputs": [
+                              {
+                                "alias": "a",
+                                "operation": "Table scan on a",
+                                "table_name": "appointment",
+                                "access_type": "table",
+                                "schema_name": "healthcare_clinic_portal",
+                                "used_columns": [
+                                  "appointment_id",
+                                  "patient_id",
+                                  "doctor_id",
+                                  "schedule_id",
+                                  "appointment_date_time",
+                                  "status"
+                                ],
+                                "estimated_rows": 7.0,
+                                "estimated_total_cost": 0.30107765197753916
+                              },
+                              {
+                                "inputs": [
+                                  {
+                                    "inputs": [
+                                      {
+                                        "alias": "d",
+                                        "operation": "Table scan on d",
+                                        "table_name": "doctor",
+                                        "access_type": "table",
+                                        "schema_name": "healthcare_clinic_portal",
+                                        "used_columns": [
+                                          "doctor_id",
+                                          "full_name"
+                                        ],
+                                        "estimated_rows": 2.0,
+                                        "estimated_total_cost": 0.45
+                                      },
+                                      {
+                                        "alias": "st",
+                                        "covering": false,
+                                        "operation": "Single-row index lookup on st using PRIMARY (doctor_id = d.doctor_id)",
+                                        "index_name": "PRIMARY",
+                                        "table_name": "specialist",
+                                        "access_type": "index",
+                                        "key_columns": [
+                                          "doctor_id"
+                                        ],
+                                        "schema_name": "healthcare_clinic_portal",
+                                        "used_columns": [
+                                          "doctor_id",
+                                          "specialty_id"
+                                        ],
+                                        "estimated_rows": 1.0,
+                                        "lookup_condition": "doctor_id = d.doctor_id",
+                                        "index_access_type": "index_lookup",
+                                        "lookup_references": [
+                                          "healthcare_clinic_portal.d.doctor_id"
+                                        ],
+                                        "estimated_total_cost": 0.3
+                                      }
+                                    ],
+                                    "join_type": "left join",
+                                    "operation": "Nested loop left join",
+                                    "access_type": "join",
+                                    "estimated_rows": 2.0,
+                                    "join_algorithm": "nested_loop",
+                                    "estimated_total_cost": 1.15
+                                  },
+                                  {
+                                    "alias": "sp",
+                                    "covering": false,
+                                    "operation": "Single-row index lookup on sp using PRIMARY (specialty_id = st.specialty_id)",
+                                    "index_name": "PRIMARY",
+                                    "table_name": "specialty",
+                                    "access_type": "index",
+                                    "key_columns": [
+                                      "specialty_id"
+                                    ],
+                                    "schema_name": "healthcare_clinic_portal",
+                                    "used_columns": [
+                                      "specialty_id",
+                                      "specialty_name"
+                                    ],
+                                    "estimated_rows": 1.0,
+                                    "lookup_condition": "specialty_id = st.specialty_id",
+                                    "index_access_type": "index_lookup",
+                                    "lookup_references": [
+                                      "healthcare_clinic_portal.st.specialty_id"
+                                    ],
+                                    "estimated_total_cost": 0.3
+                                  }
+                                ],
+                                "heading": "Hash",
+                                "join_type": "left join",
+                                "operation": "Nested loop left join",
+                                "access_type": "join",
+                                "estimated_rows": 2.0,
+                                "join_algorithm": "nested_loop",
+                                "estimated_total_cost": 1.8499999999999999
+                              }
+                            ],
+                            "join_type": "inner join",
+                            "operation": "Inner hash join (a.doctor_id = d.doctor_id)",
+                            "access_type": "join",
+                            "join_columns": [
+                              "a.doctor_id",
+                              "d.doctor_id"
+                            ],
+                            "estimated_rows": 7.0,
+                            "hash_condition": [
+                              "(a.doctor_id = d.doctor_id)"
+                            ],
+                            "join_algorithm": "hash",
+                            "estimated_total_cost": 3.502155303955078
+                          }
+                        ],
+                        "condition": "(cast(a.appointment_date_time as date) = <cache>((@report_date)))",
+                        "operation": "Filter: (cast(a.appointment_date_time as date) = <cache>((@report_date)))",
+                        "access_type": "filter",
+                        "estimated_rows": 7.0,
+                        "filter_columns": [
+                          "a.appointment_date_time"
+                        ],
+                        "estimated_total_cost": 3.502155303955078
+                      },
+                      {
+                        "alias": "p",
+                        "covering": false,
+                        "operation": "Single-row index lookup on p using PRIMARY (patient_id = a.patient_id)",
+                        "index_name": "PRIMARY",
+                        "table_name": "patient",
+                        "access_type": "index",
+                        "key_columns": [
+                          "patient_id"
+                        ],
+                        "schema_name": "healthcare_clinic_portal",
+                        "used_columns": [
+                          "patient_id",
+                          "full_name"
+                        ],
+                        "estimated_rows": 1.0,
+                        "lookup_condition": "patient_id = a.patient_id",
+                        "index_access_type": "index_lookup",
+                        "lookup_references": [
+                          "healthcare_clinic_portal.a.patient_id"
+                        ],
+                        "estimated_total_cost": 0.1392857142857143
+                      }
+                    ],
+                    "join_type": "inner join",
+                    "operation": "Nested loop inner join",
+                    "access_type": "join",
+                    "estimated_rows": 7.0,
+                    "join_algorithm": "nested_loop",
+                    "estimated_total_cost": 5.077155303955078
+                  },
+                  {
+                    "alias": "ds",
+                    "covering": false,
+                    "operation": "Single-row index lookup on ds using PRIMARY (schedule_id = a.schedule_id)",
+                    "index_name": "PRIMARY",
+                    "table_name": "doctor_schedule",
+                    "access_type": "index",
+                    "key_columns": [
+                      "schedule_id"
+                    ],
+                    "schema_name": "healthcare_clinic_portal",
+                    "used_columns": [
+                      "schedule_id",
+                      "start_time",
+                      "end_time"
+                    ],
+                    "estimated_rows": 1.0,
+                    "lookup_condition": "schedule_id = a.schedule_id",
+                    "index_access_type": "index_lookup",
+                    "lookup_references": [
+                      "healthcare_clinic_portal.a.schedule_id"
+                    ],
+                    "estimated_total_cost": 0.1392857142857143
+                  }
+                ],
+                "join_type": "inner join",
+                "operation": "Nested loop inner join",
+                "access_type": "join",
+                "estimated_rows": 7.0,
+                "join_algorithm": "nested_loop",
+                "estimated_total_cost": 6.6521553039550785
+              }
+            ],
+            "operation": "Stream results",
+            "access_type": "stream",
+            "estimated_rows": 7.0,
+            "estimated_total_cost": 6.6521553039550785
+          }
+        ],
+        "operation": "Sort: a.appointment_date_time",
+        "access_type": "sort",
+        "sort_fields": [
+          "a.appointment_date_time"
+        ]
+      },
+      "query_type": "select",
+      "json_schema_version": "2.0"
+    },
+    "q07": {
+      "query": "/* select#1 */ select `p`.`patient_id` AS `patient_id`,`p`.`full_name` AS `full_name`,`mh`.`record_date` AS `record_date`,`mh`.`diagnosis` AS `diagnosis`,`mh`.`symptoms` AS `symptoms`,`d`.`full_name` AS `doctor_name` from `healthcare_clinic_portal`.`medical_history` `mh` join `healthcare_clinic_portal`.`consultation_session` `cs` join `healthcare_clinic_portal`.`appointment` `a` join `healthcare_clinic_portal`.`patient` `p` join `healthcare_clinic_portal`.`doctor` `d` where ((`cs`.`session_id` = `mh`.`session_id`) and (`a`.`appointment_id` = `cs`.`appointment_id`) and (`p`.`patient_id` = `a`.`patient_id`) and (`d`.`doctor_id` = `a`.`doctor_id`)) order by `p`.`patient_id`,`mh`.`record_date`",
+      "query_plan": {
+        "inputs": [
+          {
+            "inputs": [
+              {
+                "inputs": [
+                  {
+                    "inputs": [
+                      {
+                        "inputs": [
+                          {
+                            "inputs": [
+                              {
+                                "alias": "mh",
+                                "operation": "Table scan on mh",
+                                "table_name": "medical_history",
+                                "access_type": "table",
+                                "schema_name": "healthcare_clinic_portal",
+                                "used_columns": [
+                                  "medical_history_id",
+                                  "session_id",
+                                  "record_date",
+                                  "diagnosis",
+                                  "symptoms"
+                                ],
+                                "estimated_rows": 1.0,
+                                "estimated_total_cost": 0.35
+                              },
+                              {
+                                "alias": "cs",
+                                "covering": false,
+                                "operation": "Single-row index lookup on cs using PRIMARY (session_id = mh.session_id)",
+                                "index_name": "PRIMARY",
+                                "table_name": "consultation_session",
+                                "access_type": "index",
+                                "key_columns": [
+                                  "session_id"
+                                ],
+                                "schema_name": "healthcare_clinic_portal",
+                                "used_columns": [
+                                  "session_id",
+                                  "appointment_id"
+                                ],
+                                "estimated_rows": 1.0,
+                                "lookup_condition": "session_id = mh.session_id",
+                                "index_access_type": "index_lookup",
+                                "lookup_references": [
+                                  "healthcare_clinic_portal.mh.session_id"
+                                ],
+                                "estimated_total_cost": 0.35
+                              }
+                            ],
+                            "join_type": "inner join",
+                            "operation": "Nested loop inner join",
+                            "access_type": "join",
+                            "estimated_rows": 1.0,
+                            "join_algorithm": "nested_loop",
+                            "estimated_total_cost": 0.7
+                          },
+                          {
+                            "alias": "a",
+                            "covering": false,
+                            "operation": "Single-row index lookup on a using PRIMARY (appointment_id = cs.appointment_id)",
+                            "index_name": "PRIMARY",
+                            "table_name": "appointment",
+                            "access_type": "index",
+                            "key_columns": [
+                              "appointment_id"
+                            ],
+                            "schema_name": "healthcare_clinic_portal",
+                            "used_columns": [
+                              "appointment_id",
+                              "patient_id",
+                              "doctor_id"
+                            ],
+                            "estimated_rows": 1.0,
+                            "lookup_condition": "appointment_id = cs.appointment_id",
+                            "index_access_type": "index_lookup",
+                            "lookup_references": [
+                              "healthcare_clinic_portal.cs.appointment_id"
+                            ],
+                            "estimated_total_cost": 0.35
+                          }
+                        ],
+                        "join_type": "inner join",
+                        "operation": "Nested loop inner join",
+                        "access_type": "join",
+                        "estimated_rows": 1.0,
+                        "join_algorithm": "nested_loop",
+                        "estimated_total_cost": 1.05
+                      },
+                      {
+                        "alias": "p",
+                        "covering": false,
+                        "operation": "Single-row index lookup on p using PRIMARY (patient_id = a.patient_id)",
+                        "index_name": "PRIMARY",
+                        "table_name": "patient",
+                        "access_type": "index",
+                        "key_columns": [
+                          "patient_id"
+                        ],
+                        "schema_name": "healthcare_clinic_portal",
+                        "used_columns": [
+                          "patient_id",
+                          "full_name"
+                        ],
+                        "estimated_rows": 1.0,
+                        "lookup_condition": "patient_id = a.patient_id",
+                        "index_access_type": "index_lookup",
+                        "lookup_references": [
+                          "healthcare_clinic_portal.a.patient_id"
+                        ],
+                        "estimated_total_cost": 0.35
+                      }
+                    ],
+                    "join_type": "inner join",
+                    "operation": "Nested loop inner join",
+                    "access_type": "join",
+                    "estimated_rows": 1.0,
+                    "join_algorithm": "nested_loop",
+                    "estimated_total_cost": 1.4000000000000001
+                  },
+                  {
+                    "alias": "d",
+                    "covering": false,
+                    "operation": "Single-row index lookup on d using PRIMARY (doctor_id = a.doctor_id)",
+                    "index_name": "PRIMARY",
+                    "table_name": "doctor",
+                    "access_type": "index",
+                    "key_columns": [
+                      "doctor_id"
+                    ],
+                    "schema_name": "healthcare_clinic_portal",
+                    "used_columns": [
+                      "doctor_id",
+                      "full_name"
+                    ],
+                    "estimated_rows": 1.0,
+                    "lookup_condition": "doctor_id = a.doctor_id",
+                    "index_access_type": "index_lookup",
+                    "lookup_references": [
+                      "healthcare_clinic_portal.a.doctor_id"
+                    ],
+                    "estimated_total_cost": 0.35
+                  }
+                ],
+                "join_type": "inner join",
+                "operation": "Nested loop inner join",
+                "access_type": "join",
+                "estimated_rows": 1.0,
+                "join_algorithm": "nested_loop",
+                "estimated_total_cost": 1.7500000000000002
+              }
+            ],
+            "operation": "Stream results",
+            "access_type": "stream",
+            "estimated_rows": 1.0,
+            "estimated_total_cost": 1.7500000000000002
+          }
+        ],
+        "operation": "Sort: p.patient_id, mh.record_date",
+        "access_type": "sort",
+        "sort_fields": [
+          "p.patient_id",
+          "mh.record_date"
+        ]
+      },
+      "query_type": "select",
+      "json_schema_version": "2.0"
+    },
+    "q08": {
+      "query": "/* select#1 */ select `rx`.`prescription_id` AS `prescription_id`,`a`.`patient_id` AS `patient_id`,`rx`.`prescription_date` AS `prescription_date`,`m`.`medication_name` AS `medication_name`,`pi`.`dosage` AS `dosage`,`pi`.`frequency` AS `frequency`,`pi`.`duration` AS `duration`,`pi`.`special_instructions` AS `special_instructions` from `healthcare_clinic_portal`.`prescription` `rx` join `healthcare_clinic_portal`.`consultation_session` `cs` join `healthcare_clinic_portal`.`appointment` `a` join `healthcare_clinic_portal`.`prescription_item` `pi` join `healthcare_clinic_portal`.`medication` `m` where ((`cs`.`session_id` = `rx`.`session_id`) and (`a`.`appointment_id` = `cs`.`appointment_id`) and (`pi`.`prescription_id` = `rx`.`prescription_id`) and (`pi`.`medication_id` = `m`.`medication_id`)) order by `rx`.`prescription_id`,`m`.`medication_name`",
+      "query_plan": {
+        "inputs": [
+          {
+            "inputs": [
+              {
+                "inputs": [
+                  {
+                    "alias": "pi",
+                    "operation": "Table scan on pi",
+                    "table_name": "prescription_item",
+                    "access_type": "table",
+                    "schema_name": "healthcare_clinic_portal",
+                    "used_columns": [
+                      "prescription_item_id",
+                      "prescription_id",
+                      "medication_id",
+                      "dosage",
+                      "frequency",
+                      "duration",
+                      "special_instructions"
+                    ],
+                    "estimated_rows": 2.0,
+                    "estimated_total_cost": 0.17592887878417968
+                  },
+                  {
+                    "inputs": [
+                      {
+                        "alias": "m",
+                        "covering": true,
+                        "operation": "Covering index scan on m using uq_medication_medication_name",
+                        "index_name": "uq_medication_medication_name",
+                        "table_name": "medication",
+                        "access_type": "index",
+                        "schema_name": "healthcare_clinic_portal",
+                        "used_columns": [
+                          "medication_id",
+                          "medication_name"
+                        ],
+                        "estimated_rows": 2.0,
+                        "index_access_type": "index_scan",
+                        "estimated_total_cost": 0.4504682540893555
+                      },
+                      {
+                        "inputs": [
+                          {
+                            "inputs": [
+                              {
+                                "alias": "rx",
+                                "covering": true,
+                                "operation": "Covering index scan on rx using ix_prescription_session_date",
+                                "index_name": "ix_prescription_session_date",
+                                "table_name": "prescription",
+                                "access_type": "index",
+                                "schema_name": "healthcare_clinic_portal",
+                                "used_columns": [
+                                  "prescription_id",
+                                  "session_id",
+                                  "prescription_date"
+                                ],
+                                "estimated_rows": 1.0,
+                                "index_access_type": "index_scan",
+                                "estimated_total_cost": 0.35
+                              },
+                              {
+                                "alias": "cs",
+                                "covering": false,
+                                "operation": "Single-row index lookup on cs using PRIMARY (session_id = rx.session_id)",
+                                "index_name": "PRIMARY",
+                                "table_name": "consultation_session",
+                                "access_type": "index",
+                                "key_columns": [
+                                  "session_id"
+                                ],
+                                "schema_name": "healthcare_clinic_portal",
+                                "used_columns": [
+                                  "session_id",
+                                  "appointment_id"
+                                ],
+                                "estimated_rows": 1.0,
+                                "lookup_condition": "session_id = rx.session_id",
+                                "index_access_type": "index_lookup",
+                                "lookup_references": [
+                                  "healthcare_clinic_portal.rx.session_id"
+                                ],
+                                "estimated_total_cost": 0.35
+                              }
+                            ],
+                            "join_type": "inner join",
+                            "operation": "Nested loop inner join",
+                            "access_type": "join",
+                            "estimated_rows": 1.0,
+                            "join_algorithm": "nested_loop",
+                            "estimated_total_cost": 0.7
+                          },
+                          {
+                            "alias": "a",
+                            "covering": false,
+                            "operation": "Single-row index lookup on a using PRIMARY (appointment_id = cs.appointment_id)",
+                            "index_name": "PRIMARY",
+                            "table_name": "appointment",
+                            "access_type": "index",
+                            "key_columns": [
+                              "appointment_id"
+                            ],
+                            "schema_name": "healthcare_clinic_portal",
+                            "used_columns": [
+                              "appointment_id",
+                              "patient_id"
+                            ],
+                            "estimated_rows": 1.0,
+                            "lookup_condition": "appointment_id = cs.appointment_id",
+                            "index_access_type": "index_lookup",
+                            "lookup_references": [
+                              "healthcare_clinic_portal.cs.appointment_id"
+                            ],
+                            "estimated_total_cost": 0.35
+                          }
+                        ],
+                        "heading": "Hash",
+                        "join_type": "inner join",
+                        "operation": "Nested loop inner join",
+                        "access_type": "join",
+                        "estimated_rows": 1.0,
+                        "join_algorithm": "nested_loop",
+                        "estimated_total_cost": 1.05
+                      }
+                    ],
+                    "heading": "Hash",
+                    "join_type": "inner join",
+                    "operation": "Inner hash join (no condition)",
+                    "access_type": "join",
+                    "join_columns": [],
+                    "estimated_rows": 2.0,
+                    "hash_condition": [],
+                    "join_algorithm": "hash",
+                    "estimated_total_cost": 1.5004682540893555
+                  }
+                ],
+                "join_type": "inner join",
+                "operation": "Inner hash join (pi.prescription_id = rx.prescription_id), (pi.medication_id = m.medication_id)",
+                "access_type": "join",
+                "join_columns": [
+                  "m.medication_id",
+                  "pi.medication_id",
+                  "pi.prescription_id",
+                  "rx.prescription_id"
+                ],
+                "estimated_rows": 2.0,
+                "hash_condition": [
+                  "(pi.prescription_id = rx.prescription_id)",
+                  "(pi.medication_id = m.medication_id)"
+                ],
+                "join_algorithm": "hash",
+                "estimated_total_cost": 2.1523260116577148
+              }
+            ],
+            "operation": "Stream results",
+            "access_type": "stream",
+            "estimated_rows": 2.0,
+            "estimated_total_cost": 2.1523260116577148
+          }
+        ],
+        "operation": "Sort: rx.prescription_id, m.medication_name",
+        "access_type": "sort",
+        "sort_fields": [
+          "rx.prescription_id",
+          "m.medication_name"
+        ]
+      },
+      "query_type": "select",
+      "json_schema_version": "2.0"
+    }
+  },
+  "runtime": {
+    "version": "26.7.0",
+    "sql_mode": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+    "time_zone": "+07:00"
+  },
+  "base_tables": 13,
+  "views": 3,
+  "triggers_visible_to_app": 0,
+  "trigger_scope": "DBA/test suite verifies trigger behavior; app lacks TRIGGER metadata privilege.",
+  "foreign_keys": 16,
+  "invalid_doctor_subtypes": 0,
+  "empty_prescriptions": 0,
+  "app_grants": [
+    "GRANT USAGE ON *.* TO `healthcare_app`@`127.0.0.1`",
+    "GRANT SELECT, INSERT, UPDATE ON `healthcare_clinic_portal`.* TO `healthcare_app`@`127.0.0.1`",
+    "GRANT `clinic_application`@`%` TO `healthcare_app`@`127.0.0.1`"
+  ],
+  "active_role": "`clinic_application`@`%`",
+  "delete_denied": true
+}

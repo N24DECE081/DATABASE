@@ -1,0 +1,14 @@
+{% macro field_row(field) %}
+<div class="field {{ 'wide' if field.type == 'TextAreaField' else '' }}">
+  {{ field.label }}
+  {{ field(class_='control', **{'aria-invalid':'true' if field.errors else 'false'}) }}
+  {% for error in field.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+</div>
+{% endmacro %}
+{% macro badge(status) %}<span class="badge {{ status|lower|replace(' ','-') }}">{{ {'Scheduled':'Đã đặt','Checked-In':'Đã check-in','Completed':'Hoàn tất','Cancelled':'Đã hủy','No-show':'Vắng mặt','Available':'Khả dụng','Busy':'Bận','On Leave':'Nghỉ','Active':'Hoạt động','Locked':'Đã khóa','Suspended':'Tạm ngưng'}.get(status,status) }}</span>{% endmacro %}
+{% macro empty(message='Chưa có dữ liệu trong mục này.') %}<div class="empty"><span class="empty-icon">—</span><h3>{{ message }}</h3><p>Dữ liệu sẽ xuất hiện khi có hoạt động phù hợp.</p></div>{% endmacro %}
+{% macro appointment_table(rows) %}
+{% if rows %}<div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Bệnh nhân</th><th>Bác sĩ</th><th>Hình thức</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+{% for a in rows %}<tr><td><strong>{{ a.appointment_date_time.strftime('%d/%m/%Y') }}</strong><small>{{ a.appointment_date_time.strftime('%H:%M') }} · {{ a.estimated_duration_minutes }} phút</small></td><td>{{ a.patient_name }}</td><td>{{ a.doctor_name }}<small>{{ a.specialty_name }}</small></td><td>{{ 'Khám từ xa' if a.appointment_type == 'Telemedicine' else 'Tại phòng khám' }}</td><td>{{ badge(a.status) }}</td><td><a class="text-link" href="{{ url_for('appointments.detail',appointment_id=a.appointment_id) }}">Chi tiết →</a></td></tr>{% endfor %}
+</tbody></table></div>{% else %}{{ empty('Chưa có lịch hẹn.') }}{% endif %}
+{% endmacro %}

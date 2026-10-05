@@ -1,0 +1,3 @@
+{% extends 'base.html' %}
+{% block title %}{{ code }} · TiTiMi{% endblock %}
+{% block content %}<section class="panel error-panel"><p class="eyebrow">YÊU CẦU CHƯA HOÀN TẤT</p><h1>{{ code }}</h1><h2>{{ message }}</h2><p>Bạn có thể quay về tổng quan hoặc mở lại trang để thử tiếp.</p><a class="button" href="{{ url_for('index') }}">Về tổng quan</a></section>{% endblock %}

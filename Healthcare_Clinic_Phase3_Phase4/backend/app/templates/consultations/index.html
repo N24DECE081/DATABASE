@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% from 'shared/macros.html' import empty %}
+{% block content %}<div class="page-heading"><div><p class="eyebrow">HÀNH TRÌNH CHĂM SÓC</p><h1>Phiên khám</h1><p>Các phiên khám gắn với lịch hẹn của bạn.</p></div></div>
+<div class="card-grid">{% for s in sessions %}<section class="panel"><span class="tag">{{ 'Hoàn tất' if s.session_end_time else 'Đang khám' }}</span><h2>{{ s.patient_name }}</h2><p>{{ s.doctor_name }}</p><p>{{ s.appointment_date_time.strftime('%d/%m/%Y · %H:%M') }}</p><a class="text-link" href="{{ url_for('consultations.detail',session_id=s.session_id) }}">Xem phiên khám →</a></section>{% else %}{{ empty('Chưa có phiên khám.') }}{% endfor %}</div>{% endblock %}
