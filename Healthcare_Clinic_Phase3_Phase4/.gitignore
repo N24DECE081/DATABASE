@@ -11,8 +11,13 @@ Thumbs.db
 *.sql.gz
 .local/
 
-# Retain baseline binaries and local delivery artifacts; track governance and handoff docs.
-/01_Reference_and_Baseline/
+# Track the approved Phase 2 baseline and its register; retain other reference
+# binaries as local read-only material until the group explicitly publishes them.
+/01_Reference_and_Baseline/*
+!/01_Reference_and_Baseline/Phase2_DB_Project_RP2_BASELINE_READ_ONLY.docx
+!/01_Reference_and_Baseline/source_register/
+/01_Reference_and_Baseline/source_register/*
+!/01_Reference_and_Baseline/source_register/BASELINE_REGISTER.md
 /02_Phase3_MySQL_Implementation/*
 !/02_Phase3_MySQL_Implementation/README.md
 !/02_Phase3_MySQL_Implementation/SQL_DELIVERY_CONTRACT.md
