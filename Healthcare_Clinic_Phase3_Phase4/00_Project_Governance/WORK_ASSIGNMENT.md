@@ -4,6 +4,8 @@
 
 Phân công theo module và đầu ra kiểm tra được. Mỗi người có phần SQL/database, phần Flask/integration hoặc security, một phần báo cáo, một tập truy vấn và một nhiệm vụ kiểm thử/review. Owner chịu trách nhiệm hoàn thiện; reviewer kiểm tra độc lập. Nhóm có thể đổi owner theo năng lực/thời gian nhưng ghi lại thay đổi trong decision log và weekly log.
 
+Mọi owner làm việc trên nhánh riêng và mở Pull Request. Reviewer trong tài liệu này thực hiện review chuyên môn; quyền approve/merge cuối vào `main` chỉ thuộc `N24DECE081`, theo `BRANCH_AND_PULL_REQUEST_RULES.md`.
+
 ## Phạm vi sở hữu theo thành viên
 
 | Thành viên | Gói việc sở hữu | Giao phẩm | Reviewer chính |

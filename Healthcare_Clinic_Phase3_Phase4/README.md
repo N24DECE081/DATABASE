@@ -16,6 +16,8 @@ Patient tìm bác sĩ/chuyên khoa, xem ca và giờ khả dụng, đặt hoặc
 
 Xem [hướng dẫn chạy](docs/setup.md), [module và entity](docs/modules.md), [khóa EER Phase 1–2](docs/eer_baseline_audit.md), [cây thư mục](00_Project_Governance/FOLDER_STRUCTURE.md), [bằng chứng kiểm thử](docs/verification/RESULTS.md) và [ghi chú báo cáo](docs/report_changes.md).
 
+Mọi thành viên phải làm việc trên nhánh riêng và mở Pull Request; không push trực tiếp vào `main`. Chỉ `N24DECE081` được approve và merge. Xem [quy tắc nhánh/PR](00_Project_Governance/BRANCH_AND_PULL_REQUEST_RULES.md) và `CONTRIBUTING.md` ở root repository.
+
 | Nguồn | Nội dung |
 |---|---|
 | `backend/` | Flask, entity, forms/services/repositories, templates và app tests |
