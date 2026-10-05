@@ -29,6 +29,7 @@ def main():
             assert {t["name"] for t in tables if t["kind"]=="BASE TABLE"}=={e["table"] for e in manifest["entities"]}
             results["base_tables"]=len(manifest["entities"])
             results["views"]=len([t for t in tables if t["kind"]=="VIEW"])
+            expected_unique=set()
             for entity in manifest["entities"]:
                 cursor.execute("""SELECT COLUMN_NAME AS name, COLUMN_TYPE AS data_type, IS_NULLABLE AS nullable,
                     COLUMN_DEFAULT AS default_value FROM information_schema.COLUMNS
@@ -43,7 +44,19 @@ def main():
                     expected_default=None if default in ("None","NULL") else default.strip("'").lower()
                     actual_default=None if actual["default_value"] is None else str(actual["default_value"]).lower().replace("()","")
                     assert expected_default==actual_default,(entity["table"],actual)
+                    if "Unique" in expected["constraints"] and "PK" not in expected["constraints"]:
+                        expected_unique.add((entity["table"], expected["field"]))
                     results["fields_checked"]+=1
+            cursor.execute("""SELECT TABLE_NAME AS table_name, INDEX_NAME AS index_name,
+                GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS columns_list
+                FROM information_schema.STATISTICS
+                WHERE TABLE_SCHEMA=%s AND NON_UNIQUE=0 AND INDEX_NAME<>'PRIMARY'
+                GROUP BY TABLE_NAME, INDEX_NAME""",(database,))
+            unique_indexes=cursor.fetchall()
+            actual_unique={(row["table_name"],row["columns_list"]) for row in unique_indexes}
+            assert actual_unique==expected_unique,("Unexpected/missing UNIQUE keys",actual_unique,expected_unique)
+            results["unique_keys"]=[{"table":row["table_name"],"columns":row["columns_list"]}
+                                      for row in unique_indexes]
             cursor.execute("SELECT COUNT(*) AS n FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=%s",(database,))
             results["triggers_visible_to_app"]=cursor.fetchone()["n"]
             results["trigger_scope"]="DBA/test suite verifies trigger behavior; app lacks TRIGGER metadata privilege."

@@ -49,12 +49,9 @@ def generate():
                 expression = domain.group(1).replace(col["logical_name"], f"`{name}`")
                 definitions.append(f"  CONSTRAINT `ck_{table}_{name}` CHECK ({expression})")
         if table == "doctor_schedule":
-            definitions += ["  UNIQUE KEY `uq_schedule_natural` (`doctor_id`, `schedule_date`, `start_time`)",
-                            "  CONSTRAINT `ck_schedule_time` CHECK (`end_time` > `start_time`)"]
+            definitions.append("  CONSTRAINT `ck_schedule_time` CHECK (`end_time` > `start_time`)")
         elif table == "consultation_session":
             definitions.append("  CONSTRAINT `ck_session_time` CHECK (`end_time` IS NULL OR `end_time` > `start_time`)")
-        elif table == "prescription_item":
-            definitions.append("  UNIQUE KEY `uq_prescription_medication` (`prescription_id`, `medication_id`)")
         blocks.append(f"CREATE TABLE `{table}` (\n" + ",\n".join(definitions) +
                       "\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;")
     output = ROOT / "database/migrations/001_initial_schema.sql"

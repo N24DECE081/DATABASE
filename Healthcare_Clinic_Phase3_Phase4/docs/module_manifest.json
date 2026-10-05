@@ -2,7 +2,9 @@
   "schema_version": 1,
   "baseline": {
     "path": "01_Reference_and_Baseline/Phase2_DB_Project_RP2_BASELINE_READ_ONLY.docx",
-    "sha256": "c61e01650630cba70f956e42efdf7fbf128e88bc8d7eb38a2c1a0cbf2e50168f"
+    "sha256": "c61e01650630cba70f956e42efdf7fbf128e88bc8d7eb38a2c1a0cbf2e50168f",
+    "eer_path": "../Healthcare_EER.png",
+    "eer_sha256": "1dc9dff60a49b0a853d82673647f42b419218d01237008580fabeea444c78811"
   },
   "status": "Functional implementation running on local MySQL; automated evidence available; team review pending",
   "conflicts": [

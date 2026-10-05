@@ -85,7 +85,6 @@ CREATE TABLE `doctor_schedule` (
   `end_time` TIME NOT NULL,
   `availability_status` VARCHAR(15) NOT NULL DEFAULT 'Available',
   CONSTRAINT `ck_doctor_schedule_availability_status` CHECK (`availability_status` IN ('Available', 'Busy', 'On Leave')),
-  UNIQUE KEY `uq_schedule_natural` (`doctor_id`, `schedule_date`, `start_time`),
   CONSTRAINT `ck_schedule_time` CHECK (`end_time` > `start_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -168,6 +167,5 @@ CREATE TABLE `prescription_item` (
   `dosage` VARCHAR(50) NOT NULL,
   `frequency` VARCHAR(50) NOT NULL,
   `duration` VARCHAR(50) NOT NULL,
-  `special_instructions` VARCHAR(255) NULL DEFAULT NULL,
-  UNIQUE KEY `uq_prescription_medication` (`prescription_id`, `medication_id`)
+  `special_instructions` VARCHAR(255) NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

@@ -18,6 +18,7 @@ Giữ đầy đủ các quan hệ: `USER_ACCOUNT`, `PATIENT`, `SPECIALTY`, `DOCT
 - Có thể thêm constraint, index, view, trigger nhằm thi hành quy tắc đã có, miễn không đổi schema/ngữ nghĩa. Constraint nhiều dòng/đa bảng cần kiểm chứng thực tế trên MySQL.
 - SQL style yêu cầu tên vật lý lowercase snake_case trong khi báo cáo dùng tên logic uppercase. Lập mapping nhất quán tới baseline, không biến việc đặt tên vật lý thành thay đổi mô hình.
 - Baseline nguồn/bản sao mang nhãn `BASELINE_READ_ONLY`; không ghi đè. Mọi thay đổi tài liệu phải là artefact mới có truy vết.
+- `Healthcare_EER.png` ở root repository là EER chính thức Phase 1 và phải giữ nguyên byte/hash. Sơ đồ chi tiết phát sinh ở Phase 3/4 chỉ được dùng để giải thích, không thay thế hoặc sửa EER này.
 
 ## Yêu cầu của giảng viên
 

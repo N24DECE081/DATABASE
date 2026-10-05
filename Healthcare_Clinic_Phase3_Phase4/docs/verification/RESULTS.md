@@ -5,7 +5,7 @@
 | Kiểm tra | Kết quả | Evidence |
 |---|---|---|
 | Structural baseline/module | PASS: 10 modules, 13 entities, 77 fields, 80 Python files | scripts/verify_structure.py; baseline SHA-256 bất biến |
-| Live schema | PASS: 13 tables, 77 fields, 16 FKs, 3 views | [database.json](database.json) |
+| Live schema | PASS: 13 tables, 77 fields, 16 FKs, 3 views; UNIQUE keys khớp dictionary Phase 2 | [database.json](database.json) |
 | DB object inventory | 23 triggers, 4 procedures; InnoDB/utf8mb4 | [database_objects.json](database_objects.json), DBA read trên DB riêng |
 | Unit/integration | **34 passed**, 0 failures/errors/skips; 25.90s trong JUnit | [pytest.xml](pytest.xml) |
 | SQL complex queries | Q01–Q12 thực thi; output synthetic và row counts lưu | [database.json](database.json) → queries |
@@ -63,6 +63,8 @@ Counts/output phụ thuộc dữ liệu và ngày chạy; không dùng các con 
 Đã mở và kiểm tra ảnh trực quan. Browser dùng real CSRF login cho demo accounts; không tắt authentication. [DOT](../diagrams/doctor_specialization.dot) và [SVG](../diagrams/doctor_specialization.svg) biểu diễn DOCTOR → D/T → GENERAL_PRACTITIONER/SPECIALIST → SPECIALTY. Định nghĩa PATIENT giữ nội dung gốc; [report changes](../report_changes.md).
 
 ## Phạm vi và giới hạn
+
+EER Phase 1 vẫn là sơ đồ chính thức và không bị thay đổi. Hash ảnh EER cùng hash DOCX Phase 2 được verifier khóa; hình DOCTOR D/T là hình phóng to giải thích, không phải thiết kế thay thế. Hai UNIQUE tổng hợp không có trong dictionary đã được gỡ khỏi generator, DDL và live DB; [baseline audit](../eer_baseline_audit.md).
 
 Total specialization được service bảo đảm ở commit khi tạo doctor; DB chặn disjoint và sử dụng orphan, audit phát hiện. DBA chèn riêng DOCTOR vẫn có thể tạo trạng thái trung gian chưa có subtype. Tương tự, service bảo đảm ≥1 prescription item khi commit; DBA chèn bare header có thể tạo prescription rỗng. FK không tự bảo đảm hai quy tắc nhiều dòng này.
 

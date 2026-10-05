@@ -1156,6 +1156,40 @@
   },
   "base_tables": 13,
   "views": 3,
+  "unique_keys": [
+    {
+      "table": "consultation_session",
+      "columns": "appointment_id"
+    },
+    {
+      "table": "doctor",
+      "columns": "email"
+    },
+    {
+      "table": "doctor",
+      "columns": "license_number"
+    },
+    {
+      "table": "doctor",
+      "columns": "user_id"
+    },
+    {
+      "table": "medication",
+      "columns": "medication_name"
+    },
+    {
+      "table": "patient",
+      "columns": "user_id"
+    },
+    {
+      "table": "specialty",
+      "columns": "specialty_name"
+    },
+    {
+      "table": "user_account",
+      "columns": "username"
+    }
+  ],
   "triggers_visible_to_app": 0,
   "trigger_scope": "DBA/test suite verifies trigger behavior; app lacks TRIGGER metadata privilege.",
   "foreign_keys": 16,

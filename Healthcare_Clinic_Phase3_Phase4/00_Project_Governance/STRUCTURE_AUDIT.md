@@ -7,7 +7,8 @@ Cây đã chia module và triển khai thành ứng dụng Flask/MySQL chạy th
 | Python/SQL | backend/database là nguồn duy nhất; 02/03 là hợp đồng |
 | Module/entity | 10 module, 13 dataclass, 77 field; mỗi entity sở hữu một lần |
 | Baseline | SHA-256 Phase 2 giữ nguyên; original dictionary so trực tiếp với manifest |
-| EndTime | NULL/default NULL theo quyết định người dùng, override có truy vết |
+| EER Phase 1 | Ảnh gốc giữ nguyên byte/hash; sơ đồ DOCTOR chỉ là hình giải thích |
+| EndTime | NULL/default NULL theo quyết định người dùng, ngoại lệ baseline duy nhất |
 | Live schema | 13 bảng/77 cột/16 FK, 3 views; MySQL 26.7.0 |
 | Integrity scripts | 23 triggers/4 procedures; tested temporal/concurrency/clinical/subtype cases |
 | Queries/performance | Q01–Q12 chạy; EXPLAIN JSON Q01/Q07/Q08 lưu thật |
