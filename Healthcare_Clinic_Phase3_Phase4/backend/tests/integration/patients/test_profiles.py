@@ -13,15 +13,15 @@ def profile_data(**overrides):
 
 def test_patient_profile_update_cannot_change_patient_identity_or_other_account(app,client):
     login(client,'patient_one')
-    assert client.get('/patients/account/U_PATIENT2/edit').status_code==403
-    assert post(client,'/patients/profile',profile_data(patient_id='P2',user_id='U_PATIENT2')).status_code==302
-    own=sql(app,"SELECT * FROM patient WHERE patient_id='P1'",one=True)
-    other=sql(app,"SELECT * FROM patient WHERE patient_id='P2'",one=True)
-    assert own['user_id']=='U_PATIENT1' and own['full_name']=='Updated Synthetic Patient'
-    assert own['blood_type'] is None and other['full_name']=='Demo Patient 2'
+    assert client.get('/patients/account/USER-005/edit').status_code==403
+    assert post(client,'/patients/profile',profile_data(patient_id='PAT-002',user_id='USER-005')).status_code==302
+    own=sql(app,"SELECT * FROM patient WHERE patient_id='PAT-001'",one=True)
+    other=sql(app,"SELECT * FROM patient WHERE patient_id='PAT-002'",one=True)
+    assert own['user_id']=='USER-004' and own['full_name']=='Updated Synthetic Patient'
+    assert own['blood_type'] is None and other['full_name']=='Trần Thu Hà'
 
 
 def test_administrator_can_update_registered_patient_profile(app,client):
     login(client,'admin')
-    assert post(client,'/patients/account/U_PATIENT2/edit',profile_data()).status_code==302
-    assert sql(app,"SELECT full_name FROM patient WHERE patient_id='P2'",one=True)['full_name']=='Updated Synthetic Patient'
+    assert post(client,'/patients/account/USER-005/edit',profile_data()).status_code==302
+    assert sql(app,"SELECT full_name FROM patient WHERE patient_id='PAT-002'",one=True)['full_name']=='Updated Synthetic Patient'

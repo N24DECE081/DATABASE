@@ -2,6 +2,10 @@
 
 Ứng dụng Flask/MySQL chạy thật tại http://127.0.0.1:5000. MySQL riêng localhost:3307, schema healthcare_clinic_portal. Kết quả dưới đây là observed output của lần chạy trong workspace; không thay việc nghiệm thu của nhóm.
 
+**Cập nhật live ngày 2026-10-07:** database demo cũ đã được sao lưu cục bộ (bỏ qua trong Git) rồi dựng lại bằng đúng migration/index/trigger/view hiện có và seed mới. Live schema xác nhận 13 bảng, 23 triggers, 4 procedures, 3 views; seed có 5 accounts, 2 patients, 2 doctors, 8 shifts, 7 appointments, 1 session, 1 history, 1 prescription/2 items và 2 medications. Q01–Q12 đều được thực thi trực tiếp thành công trên MySQL; số dòng lần chạy này lần lượt là 5, 5, 1, 2, 58, 7, 1, 2, 2, 1, 2, 0. Q01 trả 5 lịch ngày kế tiếp với ID `APT-002`–`APT-006`. Q12 trả 0 lỗi/audit findings, hợp lệ với seed hiện tại. Schema được khôi phục về cùng định nghĩa DDL của project; không đổi schema hoặc logic query.
+
+`database.json` và `pytest.xml` bên dưới là evidence kiểm thử được ghi ngày 2026-10-05 với seed/ID cũ. Chúng vẫn là kết quả lịch sử, không phải output chi tiết của lần reseed ngày 2026-10-07; pytest tích hợp chưa được chạy lại sau lần reseed này.
+
 | Kiểm tra | Kết quả | Evidence |
 |---|---|---|
 | Structural baseline/module | PASS: 10 modules, 13 entities, 77 fields, 80 Python files | scripts/verify_structure.py; baseline SHA-256 bất biến |
