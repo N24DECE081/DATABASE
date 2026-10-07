@@ -30,7 +30,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-local.ps1
 
 `ExecutionPolicy Bypass` chỉ áp dụng process chạy script này. Bootstrap chỉ dùng root của MySQL riêng trên loopback để tạo schema/user/role. Root local này được khởi tạo không có mật khẩu; Flask dùng `healthcare_app` với password ngẫu nhiên lưu trong `.env`, chỉ được SELECT/INSERT/UPDATE qua role `clinic_application`.
 
-Dữ liệu khởi tạo gồm 5 accounts, 2 patients, 2 doctors (GP/Specialist), 1 specialty, 8 shifts, 7 appointments, 1 completed session, 1 history, 1 prescription/2 items và 2 thuốc giả lập. ID dùng quy ước `<ENTITY-PREFIX>-<3 chữ số>` như `PAT-001`, `DOC-001`, `APT-001`; ngày seed tương đối theo ngày bootstrap. Hồ sơ, địa chỉ/email và bệnh sử đều là dữ liệu hư cấu; số điện thoại được mask, email dùng miền `.invalid`, và nội dung thuốc/chẩn đoán chỉ phục vụ demo, không dùng lâm sàng. Seed từ chối chạy khi `user_account` đã có dữ liệu, không xóa/reset database; test dùng schema tạm riêng.
+Dữ liệu khởi tạo: 5 accounts, 2 patients, 2 doctors (GP/Specialist), 1 specialty, 8 shifts, 7 appointments, 1 completed session, 1 history, 1 prescription/2 items, 2 thuốc giả lập. Các ngày seed tương đối theo ngày bootstrap để có lịch cho demo. Seed không xóa dữ liệu; test dùng schema tạm riêng.
 
 | Role | Username | Password |
 |---|---|---|
