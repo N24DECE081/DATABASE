@@ -10,7 +10,7 @@
 | DOCTOR | `doctor_gp`, `doctor_specialist` |
 | PATIENT | `patient_one`, `patient_two` |
 
-Mật khẩu chung cho dữ liệu giả lập: `ClinicDemo!2026`.
+Mật khẩu chung cho dữ liệu giả lập: `ClinicDemo!2026`. Seed dùng hồ sơ hoàn toàn hư cấu, ID theo tiền tố entity và số thứ tự (ví dụ `PAT-001`, `APT-001`); contact details được mask và không chứa dữ liệu bệnh nhân thật.
 
 Patient tìm bác sĩ/chuyên khoa, xem ca và giờ khả dụng, đặt hoặc hủy lịch của mình, cập nhật hồ sơ và xem kết quả khám/đơn thuốc. Doctor quản lý ca, xem lịch được phân công, tạo lịch tái khám, bắt đầu/kết thúc phiên khám, bổ sung bệnh sử và kê đơn. Admin quản lý tài khoản, hồ sơ, danh mục và lịch hẹn; quyền đọc hồ sơ lâm sàng được giới hạn cho Patient/Doctor theo phạm vi sở hữu.
 
