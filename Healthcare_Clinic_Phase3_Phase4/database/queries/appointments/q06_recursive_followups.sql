@@ -1,5 +1,5 @@
 -- Purpose: recursive follow-up traversal. Owner: Nguyen Duong Thanh Mai. BR31-32.
--- Requires: seed. Expected: APT-005 appears at depth=1 below APT-001.
+-- Requires: seed. Expected: A_FOLLOWUP appears at depth=1 below A_COMPLETED.
 WITH RECURSIVE visits AS (
     SELECT appointment_id, follow_up_from_appt_id, patient_id, 0 AS depth
     FROM appointment WHERE follow_up_from_appt_id IS NULL
