@@ -12,7 +12,7 @@ from ...security import require_roles
 from ...services import schedules as service
 from ...services.doctors import own_doctor
 from ...services.common import found
-from ...utils.forms import data_for, run_form_action
+from ...utils.forms import data_for
 from ...utils.filters import filter_day
 
 
@@ -40,10 +40,9 @@ def create():
         directory = [d for d in directory if d["doctor_id"] == own_doctor(g.user).doctor_id]
     form.doctor_id.choices = [(d["doctor_id"], d["full_name"]) for d in directory]
     if form.validate_on_submit():
-        ok, _ = run_form_action(form, lambda: service.create(g.user, data_for(form, "doctor_id schedule_date start_time end_time availability_status")))
-        if ok:
-            flash("Đã tạo ca làm việc.", "success")
-            return redirect(url_for("schedules.index"))
+        service.create(g.user, data_for(form, "doctor_id schedule_date start_time end_time availability_status"))
+        flash("Đã tạo ca làm việc.", "success")
+        return redirect(url_for("schedules.index"))
     return render_template("shared/form.html", title="Tạo ca làm việc", subtitle="Ca làm phải có giờ kết thúc sau giờ bắt đầu và không chồng nhau.", form=form)
 
 

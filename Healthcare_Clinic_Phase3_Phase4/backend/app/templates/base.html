@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{% block title %}TiTiMi Clinic{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static',filename='css/app.css') }}">
-  <script src="{{ url_for('static',filename='js/app.js',v='20261006-2') }}" defer></script>
+  <script src="{{ url_for('static',filename='js/app.js') }}" defer></script>
 </head>
 <body class="{% if not g.user %}guest{% endif %}">
 {% if g.user %}

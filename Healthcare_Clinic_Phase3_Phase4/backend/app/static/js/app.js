@@ -1,31 +1,4 @@
 "use strict";
-// Immediate feedback; the server repeats every rule for security and consistency.
-const today = new Date();
-const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-document.querySelectorAll('input[name="date_of_birth"]').forEach(input => {
-  input.max = localToday;
-  input.addEventListener("change", () => {
-    input.setCustomValidity(input.value && input.value > localToday ? "Ngày sinh không được ở tương lai." : "");
-    input.reportValidity();
-  });
-});
-document.querySelectorAll('input[name="phone"], input[name="emergency_contact_phone"]').forEach(input => {
-  input.pattern = "[0-9]{10}";
-  input.maxLength = 10;
-  input.title = "Nhập đúng 10 chữ số.";
-  input.addEventListener("input", () => {
-    input.value = input.value.replace(/\D/g, "").slice(0, 10);
-  });
-});
-document.querySelectorAll('input[name="email"]').forEach(input => {
-  input.pattern = "[A-Za-z0-9._%+\\-]+@gmail\\.com";
-  input.title = "Email phải có dạng tennguoidung@gmail.com.";
-  input.addEventListener("change", () => {
-    const valid = !input.value || /^[A-Za-z0-9._%+-]+@gmail\.com$/i.test(input.value);
-    input.setCustomValidity(valid ? "" : "Email phải có đuôi @gmail.com.");
-    input.reportValidity();
-  });
-});
 // Toggle role-specific profile fields without changing server-side validation.
 const role = document.querySelector('select[name="role"]');
 if (role) {

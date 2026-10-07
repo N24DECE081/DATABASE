@@ -16,9 +16,7 @@ def test_end_to_end_ongoing_session_finish_history_prescription_and_patient_read
     assert response.status_code == 302
     session=sql(app,"SELECT * FROM consultation_session WHERE appointment_id='A_GP'",one=True)
     assert session["end_time"] is None
-    response = post(client,f"/medical-history/new/{session['session_id']}",{"diagnosis":"E2E synthetic diagnosis","symptoms":"Synthetic symptoms"})
-    assert response.status_code == 200
-    assert "Completed" in response.get_data(as_text=True)
+    assert post(client,f"/medical-history/new/{session['session_id']}",{"diagnosis":"E2E synthetic diagnosis","symptoms":"Synthetic symptoms"}).status_code == 400
     assert post(client,f"/consultations/{session['session_id']}/finish",{"end_time":now().strftime("%Y-%m-%dT%H:%M")}).status_code == 302
     assert sql(app,"SELECT status FROM appointment WHERE appointment_id='A_GP'",one=True)["status"] == "Completed"
     assert post(client,f"/medical-history/new/{session['session_id']}",{"diagnosis":"E2E synthetic diagnosis","symptoms":"Synthetic symptoms"}).status_code == 302

@@ -4,7 +4,7 @@
 
 Phân công theo module và đầu ra kiểm tra được. Mỗi người có phần SQL/database, phần Flask/integration hoặc security, một phần báo cáo, một tập truy vấn và một nhiệm vụ kiểm thử/review. Owner chịu trách nhiệm hoàn thiện; reviewer kiểm tra độc lập. Nhóm có thể đổi owner theo năng lực/thời gian nhưng ghi lại thay đổi trong decision log và weekly log.
 
-Phân công owner/reviewer dùng để phối hợp, không giới hạn quyền sửa code hoặc đóng góp. Mọi thành viên được review, approve và merge Pull Request, kể cả PR của mình; không cần approval riêng của `N24DECE081`. Thành viên khác chủ repository không được ghi trực tiếp lên `main`, theo `BRANCH_AND_PULL_REQUEST_RULES.md`.
+Mọi owner làm việc trên nhánh riêng và mở Pull Request. Reviewer trong tài liệu này thực hiện review chuyên môn; quyền approve/merge cuối vào `main` chỉ thuộc `N24DECE081`, theo `BRANCH_AND_PULL_REQUEST_RULES.md`.
 
 ## Phạm vi sở hữu theo thành viên
 

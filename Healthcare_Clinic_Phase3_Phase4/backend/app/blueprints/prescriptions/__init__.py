@@ -10,7 +10,7 @@ from ...repositories.medications import list_medications
 from ...security import require_roles
 from ...services import prescriptions as service
 from ...services.consultations import accessible_session
-from ...utils.forms import data_for, run_form_action
+from ...utils.forms import data_for
 
 
 @bp.get("/")
@@ -37,8 +37,7 @@ def create(session_id):
     if form.validate_on_submit():
         values = data_for(form, "diagnosis_icd instructions")
         values["items"] = [entry.form.data for entry in form.items]
-        ok, record = run_form_action(form, lambda: service.create(g.user, session_id, values))
-        if ok:
-            flash("Đã lưu đơn thuốc và các mục thuốc.", "success")
-            return redirect(url_for("prescriptions.detail", prescription_id=record.prescription_id))
+        record = service.create(g.user, session_id, values)
+        flash("Đã lưu đơn thuốc và các mục thuốc.", "success")
+        return redirect(url_for("prescriptions.detail", prescription_id=record.prescription_id))
     return render_template("prescriptions/form.html", form=form)
