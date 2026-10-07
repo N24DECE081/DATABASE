@@ -34,8 +34,8 @@ Tài liệu này là điểm bắt đầu cho từng thành viên. Làm theo th�
 
 ## Quy tắc handoff
 
-- Thành viên khác chủ repository `N24DECE081` không được ghi trực tiếp lên `main`; đưa thay đổi vào `main` qua Pull Request theo `BRANCH_AND_PULL_REQUEST_RULES.md`. Chủ repository được thao tác trực tiếp lên `main`.
-- Mọi thành viên được review, approve và merge Pull Request, kể cả PR của chính mình; không cần approval riêng của chủ repository. Phân công reviewer là khuyến nghị phối hợp.
+- Không push hoặc merge trực tiếp vào `main`. Mọi thay đổi đi qua nhánh riêng và Pull Request theo `BRANCH_AND_PULL_REQUEST_RULES.md`.
+- Reviewer chuyên môn kiểm tra phần được phân công; chỉ chủ repository `N24DECE081` được approve cuối và merge Pull Request.
 - Owner gửi commit/artefact và cách chạy cho reviewer; reviewer chạy lại trước khi đánh dấu `Done`.
 - Dùng `WEEKLY_PROGRESS_LOG.md` để ghi owner, reviewer, link artefact, trạng thái `Done`, `In review`, `Blocked` hoặc `Not run`.
 - Nếu DDL thay đổi, Tiến thông báo cả nhóm trước khi Mai cập nhật seed/trigger và Tuyền cập nhật repository/form.

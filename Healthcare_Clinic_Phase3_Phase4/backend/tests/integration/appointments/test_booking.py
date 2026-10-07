@@ -31,8 +31,8 @@ def test_patient_booking_ignores_forged_patient_id(app, client):
 def test_overlap_and_outside_shift_leave_database_unchanged(app, client):
     login(client,"patient_one")
     day=now().date()+timedelta(days=1)
-    assert post(client,"/appointments/new",booking(appointment_date_time=f"{day}T09:15")).status_code == 200
-    assert post(client,"/appointments/new",booking(appointment_date_time=f"{day}T17:00")).status_code == 200
+    assert post(client,"/appointments/new",booking(appointment_date_time=f"{day}T09:15")).status_code == 400
+    assert post(client,"/appointments/new",booking(appointment_date_time=f"{day}T17:00")).status_code == 400
     assert sql(app,"SELECT COUNT(*) AS n FROM appointment",one=True)["n"] == 7
 
 
@@ -118,5 +118,5 @@ def test_admin_reschedule_preserves_creator_and_rejects_outside_shift(app,client
     assert updated['booked_by_user_id']==original['booked_by_user_id']
     assert updated['appointment_date_time'].hour==14
     day=now().date()+timedelta(days=1)
-    assert post(client,'/appointments/A_GP/reschedule',booking(appointment_date_time=f'{day}T17:00')).status_code==200
+    assert post(client,'/appointments/A_GP/reschedule',booking(appointment_date_time=f'{day}T17:00')).status_code==400
     assert sql(app,"SELECT HOUR(appointment_date_time) AS h FROM appointment WHERE appointment_id='A_GP'",one=True)['h']==14

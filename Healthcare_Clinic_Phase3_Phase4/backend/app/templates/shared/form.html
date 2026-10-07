@@ -3,7 +3,6 @@
 {% block content %}
 <div class="page-heading"><div><p class="eyebrow">TITIMI CLINIC</p><h1>{{ title }}</h1><p>{{ subtitle }}</p></div></div>
 <section class="panel form-panel"><form method="post" class="form-grid">{{ form.hidden_tag() }}
-{% if form.form_errors or form.general_errors %}<div class="field-error wide" role="alert">{% for error in form.form_errors %}<span>{{ error }}</span>{% endfor %}{% for error in form.general_errors|default([]) %}<span>{{ error }}</span>{% endfor %}</div>{% endif %}
 {% for field in form if field.type not in ('CSRFTokenField','HiddenField','SubmitField') %}{{ field_row(field) }}{% endfor %}
 <div class="form-actions wide">{{ form.submit(class_='button') }}<a class="button secondary" href="{{ url_for('index') }}">Quay lại</a></div>
 </form></section>

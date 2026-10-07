@@ -11,7 +11,7 @@ from ...security import require_roles
 from ...services import consultations as service
 from ...services.appointments import accessible
 from ...services.common import now
-from ...utils.forms import data_for, run_form_action
+from ...utils.forms import data_for
 
 
 @bp.get("/")
@@ -27,10 +27,9 @@ def create(appointment_id):
     accessible(g.user, appointment_id)
     form = SessionForm()
     if form.validate_on_submit():
-        ok, session = run_form_action(form, lambda: service.create(g.user, appointment_id, data_for(form, "start_time end_time actual_duration_minutes meeting_url diagnosis_notes")))
-        if ok:
-            flash("Đã lưu phiên khám.", "success")
-            return redirect(url_for("consultations.detail", session_id=session.session_id))
+        session = service.create(g.user, appointment_id, data_for(form, "start_time end_time actual_duration_minutes meeting_url diagnosis_notes"))
+        flash("Đã lưu phiên khám.", "success")
+        return redirect(url_for("consultations.detail", session_id=session.session_id))
     return render_template("shared/form.html", title="Ghi phiên khám", subtitle="Để trống giờ kết thúc nếu đang khám. Khi đóng phiên, thời lượng được tính từ hai mốc giờ.", form=form)
 
 
