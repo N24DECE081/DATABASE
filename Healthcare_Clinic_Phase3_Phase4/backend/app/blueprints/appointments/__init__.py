@@ -10,7 +10,7 @@ from ...repositories import appointments, schedules, patients
 from ...security import require_roles
 from ...services import appointments as service
 from ...services.doctors import own_doctor
-from ...utils.forms import data_for
+from ...utils.forms import data_for, run_form_action
 from ...utils.filters import filter_day
 
 
@@ -47,9 +47,10 @@ def create():
                 pass
         form.follow_up_from_appt_id.data = request.args.get("follow_up", "")
     if form.validate_on_submit():
-        appointment = service.book(g.user, data_for(form, "schedule_id patient_id appointment_date_time estimated_duration_minutes appointment_type follow_up_from_appt_id reason"))
-        flash("Đã đặt lịch hẹn. Bạn có thể xem chi tiết ngay bên dưới.", "success")
-        return redirect(url_for("appointments.detail", appointment_id=appointment.appointment_id))
+        ok, appointment = run_form_action(form, lambda: service.book(g.user, data_for(form, "schedule_id patient_id appointment_date_time estimated_duration_minutes appointment_type follow_up_from_appt_id reason")))
+        if ok:
+            flash("Đã đặt lịch hẹn. Bạn có thể xem chi tiết ngay bên dưới.", "success")
+            return redirect(url_for("appointments.detail", appointment_id=appointment.appointment_id))
     return render_template("shared/form.html", title="Đặt lịch khám" if g.user.role != "DOCTOR" else "Tạo lịch tái khám",
                            subtitle="Chọn bác sĩ qua ca làm và nhập thời gian mong muốn trong ca đó.", form=form)
 
@@ -80,7 +81,8 @@ def reschedule(appointment_id):
     form.schedule_id.choices=[(s["schedule_id"],f"{s['schedule_date']} {s['start_time']}–{s['end_time']}")
         for s in schedules.list_schedules(appointment.doctor_id,available_only=True)]
     if form.validate_on_submit():
-        service.reschedule(g.user,appointment_id,data_for(form,"schedule_id appointment_date_time estimated_duration_minutes appointment_type reason"))
-        flash("Đã điều chỉnh lịch hẹn.","success")
-        return redirect(url_for("appointments.detail",appointment_id=appointment_id))
+        ok, _ = run_form_action(form, lambda: service.reschedule(g.user,appointment_id,data_for(form,"schedule_id appointment_date_time estimated_duration_minutes appointment_type reason")))
+        if ok:
+            flash("Đã điều chỉnh lịch hẹn.","success")
+            return redirect(url_for("appointments.detail",appointment_id=appointment_id))
     return render_template("shared/form.html",title="Điều chỉnh lịch hẹn",subtitle="Chọn ca làm và thời gian mới của bác sĩ đã phân công.",form=form)

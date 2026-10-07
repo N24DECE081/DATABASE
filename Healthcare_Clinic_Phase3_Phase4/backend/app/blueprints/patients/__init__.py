@@ -9,7 +9,7 @@ from ...forms.patients import ProfileForm
 from ...security import require_roles
 from ...services import patients, appointments, medical_history, prescriptions
 from ...repositories.appointments import list_for
-from ...utils.forms import data_for
+from ...utils.forms import data_for, run_form_action
 
 
 @bp.get("/")
@@ -29,9 +29,10 @@ def profile():
         values = data_for(form, "full_name date_of_birth gender phone email address blood_type allergies chronic_diseases emergency_contact_name emergency_contact_phone")
         for name in ("email", "address", "blood_type", "allergies", "chronic_diseases"):
             values[name] = values[name] or None
-        patients.update_profile(g.user, values)
-        flash("Đã cập nhật hồ sơ cá nhân.", "success")
-        return redirect(url_for("patients.dashboard"))
+        ok, _ = run_form_action(form, lambda: patients.update_profile(g.user, values))
+        if ok:
+            flash("Đã cập nhật hồ sơ cá nhân.", "success")
+            return redirect(url_for("patients.dashboard"))
     return render_template("shared/form.html", title="Hồ sơ cá nhân", subtitle="Thông tin liên hệ và sức khỏe nền của bạn.", form=form)
 
 
@@ -45,7 +46,8 @@ def edit_by_admin(account_id):
         values = data_for(form, "full_name date_of_birth gender phone email address blood_type allergies chronic_diseases emergency_contact_name emergency_contact_phone")
         for name in ("email", "address", "blood_type", "allergies", "chronic_diseases"):
             values[name] = values[name] or None
-        patients.update_by_admin(g.user, account_id, values)
-        flash("Đã cập nhật hồ sơ bệnh nhân.", "success")
-        return redirect(url_for("admin.dashboard"))
+        ok, _ = run_form_action(form, lambda: patients.update_by_admin(g.user, account_id, values))
+        if ok:
+            flash("Đã cập nhật hồ sơ bệnh nhân.", "success")
+            return redirect(url_for("admin.dashboard"))
     return render_template("shared/form.html", title="Hồ sơ bệnh nhân", subtitle="Cập nhật thông tin hồ sơ đã đăng ký.", form=form)

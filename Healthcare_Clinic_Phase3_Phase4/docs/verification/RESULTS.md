@@ -7,7 +7,7 @@
 | Structural baseline/module | PASS: 10 modules, 13 entities, 77 fields, 80 Python files | scripts/verify_structure.py; baseline SHA-256 bất biến |
 | Live schema | PASS: 13 tables, 77 fields, 16 FKs, 3 views; UNIQUE keys khớp dictionary Phase 2 | [database.json](database.json) |
 | DB object inventory | 23 triggers, 4 procedures; InnoDB/utf8mb4 | [database_objects.json](database_objects.json), DBA read trên DB riêng |
-| Unit/integration | **34 passed**, 0 failures/errors/skips; 25.90s trong JUnit | [pytest.xml](pytest.xml) |
+| Unit/integration | **39 passed**, 0 failures/errors/skips; 41.53s trong JUnit | [pytest.xml](pytest.xml) |
 | SQL complex queries | Q01–Q12 thực thi; output synthetic và row counts lưu | [database.json](database.json) → queries |
 | Performance | EXPLAIN FORMAT=JSON Q01/Q07/Q08 | database.json → plans |
 | Privileges | clinic_application Active; app DELETE bị từ chối errno 1142 | database.json → app_grants/active_role/delete_denied |

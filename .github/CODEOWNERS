@@ -1,2 +1,2 @@
-# N24DECE081 is the mandatory final reviewer for every repository change.
-* @N24DECE081
+# No mandatory code owner. All members may review, approve, and merge pull requests.
+# Members other than N24DECE081 must not write directly to main.

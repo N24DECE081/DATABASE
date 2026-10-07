@@ -9,6 +9,7 @@ from ...forms.medications import MedicationForm
 from ...repositories.medications import list_medications
 from ...security import require_roles
 from ...services.medications import create as create_medication
+from ...utils.forms import run_form_action
 
 
 @bp.get("/")
@@ -22,7 +23,8 @@ def index():
 def create():
     form = MedicationForm()
     if form.validate_on_submit():
-        create_medication(g.user, form.medication_name.data, form.description.data)
-        flash("Đã thêm thuốc vào danh mục.", "success")
-        return redirect(url_for("medications.index"))
+        ok, _ = run_form_action(form, lambda: create_medication(g.user, form.medication_name.data, form.description.data))
+        if ok:
+            flash("Đã thêm thuốc vào danh mục.", "success")
+            return redirect(url_for("medications.index"))
     return render_template("shared/form.html", title="Thêm thuốc", subtitle="Danh mục thuốc dùng khi lập đơn thuốc.", form=form)

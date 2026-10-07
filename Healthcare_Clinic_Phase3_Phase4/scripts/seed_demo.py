@@ -53,14 +53,14 @@ def seed(connection, clock=None):
         for number in (1, 2):
             add("patient", patient_id=f"P{number}", user_id=f"U_PATIENT{number}", full_name=f"Demo Patient {number}",
                 date_of_birth=today.replace(year=today.year-25, month=1, day=1), gender="Other", phone="0000000000",
-                email=f"patient{number}@example.invalid", emergency_contact_name="Synthetic Emergency Contact",
+                email=f"patient{number}.demo@gmail.com", emergency_contact_name="Synthetic Emergency Contact",
                 emergency_contact_phone="0000000001")
         add("specialty", specialty_id="T_DEMO", specialty_name="Demo Specialty", description="Synthetic catalog for assessment")
         add("doctor", doctor_id="D_GP", user_id="U_GP", full_name="Demo General Practitioner",
-            phone="0000000002", email="gp@example.invalid", license_number="DEMO-GP-001")
+            phone="0000000002", email="gp.demo@gmail.com", license_number="DEMO-GP-001")
         add("general_practitioner", doctor_id="D_GP")
         add("doctor", doctor_id="D_SP", user_id="U_SPECIALIST", full_name="Demo Specialist",
-            phone="0000000003", email="specialist@example.invalid", license_number="DEMO-SP-001")
+            phone="0000000003", email="specialist.demo@gmail.com", license_number="DEMO-SP-001")
         add("specialist", doctor_id="D_SP", specialty_id="T_DEMO")
         for did in ("D_GP", "D_SP"):
             for offset in (-1, 1, 2, 3):

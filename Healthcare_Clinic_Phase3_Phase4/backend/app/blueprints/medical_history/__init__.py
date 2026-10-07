@@ -9,7 +9,7 @@ from ...forms.medical_history import HistoryForm
 from ...security import require_roles
 from ...services import medical_history as service
 from ...services.consultations import accessible_session
-from ...utils.forms import data_for
+from ...utils.forms import data_for, run_form_action
 
 
 @bp.get("/")
@@ -24,7 +24,8 @@ def create(session_id):
     accessible_session(g.user, session_id)
     form = HistoryForm()
     if form.validate_on_submit():
-        service.create(g.user, session_id, data_for(form, "diagnosis symptoms progress_notes"))
-        flash("Đã ghi bệnh sử vào hồ sơ.", "success")
-        return redirect(url_for("medical_history.index"))
+        ok, _ = run_form_action(form, lambda: service.create(g.user, session_id, data_for(form, "diagnosis symptoms progress_notes")))
+        if ok:
+            flash("Đã ghi bệnh sử vào hồ sơ.", "success")
+            return redirect(url_for("medical_history.index"))
     return render_template("shared/form.html", title="Ghi bệnh sử", subtitle="Bệnh sử chỉ ghi sau khi lịch hẹn Completed; bản ghi được lưu trong hồ sơ lâu dài.", form=form)
