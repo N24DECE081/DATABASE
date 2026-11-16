@@ -1,4 +1,4 @@
-"""Deterministic synthetic identities with clinic-local relative demo dates."""
+"""Deterministic, fictional clinic records with clinic-local relative demo dates."""
 from datetime import datetime, timedelta, time, timezone
 from pathlib import Path
 import os
@@ -9,16 +9,16 @@ from werkzeug.security import generate_password_hash
 
 ROOT = Path(__file__).resolve().parents[1]
 DEMO_PASSWORD = "ClinicDemo!2026"
-ACCOUNTS = [("U_ADMIN", "admin", "ADMIN"), ("U_GP", "doctor_gp", "DOCTOR"),
-            ("U_SPECIALIST", "doctor_specialist", "DOCTOR"),
-            ("U_PATIENT1", "patient_one", "PATIENT"), ("U_PATIENT2", "patient_two", "PATIENT")]
+ACCOUNTS = [("USER-001", "admin", "ADMIN"), ("USER-002", "doctor_gp", "DOCTOR"),
+            ("USER-003", "doctor_specialist", "DOCTOR"),
+            ("USER-004", "patient_one", "PATIENT"), ("USER-005", "patient_two", "PATIENT")]
 
 
 def seed_status_examples(connection):
     """Add only missing, explicitly named synthetic status fixtures; never reset data."""
     for aid,pid,did,sid,hour,state in (
-        ("A_CANCELLED","P1","D_GP","S_D_GP_1",12,"Cancelled"),
-        ("A_MISSED","P2","D_SP","S_D_SP_PAST",11,"No-show"),
+        ("APT-006","PAT-001","DOC-001","SCH-002",12,"Cancelled"),
+        ("APT-007","PAT-002","DOC-002","SCH-005",11,"No-show"),
     ):
         with connection.cursor() as cursor:
             cursor.execute("SELECT COUNT(*) FROM appointment WHERE appointment_id=%s",(aid,))
@@ -28,8 +28,9 @@ def seed_status_examples(connection):
             day=cursor.fetchone()[0]
             cursor.execute("""INSERT INTO appointment(appointment_id,patient_id,doctor_id,schedule_id,
                 booked_by_user_id,appointment_date_time,estimated_duration_minutes,appointment_type,status,reason)
-                VALUES(%s,%s,%s,%s,'U_ADMIN',%s,30,'In-person',%s,'Synthetic status example')""",
-                (aid,pid,did,sid,datetime.combine(day,time(hour)),state))
+                VALUES(%s,%s,%s,%s,'USER-001',%s,30,'In-person',%s,%s)""",
+                (aid,pid,did,sid,datetime.combine(day,time(hour)),state,
+                 "Patient cancelled in advance" if state == "Cancelled" else "Patient did not attend"))
 
 
 def seed(connection, clock=None):
@@ -50,49 +51,75 @@ def seed(connection, clock=None):
         for uid, username, role in ACCOUNTS:
             add("user_account", user_id=uid, username=username, password_hash=password_hash,
                 role=role, account_status="Active", created_at=clock)
-        for number in (1, 2):
-            add("patient", patient_id=f"P{number}", user_id=f"U_PATIENT{number}", full_name=f"Demo Patient {number}",
-                date_of_birth=today.replace(year=today.year-25, month=1, day=1), gender="Other", phone="0000000000",
-                email=f"patient{number}@example.invalid", emergency_contact_name="Synthetic Emergency Contact",
-                emergency_contact_phone="0000000001")
-        add("specialty", specialty_id="T_DEMO", specialty_name="Demo Specialty", description="Synthetic catalog for assessment")
-        add("doctor", doctor_id="D_GP", user_id="U_GP", full_name="Demo General Practitioner",
-            phone="0000000002", email="gp@example.invalid", license_number="DEMO-GP-001")
-        add("general_practitioner", doctor_id="D_GP")
-        add("doctor", doctor_id="D_SP", user_id="U_SPECIALIST", full_name="Demo Specialist",
-            phone="0000000003", email="specialist@example.invalid", license_number="DEMO-SP-001")
-        add("specialist", doctor_id="D_SP", specialty_id="T_DEMO")
-        for did in ("D_GP", "D_SP"):
+        patients = [
+            ("PAT-001", "USER-004", "Nguyễn Minh An", today.replace(year=today.year-32, month=4, day=12),
+             "Male", "09xx-xxx-101", "minh.an@example.invalid", "Ba Đình, Hà Nội (demo)", "O+",
+             "Không ghi nhận (demo)", "Không ghi nhận (demo)", "Nguyễn Văn Bình (demo)", "09xx-xxx-201"),
+            ("PAT-002", "USER-005", "Trần Thu Hà", today.replace(year=today.year-38, month=9, day=23),
+             "Female", "09xx-xxx-102", "thu.ha@example.invalid", "Cầu Giấy, Hà Nội (demo)", "A+",
+             "Phấn hoa (demo)", "Không ghi nhận (demo)", "Trần Thị Mai (demo)", "09xx-xxx-202"),
+        ]
+        for patient in patients:
+            add("patient", patient_id=patient[0], user_id=patient[1], full_name=patient[2],
+                date_of_birth=patient[3], gender=patient[4], phone=patient[5], email=patient[6],
+                address=patient[7], blood_type=patient[8], allergies=patient[9], chronic_diseases=patient[10],
+                emergency_contact_name=patient[11], emergency_contact_phone=patient[12])
+        add("specialty", specialty_id="SPC-001", specialty_name="Tim mạch",
+            description="Chuyên khoa tim mạch (dữ liệu giả lập)")
+        add("doctor", doctor_id="DOC-001", user_id="USER-002", full_name="Nguyễn Minh Quân",
+            phone="09xx-xxx-301", email="minh.quan@example.invalid", license_number="DEMO-LIC-001")
+        add("general_practitioner", doctor_id="DOC-001")
+        add("doctor", doctor_id="DOC-002", user_id="USER-003", full_name="Lê Bảo Ngọc",
+            phone="09xx-xxx-302", email="bao.ngoc@example.invalid", license_number="DEMO-LIC-002")
+        add("specialist", doctor_id="DOC-002", specialty_id="SPC-001")
+        schedule_ids = {}
+        schedule_number = 1
+        for doctor_id in ("DOC-001", "DOC-002"):
             for offset in (-1, 1, 2, 3):
-                suffix = "PAST" if offset == -1 else str(offset)
-                add("doctor_schedule", schedule_id=f"S_{did}_{suffix}", doctor_id=did,
-                    schedule_date=today+timedelta(days=offset), start_time=time(8), end_time=time(17), availability_status="Available")
-        for mid in ("M_A", "M_B"):
-            add("medication", medication_id=mid, medication_name=f"Demo Formulary {mid[-1]}",
-                description="Synthetic demonstration medication; no clinical use")
+                schedule_id = f"SCH-{schedule_number:03}"
+                schedule_ids[(doctor_id, offset)] = schedule_id
+                add("doctor_schedule", schedule_id=schedule_id, doctor_id=doctor_id,
+                    schedule_date=today+timedelta(days=offset), start_time=time(8), end_time=time(17),
+                    availability_status="Available")
+                schedule_number += 1
+        add("medication", medication_id="MED-001", medication_name="Cetirizine 10 mg (DEMO)",
+            description="Thuốc kháng histamine; dữ liệu danh mục giả lập, không dùng điều trị")
+        add("medication", medication_id="MED-002", medication_name="Natri clorid 0,9% dạng xịt (DEMO)",
+            description="Sản phẩm vệ sinh mũi; dữ liệu danh mục giả lập, không dùng điều trị")
 
         past = datetime.combine(today-timedelta(days=1), time(9))
-        add("appointment", appointment_id="A_COMPLETED", patient_id="P1", doctor_id="D_GP",
-            schedule_id="S_D_GP_PAST", booked_by_user_id="U_ADMIN", appointment_date_time=past,
-            estimated_duration_minutes=30, appointment_type="In-person", status="Checked-In", reason="Synthetic visit")
-        add("consultation_session", session_id="C_COMPLETED", appointment_id="A_COMPLETED", start_time=past,
-            end_time=past+timedelta(minutes=30), actual_duration_minutes=30, session_type="In-person", diagnosis_notes="Synthetic demonstration encounter")
+        add("appointment", appointment_id="APT-001", patient_id="PAT-001", doctor_id="DOC-001",
+            schedule_id=schedule_ids[("DOC-001", -1)], booked_by_user_id="USER-001", appointment_date_time=past,
+            estimated_duration_minutes=30, appointment_type="In-person", status="Checked-In",
+            reason="Tái khám dị ứng theo lịch (giả lập)")
+        add("consultation_session", session_id="SES-001", appointment_id="APT-001", start_time=past,
+            end_time=past+timedelta(minutes=30), actual_duration_minutes=30, session_type="In-person",
+            diagnosis_notes="Viêm mũi dị ứng theo mùa (tình huống giả lập)")
         with connection.cursor() as cursor:
-            cursor.execute("UPDATE appointment SET status = 'Completed' WHERE appointment_id = %s", ("A_COMPLETED",))
-        add("medical_history", medical_history_id="H_DEMO", session_id="C_COMPLETED", record_date=past+timedelta(minutes=30),
-            diagnosis="Synthetic diagnosis", symptoms="Synthetic symptoms", progress_notes="Demonstration record")
-        add("prescription", prescription_id="R_DEMO", session_id="C_COMPLETED", prescription_date=past+timedelta(minutes=30), instructions="Synthetic demonstration only")
-        for mid in ("M_A", "M_B"):
-            add("prescription_item", prescription_item_id=f"I_{mid}", prescription_id="R_DEMO", medication_id=mid,
-                dosage="Demo dose", frequency="Demo frequency", duration="Demo course", special_instructions="Not for clinical use")
+            cursor.execute("UPDATE appointment SET status = 'Completed' WHERE appointment_id = %s", ("APT-001",))
+        add("medical_history", medical_history_id="HIS-001", session_id="SES-001",
+            record_date=past+timedelta(minutes=30), diagnosis="Viêm mũi dị ứng theo mùa (giả lập)",
+            symptoms="Hắt hơi, nghẹt mũi theo mùa (giả lập)",
+            progress_notes="Đã tư vấn theo dõi và tái khám; hồ sơ hoàn toàn giả lập.")
+        add("prescription", prescription_id="RX-001", session_id="SES-001",
+            prescription_date=past+timedelta(minutes=30),
+            instructions="Dữ liệu đơn thuốc giả lập, không sử dụng thay cho chỉ định y tế.")
+        for item_id, medication_id, dosage, frequency, duration in (
+            ("RXI-001", "MED-001", "10 mg", "Theo hướng dẫn bác sĩ (giả lập)", "5 ngày (giả lập)"),
+            ("RXI-002", "MED-002", "Dạng xịt", "Theo hướng dẫn bác sĩ (giả lập)", "3 ngày (giả lập)"),
+        ):
+            add("prescription_item", prescription_item_id=item_id, prescription_id="RX-001",
+                medication_id=medication_id, dosage=dosage, frequency=frequency, duration=duration,
+                special_instructions="Chỉ là dữ liệu mẫu; không dùng lâm sàng.")
         future = today+timedelta(days=1)
         for aid, pid, did, hour, modality, parent, creator in [
-            ("A_GP", "P1", "D_GP", 9, "In-person", None, "U_PATIENT1"),
-            ("A_VIRTUAL", "P2", "D_SP", 10, "Telemedicine", None, "U_PATIENT2"),
-            ("A_SP", "P1", "D_SP", 13, "In-person", None, "U_ADMIN"),
-            ("A_FOLLOWUP", "P1", "D_GP", 11, "In-person", "A_COMPLETED", "U_GP"),
+            ("APT-002", "PAT-001", "DOC-001", 9, "In-person", None, "USER-004"),
+            ("APT-003", "PAT-002", "DOC-002", 10, "Telemedicine", None, "USER-005"),
+            ("APT-004", "PAT-001", "DOC-002", 13, "In-person", None, "USER-001"),
+            ("APT-005", "PAT-001", "DOC-001", 11, "In-person", "APT-001", "USER-002"),
         ]:
-            add("appointment", appointment_id=aid, patient_id=pid, doctor_id=did, schedule_id=f"S_{did}_1",
+            add("appointment", appointment_id=aid, patient_id=pid, doctor_id=did,
+                schedule_id=schedule_ids[(did, 1)],
                 booked_by_user_id=creator, follow_up_from_appt_id=parent,
                 appointment_date_time=datetime.combine(future,time(hour)), estimated_duration_minutes=30,
                 appointment_type=modality, status="Scheduled", reason="Synthetic demo booking")

@@ -1,4 +1,18 @@
 "use strict";
+const passwordToggle = document.querySelector(".password-toggle");
+if (passwordToggle) {
+  const targetId = passwordToggle.dataset.target;
+  const passwordInput = document.getElementById(targetId);
+  if (passwordInput) {
+    passwordToggle.addEventListener("click", () => {
+      const isHidden = passwordInput.type === "password";
+      passwordInput.type = isHidden ? "text" : "password";
+      passwordToggle.textContent = isHidden ? "Ẩn" : "Hiện";
+      passwordToggle.setAttribute("aria-label", isHidden ? "Ẩn mật khẩu" : "Hiện mật khẩu");
+      passwordToggle.setAttribute("aria-pressed", String(isHidden));
+    });
+  }
+}
 // Toggle role-specific profile fields without changing server-side validation.
 const role = document.querySelector('select[name="role"]');
 if (role) {

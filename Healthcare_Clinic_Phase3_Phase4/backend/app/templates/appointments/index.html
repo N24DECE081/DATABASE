@@ -1,4 +1,33 @@
 {% extends 'base.html' %}{% from 'shared/macros.html' import appointment_table %}
-{% block content %}<div class="page-heading"><div><p class="eyebrow">ĐIỀU PHỐI KHÁM</p><h1>Lịch hẹn</h1><p>{{ 'Các lịch hẹn được phân công cho bạn.' if g.user.role == 'DOCTOR' else 'Theo dõi thời gian, bác sĩ và trạng thái lịch hẹn.' }}</p></div><a class="button" href="{{ url_for('appointments.create') }}">+ {{ 'Tạo tái khám' if g.user.role == 'DOCTOR' else 'Đặt lịch' }}</a></div>
-<form class="filters" method="get"><label>Ngày khám<input class="control" type="date" name="day" value="{{ request.args.get('day','') }}"></label><label>Trạng thái<select class="control" name="status"><option value="">Tất cả</option>{% for s in ['Scheduled','Checked-In','Completed','Cancelled','No-show'] %}<option {{ 'selected' if request.args.get('status') == s else '' }}>{{ s }}</option>{% endfor %}</select></label><button class="button secondary">Lọc lịch hẹn</button></form>
-<section class="panel">{{ appointment_table(appointments) }}</section>{% endblock %}
+{% block title %}Lịch hẹn · TiTiMi{% endblock %}
+{% block content %}
+{% if g.user.role == 'DOCTOR' %}
+<section class="portal-welcome doctor-welcome">
+  <div><p class="eyebrow">KHÔNG GIAN CHUYÊN MÔN</p><h1>Xin chào, {{ doctor_profile.full_name }}.</h1><p>Theo dõi lịch khám được phân công và cập nhật tiến trình chăm sóc.</p></div>
+  <a class="button" href="{{ url_for('appointments.create') }}">Tạo lịch tái khám <span aria-hidden="true">→</span></a>
+</section>
+<div class="stats four doctor-stats">
+  <div class="stat stat-blue"><span>Lịch hẹn hôm nay</span><strong>{{ doctor_stats.today }}</strong><small>Theo ngày làm việc hiện tại</small></div>
+  <div class="stat"><span>Đang chờ xử lý</span><strong>{{ doctor_stats.waiting }}</strong><small>Lịch Scheduled và Checked-In</small></div>
+  <div class="stat stat-pink"><span>Đã hoàn thành</span><strong>{{ doctor_stats.completed }}</strong><small>Trong các lịch được phân công</small></div>
+  <div class="stat"><span>Bệnh nhân có lịch</span><strong>{{ doctor_stats.patients }}</strong><small>Theo lịch hẹn được phân công</small></div>
+</div>
+{% if next_appointment %}
+<section class="next-appointment-panel doctor-next-panel">
+  <div class="doctor-next-copy"><p class="eyebrow">LỊCH TIẾP THEO</p><h2>{{ next_appointment.patient_name }}</h2><p>{{ next_appointment.appointment_date_time.strftime('%H:%M · %d/%m/%Y') }} <span>·</span> {{ next_appointment.appointment_type }}</p></div>
+  <a class="button secondary" href="{{ url_for('appointments.detail',appointment_id=next_appointment.appointment_id) }}">Mở lịch hẹn <span aria-hidden="true">→</span></a>
+</section>
+{% endif %}
+{% else %}
+<div class="page-heading"><div><p class="eyebrow">{{ 'ĐIỀU HÀNH PHÒNG KHÁM' if g.user.role == 'ADMIN' else 'LỊCH KHÁM CỦA BẠN' }}</p><h1>Lịch hẹn</h1><p>{{ 'Theo dõi thời gian, bác sĩ và trạng thái lịch hẹn.' if g.user.role == 'ADMIN' else 'Theo dõi lịch khám và trạng thái các cuộc hẹn của bạn.' }}</p></div><a class="button" href="{{ url_for('appointments.create') }}">Đặt lịch <span aria-hidden="true">→</span></a></div>
+{% endif %}
+<form class="filters" method="get">
+  <label>Ngày khám<input class="control" type="date" name="day" value="{{ request.args.get('day','') }}"></label>
+  <label>Trạng thái<select class="control" name="status"><option value="">Tất cả</option>{% for s in ['Scheduled','Checked-In','Completed','Cancelled','No-show'] %}<option {{ 'selected' if request.args.get('status') == s else '' }}>{{ s }}</option>{% endfor %}</select></label>
+  <button class="button secondary">Lọc lịch hẹn</button>
+</form>
+<section class="panel dashboard-panel">
+  <div class="panel-heading"><div><p class="eyebrow">DANH SÁCH</p><h2>{{ 'Lịch được phân công' if g.user.role == 'DOCTOR' else 'Lịch hẹn' }}</h2></div><span class="tag">{{ appointments|length }} kết quả</span></div>
+  {{ appointment_table(appointments) }}
+</section>
+{% endblock %}

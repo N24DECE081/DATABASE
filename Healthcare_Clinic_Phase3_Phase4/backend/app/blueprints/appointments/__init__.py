@@ -10,6 +10,7 @@ from ...repositories import appointments, schedules, patients
 from ...security import require_roles
 from ...services import appointments as service
 from ...services.doctors import own_doctor
+from ...services.common import now
 from ...utils.forms import data_for
 from ...utils.filters import filter_day
 
@@ -17,7 +18,33 @@ from ...utils.filters import filter_day
 @bp.get("/")
 @require_roles()
 def index():
-    return render_template("appointments/index.html", appointments=appointments.list_for(g.user, request.args.get("status", "")[:15], filter_day()))
+    status = request.args.get("status", "")[:15]
+    day = filter_day()
+    rows = appointments.list_for(g.user, status, day)
+    context = {"appointments": rows}
+    if g.user.role == "DOCTOR":
+        all_rows = appointments.list_for(g.user) if status or day else rows
+        current_time = now()
+        upcoming = [
+            appointment for appointment in all_rows
+            if appointment["appointment_date_time"] >= current_time
+            and appointment["status"] in ("Scheduled", "Checked-In")
+        ]
+        context.update({
+            "doctor_profile": own_doctor(g.user),
+            "doctor_stats": {
+                "today": sum(appointment["appointment_date_time"].date() == current_time.date()
+                             for appointment in all_rows),
+                "waiting": sum(appointment["status"] in ("Scheduled", "Checked-In")
+                               for appointment in all_rows),
+                "completed": sum(appointment["status"] == "Completed" for appointment in all_rows),
+                "patients": len({appointment["patient_id"] for appointment in all_rows}),
+            },
+            "next_appointment": min(
+                upcoming, key=lambda appointment: appointment["appointment_date_time"], default=None
+            ),
+        })
+    return render_template("appointments/index.html", **context)
 
 
 @bp.route("/new", methods=["GET", "POST"])

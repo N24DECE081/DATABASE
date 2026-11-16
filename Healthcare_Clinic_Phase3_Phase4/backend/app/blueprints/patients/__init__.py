@@ -10,6 +10,7 @@ from ...security import require_roles
 from ...services import patients, appointments, medical_history, prescriptions
 from ...repositories.appointments import list_for
 from ...utils.forms import data_for
+from ...services.common import now
 
 
 @bp.get("/")
@@ -17,8 +18,16 @@ from ...utils.forms import data_for
 def dashboard():
     profile = patients.own_profile(g.user)
     visits = list_for(g.user)
+    current_time = now()
+    upcoming = [
+        visit for visit in visits
+        if visit["appointment_date_time"] >= current_time
+        and visit["status"] in ("Scheduled", "Checked-In")
+    ]
+    next_appointment = min(upcoming, key=lambda visit: visit["appointment_date_time"], default=None)
     return render_template("patients/dashboard.html", profile=profile, appointments=visits,
-        history_count=len(medical_history.list_for(g.user)), prescription_count=len(prescriptions.list_for(g.user)))
+        history_count=len(medical_history.list_for(g.user)), prescription_count=len(prescriptions.list_for(g.user)),
+        next_appointment=next_appointment)
 
 
 @bp.route("/profile", methods=["GET", "POST"])
