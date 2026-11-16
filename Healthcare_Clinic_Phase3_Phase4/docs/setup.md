@@ -19,18 +19,47 @@ Cài Python 3.11+ và MySQL có CHECK/roles; phiên bản đã chạy ở đây 
 python -m venv .venv
 ```
 
-Dùng đường dẫn Python mà venv thực tế tạo ra: Windows Python thông thường là `.venv/Scripts/python.exe`; môi trường hiện tại là `.venv/bin/python.exe`. Ví dụ cho môi trường hiện tại:
+Dùng đường dẫn Python mà venv thực tế tạo ra: Windows Python thông thường là `.venv/Scripts/python.exe`; môi trường hiện tại là `.venv/bin/python.exe`. Ví dụ cho môi trường hiện tại, chọn **một** trong hai lệnh bootstrap:
 
 ```powershell
 .venv/bin/python.exe -m pip install -r backend/requirements-lock.txt
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-mysql.ps1
+# Bộ nhỏ mặc định:
 .venv/bin/python.exe -X utf8 scripts/bootstrap_local.py
+# Hoặc thay bằng bộ dữ liệu tiếng Việt 2.000 dòng:
+.venv/bin/python.exe -X utf8 scripts/bootstrap_local.py --dataset vietnamese
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-local.ps1
 ```
 
 `ExecutionPolicy Bypass` chỉ áp dụng process chạy script này. Bootstrap chỉ dùng root của MySQL riêng trên loopback để tạo schema/user/role. Root local này được khởi tạo không có mật khẩu; Flask dùng `healthcare_app` với password ngẫu nhiên lưu trong `.env`, chỉ được SELECT/INSERT/UPDATE qua role `clinic_application`.
 
-Dữ liệu khởi tạo: 5 accounts, 2 patients, 2 doctors (GP/Specialist), 1 specialty, 8 shifts, 7 appointments, 1 completed session, 1 history, 1 prescription/2 items, 2 thuốc giả lập. Các ngày seed tương đối theo ngày bootstrap để có lịch cho demo. Seed không xóa dữ liệu; test dùng schema tạm riêng.
+Dữ liệu mặc định gồm 5 accounts, 2 patients, 2 doctors (GP/Specialist), 1 specialty, 8 shifts, 7 appointments, 1 completed session, 1 history, 1 prescription/2 items và 2 thuốc. Muốn dùng bộ lớn, truyền `--dataset vietnamese` **ngay khi bootstrap schema mới**; seed từ chối chạy nếu bất kỳ bảng nào đã có dữ liệu. Không xóa/reset database. Có thể kiểm tra số dòng trước đó bằng `.venv/bin/python.exe -X utf8 scripts/seed_vietnamese_dataset.py --dry-run`.
+
+Bộ tiếng Việt có tổng cộng **2.000 dòng**:
+
+| Bảng | Dòng |
+|---|---:|
+| user_account / patient | 92 / 80 |
+| specialty / doctor / general_practitioner / specialist | 6 / 11 / 4 / 7 |
+| doctor_schedule / appointment | 112 / 650 |
+| consultation_session / medical_history | 400 / 300 |
+| medication / prescription / prescription_item | 24 / 150 / 164 |
+
+Tài khoản dùng chung mật khẩu `BenhVien!2026`: admin `admin`, bác sĩ `bacsi001`–`bacsi011`, bệnh nhân `benhnhan001`–`benhnhan080`. Bộ dữ liệu được tạo tự động cho bài tập, không phải hồ sơ bệnh nhân thật. Số điện thoại có 10 chữ số theo định dạng di động Việt Nam; email tạo từ tên người dùng theo định dạng Gmail nhưng chưa xác minh và không dùng để gửi thư. Địa chỉ có số nhà, tên đường và quận/thành phố; tên người liên hệ là tên tiếng Việt đầy đủ. Link khám trực tuyến theo định dạng Google Meet nhưng không phải cuộc họp thật. Danh mục thuốc và hướng dẫn không thay thế tư vấn y tế. Cả hai seed giữ nguyên 13 bảng hiện có và không thêm cột hay thay đổi baseline.
+
+### Thay dữ liệu hiện có bằng MySQL Workbench
+
+Đã sao lưu xong thì từ thư mục dự án xuất file dữ liệu cho schema `healthcare_clinic_portal`:
+
+```powershell
+.\.venv\Scripts\python.exe -X utf8 scripts\seed_vietnamese_dataset.py --export-replace
+```
+
+Trong Workbench đang kết nối tới đúng server/schema, mở `database/seeds/healthcare_clinic_portal_vietnamese_seed.sql` và bấm **Execute All**. Script xóa các dòng trong 13 bảng dự án, nạp 2.000 dòng mới, khôi phục các trigger xóa tạm thời và trả về tổng dòng để kiểm tra. Dừng ứng dụng trước khi chạy để tránh ghi dữ liệu đồng thời. Chỉ dùng khi đã sao lưu và muốn thay toàn bộ dữ liệu của các bảng này.
+
+`admin`, `bacsi001`... là tài khoản ứng dụng, không phải tài khoản kết nối MySQL Workbench. Kết nối Workbench cần user MySQL có quyền xóa/chèn dữ liệu và tạo trigger.
+
+Tài khoản cho bộ nhỏ mặc định:
 
 | Role | Username | Password |
 |---|---|---|
@@ -38,7 +67,7 @@ Dữ liệu khởi tạo: 5 accounts, 2 patients, 2 doctors (GP/Specialist), 1 s
 | DOCTOR | `doctor_gp`, `doctor_specialist` | `ClinicDemo!2026` |
 | PATIENT | `patient_one`, `patient_two` | `ClinicDemo!2026` |
 
-## Luồng demo
+## Luồng chức năng
 
 1. Patient xem bác sĩ/chuyên khoa và ca khả dụng, chọn giờ hoặc bác sĩ mong muốn, đặt lịch.
 2. Doctor xem lịch được phân công, check-in, bắt đầu phiên khám với EndTime NULL.
@@ -46,7 +75,7 @@ Dữ liệu khởi tạo: 5 accounts, 2 patients, 2 doctors (GP/Specialist), 1 s
 4. Doctor thêm bệnh sử và đơn thuốc có ít nhất một item. Patient xem kết quả của chính mình.
 5. Thử đặt trùng giờ, đặt ngoài ca, đọc hồ sơ người khác hoặc thêm bệnh sử trước Completed: yêu cầu bị chặn.
 
-Hồ sơ bệnh án dùng dữ liệu giả lập; thuốc demo là danh mục mẫu. Các trạng thái lịch hẹn được giữ lại, không hard-delete.
+Dữ liệu hồ sơ được sinh tự động cho bài tập, không phải hồ sơ bệnh nhân thật. Danh mục thuốc chỉ phục vụ vận hành phần mềm. Các trạng thái lịch hẹn được giữ lại, không hard-delete.
 
 ## Kiểm chứng
 
