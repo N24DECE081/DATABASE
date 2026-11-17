@@ -2,8 +2,6 @@
 
 -- Preserves tables, views, procedures, and other triggers.
 
-USE `healthcare_clinic_portal`;
-
 DROP TRIGGER IF EXISTS `history_before_delete`;
 
 DROP TRIGGER IF EXISTS `prescription_item_before_delete`;
