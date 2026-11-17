@@ -59,3 +59,15 @@ def finish(user, session_id, ends):
         appointment.status = "Completed"
         appointments.update(appointment)
         return session
+
+
+def update_notes(user, session_id, notes, meeting_url=None):
+    if user.role != "DOCTOR":
+        abort(403)
+    with transaction():
+        session = accessible_session(user, session_id, lock=True)
+        ensure(session.end_time is None, "Phiên khám đã kết thúc, không thể sửa ghi chú.")
+        session.diagnosis_notes = notes or None
+        if meeting_url is not None:
+            session.meeting_url = meeting_url or None
+        return consultations.update(session)

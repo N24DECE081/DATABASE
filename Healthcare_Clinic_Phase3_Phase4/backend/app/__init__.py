@@ -46,7 +46,7 @@ def create_app(test_config=None) -> Flask:
     def index():
         if g.user is None:
             return redirect(url_for("auth.login"))
-        target = {"ADMIN": "admin.dashboard", "DOCTOR": "appointments.index", "PATIENT": "patients.dashboard"}
+        target = {"ADMIN": "admin.dashboard", "DOCTOR": "doctors.portal", "PATIENT": "patients.dashboard"}
         return redirect(url_for(target[g.user.role]))
 
     @app.get("/health")

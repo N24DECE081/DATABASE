@@ -11,6 +11,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-local.ps1
 
 Mở http://127.0.0.1:5000. `/health` kiểm process; `/ready` kiểm kết nối DB. `backend/.env` đã được tạo local và không được đưa vào Git. `bootstrap_local.py` từ chối ghi đè `.env` hoặc schema sẵn có.
 
+Giao diện doctor được đóng gói sẵn trong `backend/app/static/doctor-portal/`. Nếu chỉnh sửa React source, chạy `npm ci`, `npm run typecheck` và `npm run build` trong `backend/doctor-portal-frontend/` trước khi khởi động lại Flask.
+
 ## Khởi tạo bản checkout mới
 
 Cài Python 3.11+ và MySQL có CHECK/roles; phiên bản đã chạy ở đây là 26.7.0. Script MySQL mặc định tìm `C:/Program Files/MySQL/MySQL Server 26.7`; có thể truyền `-MySqlHome` cho vị trí khác. Không khởi động một DB thứ hai nếu cổng 3307 đang được ứng dụng khác dùng.
