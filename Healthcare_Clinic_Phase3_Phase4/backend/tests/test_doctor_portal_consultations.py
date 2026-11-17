@@ -12,6 +12,9 @@ def doctor_client(monkeypatch):
         "TESTING": True,
         "SECRET_KEY": "test-key",
         "WTF_CSRF_ENABLED": False,
+        "JAAS_APP_ID": "test-app",
+        "JAAS_API_KEY_ID": "test-key",
+        "JAAS_PRIVATE_KEY": "test-private-key",
     })
     client = app.test_client()
     with client.session_transaction() as session:
@@ -28,7 +31,7 @@ def test_create_consultation_serializes_clinical_fields_and_online_call(monkeypa
         start_time=start_time,
         end_time=None,
         actual_duration_minutes=5,
-        meeting_url="https://meet.example.test/room",
+        meeting_url="https://8x8.vc/test-app/titimi-0123456789abcdef0123456789abcdef",
         diagnosis_notes="Lý do khám:\nĐau bụng\n\nChẩn đoán:\nViêm dạ dày",
     )
     appointment = {
@@ -49,7 +52,6 @@ def test_create_consultation_serializes_clinical_fields_and_online_call(monkeypa
     response = client.post(
         "/api/doctor/appointments/APT-1/consultation",
         json={
-            "meeting_url": session.meeting_url,
             "diagnosis_notes": session.diagnosis_notes,
         },
     )
@@ -63,7 +65,7 @@ def test_create_consultation_serializes_clinical_fields_and_online_call(monkeypa
     assert data["modality"] == "Tư vấn trực tuyến"
 
 
-def test_create_consultation_rejects_non_https_meeting_url(monkeypatch):
+def test_create_consultation_rejects_client_supplied_meeting_url(monkeypatch):
     client = doctor_client(monkeypatch)
     service_called = False
 
@@ -75,19 +77,19 @@ def test_create_consultation_rejects_non_https_meeting_url(monkeypatch):
 
     response = client.post(
         "/api/doctor/appointments/APT-1/consultation",
-        json={"meeting_url": "http://meet.example.test/room", "diagnosis_notes": ""},
+        json={"meeting_url": "https://8x8.vc/test-app/titimi-forged", "diagnosis_notes": ""},
     )
 
     assert response.status_code == 400
     assert not service_called
 
 
-def test_update_consultation_saves_notes_and_meeting_url(monkeypatch):
+def test_update_consultation_saves_notes_without_changing_meeting_url(monkeypatch):
     client = doctor_client(monkeypatch)
     session = SimpleNamespace(
         session_id="CONSULT-1",
         diagnosis_notes="Chẩn đoán:\nĐau đầu",
-        meeting_url="https://meet.example.test/updated",
+        meeting_url="https://8x8.vc/test-app/titimi-0123456789abcdef0123456789abcdef",
     )
     calls = []
 
@@ -101,7 +103,6 @@ def test_update_consultation_saves_notes_and_meeting_url(monkeypatch):
         "/api/doctor/consultations/CONSULT-1",
         json={
             "diagnosis_notes": session.diagnosis_notes,
-            "meeting_url": session.meeting_url,
         },
     )
 
@@ -113,5 +114,4 @@ def test_update_consultation_saves_notes_and_meeting_url(monkeypatch):
     assert calls[0][1:] == (
         "CONSULT-1",
         session.diagnosis_notes,
-        session.meeting_url,
     )

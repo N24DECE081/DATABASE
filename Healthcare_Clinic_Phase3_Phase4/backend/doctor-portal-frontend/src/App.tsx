@@ -1161,20 +1161,27 @@ function AppointmentsPage({
 function AppointmentDetail({
   appointment,
   patients,
+  consultation,
   updateStatus,
   back,
   toast,
   startConsultation,
+  startMeeting,
+  openMeeting,
 }: {
   appointment: Appointment;
   patients: Patient[];
+  consultation?: Consultation;
   updateStatus: (id: string, status: AppointmentStatus) => Promise<void>;
   back: () => void;
   toast: (m: string) => void;
   startConsultation: () => void;
+  startMeeting: (appointmentId: string) => Promise<string>;
+  openMeeting: (sessionId: string) => void;
 }) {
   const [item, setItem] = useState(appointment);
   const [cancel, setCancel] = useState(false);
+  const [meetingBusy, setMeetingBusy] = useState(false);
   const patient = patients.find((p) => p.id === item.patientId);
   const update = async (status: AppointmentStatus) => {
     try {
@@ -1247,6 +1254,52 @@ function AppointmentDetail({
         <aside className="card action-panel">
           <h2>Thao tác</h2>
           <p>Cập nhật trạng thái hoặc bắt đầu phiên khám.</p>
+          {item.modality === "Tư vấn trực tuyến" && (
+            <section className="meeting-action">
+              <h3>Cuộc họp khám từ xa</h3>
+              {consultation?.meetingUrl && !consultation.endedAt ? (
+                <>
+                  <Button
+                    variant="secondary"
+                    icon="phone"
+                    disabled={!consultation.canJoinMeeting}
+                    onClick={() => openMeeting(consultation.id)}
+                  >
+                    Mở cuộc họp
+                  </Button>
+                  {!consultation.canJoinMeeting && (
+                    <p className="action-note">Phòng chỉ mở được sau check-in và trong khung giờ khám.</p>
+                  )}
+                </>
+              ) : !consultation ? (
+                <>
+                  <Button
+                    variant="secondary"
+                    icon="phone"
+                    disabled={!item.meetingStartAvailable || meetingBusy}
+                    onClick={async () => {
+                      setMeetingBusy(true);
+                      try {
+                        const sessionId = await startMeeting(item.id);
+                        openMeeting(sessionId);
+                      } catch (error) {
+                        toast(error instanceof Error ? error.message : "Không thể tạo và mở phòng họp.");
+                      } finally {
+                        setMeetingBusy(false);
+                      }
+                    }}
+                  >
+                    {meetingBusy ? "Đang mở phòng..." : "Tạo phòng & mở cuộc họp"}
+                  </Button>
+                  {!item.meetingStartAvailable && item.meetingStartReason && (
+                    <p className="action-note">{item.meetingStartReason}</p>
+                  )}
+                </>
+              ) : (
+                <p className="action-note">Phiên khám đã kết thúc hoặc chưa có phòng họp hoạt động.</p>
+              )}
+            </section>
+          )}
           {item.status === "Chờ xác nhận" && (
             <Button icon="check" onClick={() => update("Đã xác nhận")}>
               Xác nhận lịch hẹn
@@ -1670,6 +1723,8 @@ function ConsultationsPage({
   selected,
   setSelected,
   onSave,
+  onStartMeeting,
+  openMeeting,
   onFinish,
   toast,
   createFollowUp,
@@ -1678,7 +1733,9 @@ function ConsultationsPage({
   appointments: Appointment[];
   selected: string | null;
   setSelected: (id: string | null) => void;
-  onSave: (appointmentId: string, sessionId: string | null, meetingUrl: string, notes: string) => Promise<void>;
+  onSave: (appointmentId: string, sessionId: string | null, notes: string) => Promise<void>;
+  onStartMeeting: (appointmentId: string) => Promise<string>;
+  openMeeting: (sessionId: string) => void;
   onFinish: (sessionId: string) => Promise<void>;
   toast: (m: string) => void;
   createFollowUp: (appointment: Appointment) => void;
@@ -1696,6 +1753,8 @@ function ConsultationsPage({
         consultation={c}
         back={() => setSelected(null)}
         onSave={onSave}
+        onStartMeeting={onStartMeeting}
+        openMeeting={openMeeting}
         onFinish={onFinish}
         toast={toast}
         createFollowUp={createFollowUp}
@@ -1801,6 +1860,8 @@ function ConsultationDetail({
   consultation,
   back,
   onSave,
+  onStartMeeting,
+  openMeeting,
   onFinish,
   toast,
   createFollowUp,
@@ -1808,7 +1869,9 @@ function ConsultationDetail({
   appointment: Appointment;
   consultation?: Consultation;
   back: () => void;
-  onSave: (appointmentId: string, sessionId: string | null, meetingUrl: string, notes: string) => Promise<void>;
+  onSave: (appointmentId: string, sessionId: string | null, notes: string) => Promise<void>;
+  onStartMeeting: (appointmentId: string) => Promise<string>;
+  openMeeting: (sessionId: string) => void;
   onFinish: (sessionId: string) => Promise<void>;
   toast: (m: string) => void;
   createFollowUp: (appointment: Appointment) => void;
@@ -1821,20 +1884,11 @@ function ConsultationDetail({
     notes: consultation?.notes || "",
     plan: consultation?.plan || "",
   });
-  const [meetingUrl, setMeetingUrl] = useState(consultation?.meetingUrl || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const set = (key: keyof typeof form, value: string) => setForm({ ...form, [key]: value });
   const isComplete = consultation?.status === "Hoàn thành";
   const isOnline = appointment.modality === "Tư vấn trực tuyến";
-  const safeMeetingUrl = (() => {
-    try {
-      const url = new URL(meetingUrl.trim());
-      return url.protocol === "https:" ? url.href : "";
-    } catch {
-      return "";
-    }
-  })();
   const diagnosisNotes = [
     `Lý do khám:\n${form.complaint.trim()}`,
     `Triệu chứng:\n${form.symptoms.trim()}`,
@@ -1860,14 +1914,10 @@ function ConsultationDetail({
         onSubmit={async (e) => {
           e.preventDefault();
           if (isComplete) return;
-          if (isOnline && meetingUrl.trim() && !safeMeetingUrl) {
-            setError("Liên kết cuộc gọi phải là URL HTTPS hợp lệ.");
-            return;
-          }
           setSaving(true);
           setError("");
           try {
-            await onSave(appointment.id, consultation?.id || null, safeMeetingUrl, diagnosisNotes);
+            await onSave(appointment.id, consultation?.id || null, diagnosisNotes);
           } catch (saveError) {
             setError(saveError instanceof Error ? saveError.message : "Không thể lưu phiếu khám.");
           } finally {
@@ -1958,26 +2008,47 @@ function ConsultationDetail({
             {isOnline && (
               <section className="card patient-side">
                 <h2>Cuộc gọi trực tuyến</h2>
-                {safeMeetingUrl ? (
+                {consultation?.meetingUrl && !isComplete ? (
+                  <>
                   <Button
                     variant="secondary"
                     icon="phone"
-                    onClick={() => window.open(safeMeetingUrl, "_blank", "noopener,noreferrer")}
+                    disabled={!consultation.canJoinMeeting}
+                    onClick={() => openMeeting(consultation.id)}
                   >
-                    Mở cuộc gọi
+                    Mở cuộc họp
                   </Button>
+                  {!consultation.canJoinMeeting && <p className="action-note">Phòng chỉ mở sau check-in và trong khung giờ khám.</p>}
+                  </>
+                ) : !consultation ? (
+                  <>
+                    {appointment.meetingStartReason && <p>{appointment.meetingStartReason}</p>}
+                    <Button
+                      variant="secondary"
+                      icon="phone"
+                      disabled={saving || !appointment.meetingStartAvailable}
+                      onClick={async () => {
+                        setSaving(true);
+                        setError("");
+                        try {
+                          const sessionId = await onStartMeeting(appointment.id);
+                          openMeeting(sessionId);
+                        } catch (startError) {
+                          setError(
+                            startError instanceof Error
+                              ? startError.message
+                              : "Không thể tạo và mở phòng họp.",
+                          );
+                        } finally {
+                          setSaving(false);
+                        }
+                      }}
+                    >
+                      {saving ? "Đang mở phòng..." : "Tạo phòng & mở cuộc họp"}
+                    </Button>
+                  </>
                 ) : (
-                  <label className="field">
-                    <span>Liên kết cuộc gọi (HTTPS)</span>
-                    <input
-                      type="url"
-                      value={meetingUrl}
-                      onChange={(e) => setMeetingUrl(e.target.value)}
-                      placeholder="https://..."
-                      maxLength={255}
-                      readOnly={isComplete}
-                    />
-                  </label>
+                  <p>Phiên khám đã kết thúc hoặc chưa có phòng họp hợp lệ.</p>
                 )}
               </section>
             )}
@@ -1993,10 +2064,7 @@ function ConsultationDetail({
                   setSaving(true);
                   setError("");
                   try {
-                    if (isOnline && meetingUrl.trim() && !safeMeetingUrl) {
-                      throw new Error("Liên kết cuộc gọi phải là URL HTTPS hợp lệ.");
-                    }
-                    await onSave(appointment.id, consultation.id, safeMeetingUrl, diagnosisNotes);
+                    await onSave(appointment.id, consultation.id, diagnosisNotes);
                     await onFinish(consultation.id);
                   } catch (finishError) {
                     setError(finishError instanceof Error ? finishError.message : "Không thể kết thúc phiên khám.");
@@ -2776,16 +2844,27 @@ export default function App() {
   const saveConsultation = async (
     appointmentId: string,
     sessionId: string | null,
-    meetingUrl: string,
     diagnosisNotes: string,
   ) => {
     if (sessionId) {
-      await updateConsultationNotes(sessionId, diagnosisNotes, meetingUrl);
+      await updateConsultationNotes(sessionId, diagnosisNotes);
     } else {
-      await createConsultation(appointmentId, meetingUrl, diagnosisNotes);
+      await createConsultation(appointmentId, diagnosisNotes);
     }
     await refreshPortal();
     toast("Đã lưu nội dung phiếu khám.");
+  };
+  const startMeeting = async (appointmentId: string) => {
+    const result = await createConsultation(appointmentId, "");
+    try {
+      await refreshPortal();
+    } catch {
+      setToastMessage("Phòng họp đã tạo; không tải lại được dữ liệu bác sĩ.");
+    }
+    return result.consultation.id;
+  };
+  const openMeeting = (sessionId: string) => {
+    window.location.assign(`/consultations/${encodeURIComponent(sessionId)}/meeting`);
   };
   const completeConsultation = async (sessionId: string) => {
     await finishConsultation(sessionId);
@@ -2817,10 +2896,13 @@ export default function App() {
         <AppointmentDetail
           appointment={appointmentDetail}
           patients={patients}
+          consultation={consultations.find((item) => item.appointmentId === appointmentDetail.id)}
           updateStatus={saveAppointmentStatus}
           back={() => setAppointmentDetail(null)}
           toast={toast}
           startConsultation={() => openConsultation(appointmentDetail)}
+          startMeeting={startMeeting}
+          openMeeting={openMeeting}
         />
       );
     if (patientDetail)
@@ -2877,6 +2959,8 @@ export default function App() {
             selected={consultationDetail}
             setSelected={setConsultationDetail}
             onSave={saveConsultation}
+            onStartMeeting={startMeeting}
+            openMeeting={openMeeting}
             onFinish={completeConsultation}
             toast={toast}
             createFollowUp={(appointment) => {

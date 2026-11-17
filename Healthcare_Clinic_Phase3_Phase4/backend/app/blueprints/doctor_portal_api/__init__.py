@@ -1,13 +1,11 @@
 """JSON API for the authenticated doctor portal."""
 
-from urllib.parse import urlsplit
-
 from flask import Blueprint, abort, g, jsonify, request
 
 from ...db import query
 from ...repositories import appointments, doctors, medical_history, patients, prescriptions, schedules
 from ...security import require_roles
-from ...services import consultations as consultation_service, doctors as doctor_service
+from ...services import consultations as consultation_service, doctors as doctor_service, jaas
 from ...services.common import now
 
 
@@ -32,8 +30,29 @@ def _iso(value):
     return value.isoformat() if value is not None else None
 
 
+def _meeting_start_reason(row):
+    if row["appointment_type"] != "Telemedicine":
+        return "Lịch hẹn này không phải tư vấn trực tuyến."
+    if row.get("session_id") is not None:
+        return "Lịch hẹn đã có phiên khám."
+    if row["status"] != "Checked-In":
+        return "Bác sĩ cần check-in lịch hẹn trước."
+    if not jaas.is_configured():
+        return "Dịch vụ JaaS chưa được cấu hình đầy đủ."
+    if not jaas.may_join(row):
+        return "Chỉ có thể mở phòng trong khung giờ của lịch hẹn."
+    return ""
+
+
 def _appointment(row):
     starts = row["appointment_date_time"]
+    meeting_start_available = (
+        row["appointment_type"] == "Telemedicine"
+        and row["status"] == "Checked-In"
+        and row.get("session_id") is None
+        and jaas.is_configured()
+        and jaas.may_join(row)
+    )
     return {
         "id": row["appointment_id"],
         "patientId": row["patient_id"],
@@ -45,6 +64,8 @@ def _appointment(row):
         "modality": "Tư vấn trực tuyến" if row["appointment_type"] == "Telemedicine" else "Khám trực tiếp",
         "status": APPOINTMENT_STATUS_LABELS[row["status"]],
         "sessionId": row["session_id"],
+        "meetingStartAvailable": meeting_start_available,
+        "meetingStartReason": _meeting_start_reason(row),
     }
 
 
@@ -85,6 +106,17 @@ def _consultation(row):
         "modality": "Tư vấn trực tuyến" if row["appointment_type"] == "Telemedicine" else "Khám trực tiếp",
         "startedAt": _iso(row["start_time"]),
         "endedAt": _iso(row["end_time"]),
+        "canJoinMeeting": (
+            row["session_type"] == "Virtual"
+            and jaas.is_room_url(row["meeting_url"])
+            and row["end_time"] is None
+            and row["appointment_status"] == "Checked-In"
+            and jaas.is_configured()
+            and jaas.may_join({
+                "appointment_date_time": row["appointment_date_time"],
+                "estimated_duration_minutes": row["estimated_duration_minutes"],
+            })
+        ),
     }
 
 
@@ -125,7 +157,9 @@ def portal_data():
 
     session_rows = query(
         """SELECT cs.session_id, cs.appointment_id, cs.start_time, cs.end_time,
-                  cs.diagnosis_notes, cs.meeting_url, a.appointment_type,
+                  cs.session_type, cs.diagnosis_notes, cs.meeting_url,
+                  a.appointment_type, a.status AS appointment_status,
+                  a.estimated_duration_minutes,
                   a.patient_id, p.full_name AS patient_name,
                   a.appointment_date_time
            FROM consultation_session cs
@@ -219,21 +253,15 @@ def create_consultation(appointment_id):
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
         abort(400, description="Thông tin phiên khám không hợp lệ.")
-    meeting_url = data.get("meeting_url") or ""
+    if "meeting_url" in data:
+        abort(400, description="Liên kết phòng họp được tạo tự động bởi hệ thống.")
     notes = data.get("diagnosis_notes") or ""
-    if not isinstance(meeting_url, str) or len(meeting_url) > 255:
-        abort(400, description="Liên kết cuộc gọi không hợp lệ.")
-    if meeting_url:
-        parsed_url = urlsplit(meeting_url)
-        if parsed_url.scheme != "https" or not parsed_url.netloc:
-            abort(400, description="Liên kết cuộc gọi phải sử dụng HTTPS.")
     if not isinstance(notes, str) or len(notes) > 8000:
         abort(400, description="Ghi chú phiên khám vượt quá giới hạn.")
     session = consultation_service.create(g.user, appointment_id, {
         "start_time": now(),
         "end_time": None,
         "actual_duration_minutes": 5,
-        "meeting_url": meeting_url.strip() or None,
         "diagnosis_notes": notes.strip() or None,
     })
     appointment_row = appointments.details(appointment_id)
@@ -250,22 +278,15 @@ def create_consultation(appointment_id):
 @require_roles("DOCTOR")
 def update_consultation(session_id):
     data = request.get_json(silent=True)
+    if isinstance(data, dict) and "meeting_url" in data:
+        abort(400, description="Không thể thay đổi phòng họp sau khi phiên được tạo.")
     notes = data.get("diagnosis_notes") if isinstance(data, dict) else None
-    meeting_url = data.get("meeting_url") if isinstance(data, dict) else None
     if not isinstance(notes, str) or len(notes) > 8000:
         abort(400, description="Ghi chú phiên khám không hợp lệ.")
-    if meeting_url is not None:
-        if not isinstance(meeting_url, str) or len(meeting_url) > 255:
-            abort(400, description="Liên kết cuộc gọi không hợp lệ.")
-        if meeting_url:
-            parsed_url = urlsplit(meeting_url)
-            if parsed_url.scheme != "https" or not parsed_url.netloc:
-                abort(400, description="Liên kết cuộc gọi phải sử dụng HTTPS.")
     session = consultation_service.update_notes(
         g.user,
         session_id,
         notes.strip(),
-        meeting_url.strip() if meeting_url is not None else None,
     )
     return jsonify(session_id=session.session_id, diagnosis_notes=session.diagnosis_notes or "")
 

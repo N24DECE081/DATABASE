@@ -16,6 +16,8 @@ export type Appointment = {
   modality?: "Khám trực tiếp" | "Tư vấn trực tuyến";
   status: AppointmentStatus;
   sessionId?: string | null;
+  meetingStartAvailable?: boolean;
+  meetingStartReason?: string;
 };
 
 export type Patient = {
@@ -48,6 +50,7 @@ export type Consultation = {
   modality: "Khám trực tiếp" | "Tư vấn trực tuyến";
   startedAt: string;
   endedAt: string | null;
+  canJoinMeeting?: boolean;
 };
 
 export type Prescription = {
@@ -163,22 +166,22 @@ export function updateAppointmentStatus(id: string, status: AppointmentStatus) {
   });
 }
 
-export function createConsultation(appointmentId: string, meetingUrl: string, diagnosisNotes: string) {
+export function createConsultation(appointmentId: string, diagnosisNotes: string) {
   return request<{ consultation: Consultation }>(
     `/api/doctor/appointments/${encodeURIComponent(appointmentId)}/consultation`,
     {
       method: "POST",
-      body: JSON.stringify({ meeting_url: meetingUrl, diagnosis_notes: diagnosisNotes }),
+      body: JSON.stringify({ diagnosis_notes: diagnosisNotes }),
     },
   );
 }
 
-export function updateConsultationNotes(sessionId: string, diagnosisNotes: string, meetingUrl: string) {
+export function updateConsultationNotes(sessionId: string, diagnosisNotes: string) {
   return request<{ session_id: string; diagnosis_notes: string }>(
     `/api/doctor/consultations/${encodeURIComponent(sessionId)}`,
     {
       method: "PATCH",
-      body: JSON.stringify({ diagnosis_notes: diagnosisNotes, meeting_url: meetingUrl }),
+      body: JSON.stringify({ diagnosis_notes: diagnosisNotes }),
     },
   );
 }

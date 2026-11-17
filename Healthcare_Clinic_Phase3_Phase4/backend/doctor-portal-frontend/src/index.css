@@ -1136,6 +1136,24 @@ td b {
   font-size: 9px;
   line-height: 1.5;
 }
+.meeting-action {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbfd;
+}
+.meeting-action h3 {
+  margin: 0;
+  font-size: 12px;
+}
+.meeting-action > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
 .action-note {
   margin-top: 8px;
   padding: 11px;

@@ -12,7 +12,7 @@ def test_end_to_end_ongoing_session_finish_history_prescription_and_patient_read
     assert post(client,"/appointments/APT-002/status",{"status":"Checked-In"}).status_code == 302
     begins=now()-timedelta(minutes=10)
     response=post(client,"/consultations/new/APT-002",{"start_time":begins.strftime("%Y-%m-%dT%H:%M"),
-        "end_time":"", "actual_duration_minutes":"10", "meeting_url":"", "diagnosis_notes":"Synthetic E2E notes"})
+        "end_time":"", "actual_duration_minutes":"10", "diagnosis_notes":"Synthetic E2E notes"})
     assert response.status_code == 302
     session=sql(app,"SELECT * FROM consultation_session WHERE appointment_id='APT-002'",one=True)
     assert session["end_time"] is None
@@ -60,14 +60,30 @@ def test_database_blocks_wrong_modality_duplicate_session_and_history_delete(app
     assert archived.value.errno == 1644
 
 
-def test_virtual_session_uses_virtual_type_and_patient_can_open_meeting_link(app,client):
+def test_virtual_session_is_created_by_doctor_and_patient_can_join_within_window(app,client,monkeypatch):
+    from app.services import jaas
+
+    monkeypatch.setattr(jaas, "may_join", lambda *_args, **_kwargs: True)
     login(client,'doctor_specialist')
     assert post(client,'/appointments/APT-003/status',{'status':'Checked-In'}).status_code==302
     response=post(client,'/consultations/new/APT-003',{'start_time':(now()-timedelta(minutes=10)).strftime('%Y-%m-%dT%H:%M'),
-        'end_time':'','actual_duration_minutes':'10','meeting_url':'https://example.invalid/demo-room','diagnosis_notes':'Synthetic virtual notes'})
+        'end_time':'','actual_duration_minutes':'10','diagnosis_notes':'Synthetic virtual notes'})
     assert response.status_code==302
     row=sql(app,"SELECT * FROM consultation_session WHERE appointment_id='APT-003'",one=True)
     assert row['session_type']=='Virtual' and row['end_time'] is None
+    assert row['meeting_url'].startswith('https://8x8.vc/test-app/titimi-')
+    post(client, "/auth/logout")
+    login(client, "patient_one")
+    assert client.get(f"/consultations/{row['session_id']}/meeting").status_code == 403
+    post(client, "/auth/logout")
     login(client,'patient_two')
     html=client.get(response.headers['Location']).get_data(as_text=True)
-    assert 'https://example.invalid/demo-room' in html and 'noopener noreferrer' in html
+    assert 'Tham gia phòng họp' in html
+    monkeypatch.setattr(jaas.jwt, "encode", lambda *_args, **_kwargs: "test-jwt")
+    meeting = client.get(f"/consultations/{row['session_id']}/meeting")
+    assert meeting.status_code == 200
+    assert "8x8.vc/test-app/" in meeting.get_data(as_text=True)
+    assert "jwt=test-jwt" in meeting.get_data(as_text=True)
+
+    monkeypatch.setattr(jaas, "may_join", lambda *_args, **_kwargs: False)
+    assert client.get(f"/consultations/{row['session_id']}/meeting").status_code == 403

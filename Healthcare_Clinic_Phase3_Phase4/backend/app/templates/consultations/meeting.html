@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Khám từ xa · TiTiMi{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/meeting.css') }}">
+<section class="meeting-page">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">KHÁM TỪ XA</p>
+      <h1>Phòng khám trực tuyến</h1>
+      <p>{{ appointment.doctor_name }} · {{ appointment.patient_name }} · {{ appointment.appointment_date_time.strftime('%H:%M · %d/%m/%Y') }}</p>
+    </div>
+    <a class="button secondary" href="{{ url_for('consultations.detail', session_id=session_id) }}">Quay lại phiên khám</a>
+  </div>
+  <iframe
+    class="meeting-frame"
+    src="{{ iframe_url }}"
+    title="Phòng khám trực tuyến Jitsi"
+    allow="camera; microphone; fullscreen; display-capture; autoplay"
+    allowfullscreen
+    referrerpolicy="no-referrer"
+  ></iframe>
+</section>
+{% endblock %}

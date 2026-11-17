@@ -6,6 +6,7 @@ from ...repositories import consultations, appointments
 from ..appointments import accessible
 from ..doctors import classified_doctor
 from ..common import ensure, found, identity, now
+from .. import jaas
 
 
 def accessible_session(user, session_id, *, lock=False):
@@ -33,10 +34,16 @@ def create(user, appointment_id, data):
         appointment = accessible(user, appointment_id, lock=True)
         ensure(appointment.status in ("Checked-In", "Completed"), "Cần check-in trước khi tạo phiên khám.")
         ensure(consultations.for_appointment(appointment_id) is None, "Lịch hẹn đã có một phiên khám.")
+        session_type = "Virtual" if appointment.appointment_type == "Telemedicine" else "In-person"
+        meeting_url = None
+        if session_type == "Virtual" and data.get("end_time") is None:
+            ensure(appointment.status == "Checked-In", "Chỉ có thể mở phòng khi lịch hẹn đã check-in.")
+            ensure(jaas.may_join(appointment), "Chỉ có thể mở phòng trong khung giờ khám từ xa.")
+            meeting_url = jaas.new_room_url()
         session = consultations.insert(ConsultationSession(session_id=identity("C"), appointment_id=appointment_id,
             start_time=data["start_time"], end_time=data.get("end_time"), actual_duration_minutes=minutes,
-            session_type="Virtual" if appointment.appointment_type == "Telemedicine" else "In-person",
-            meeting_url=data.get("meeting_url") or None, diagnosis_notes=data.get("diagnosis_notes") or None))
+            session_type=session_type, meeting_url=meeting_url,
+            diagnosis_notes=data.get("diagnosis_notes") or None))
         if session.end_time is not None:
             appointment.status = "Completed"
             appointments.update(appointment)
@@ -61,13 +68,11 @@ def finish(user, session_id, ends):
         return session
 
 
-def update_notes(user, session_id, notes, meeting_url=None):
+def update_notes(user, session_id, notes):
     if user.role != "DOCTOR":
         abort(403)
     with transaction():
         session = accessible_session(user, session_id, lock=True)
         ensure(session.end_time is None, "Phiên khám đã kết thúc, không thể sửa ghi chú.")
         session.diagnosis_notes = notes or None
-        if meeting_url is not None:
-            session.meeting_url = meeting_url or None
         return consultations.update(session)

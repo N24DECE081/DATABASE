@@ -34,7 +34,9 @@ def app():
             cursor.execute(f"GRANT SELECT, INSERT, UPDATE ON `{schema}`.* TO '{db_user}'@'127.0.0.1'")
         instance = create_app({"TESTING": True, "SECRET_KEY": secrets.token_urlsafe(32),
             "MYSQL_DATABASE": schema, "MYSQL_USER": db_user, "MYSQL_PASSWORD": password,
-            "MYSQL_HOST": "127.0.0.1", "MYSQL_PORT": 3307, "WTF_CSRF_ENABLED": True})
+            "MYSQL_HOST": "127.0.0.1", "MYSQL_PORT": 3307, "WTF_CSRF_ENABLED": True,
+            "JAAS_APP_ID": "test-app", "JAAS_API_KEY_ID": "test-key",
+            "JAAS_PRIVATE_KEY": "test-private-key"})
         instance.test_root = root
         yield instance
     finally:
