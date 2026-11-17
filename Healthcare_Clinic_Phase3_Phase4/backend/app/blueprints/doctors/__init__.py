@@ -4,7 +4,9 @@ from flask import Blueprint
 
 bp = Blueprint("doctors", __name__, url_prefix="/doctors")
 
-from flask import g, flash, redirect, render_template, request, url_for
+from pathlib import Path
+
+from flask import current_app, g, flash, redirect, render_template, request, send_from_directory, url_for
 from ...repositories import doctors
 from ...security import require_roles
 
@@ -16,6 +18,12 @@ def index():
     specialty = request.args.get("specialty", "")[:20]
     return render_template("doctors/index.html", doctors=doctors.directory(search, specialty),
                            specialties=doctors.specialties(), search=search, specialty=specialty)
+
+
+@bp.get("/portal")
+@require_roles("DOCTOR")
+def portal():
+    return send_from_directory(Path(current_app.static_folder) / "doctor-portal", "index.html")
 
 
 @bp.route("/<doctor_id>/edit", methods=["GET", "POST"])

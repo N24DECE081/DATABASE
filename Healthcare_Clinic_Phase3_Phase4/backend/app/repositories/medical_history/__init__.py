@@ -7,7 +7,8 @@ from ..scope import appointment_filter
 
 def list_for(user):
     clause, params = appointment_filter(user, "a")
-    return query(f"""SELECT mh.*, d.full_name AS doctor_name, p.full_name AS patient_name
+    return query(f"""SELECT mh.*, d.full_name AS doctor_name, p.full_name AS patient_name,
+        p.patient_id
         FROM medical_history mh JOIN consultation_session cs ON cs.session_id = mh.session_id
         JOIN appointment a ON a.appointment_id = cs.appointment_id
         JOIN patient p ON p.patient_id = a.patient_id JOIN doctor d ON d.doctor_id = a.doctor_id
