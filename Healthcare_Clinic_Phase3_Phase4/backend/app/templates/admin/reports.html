@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% from 'shared/macros.html' import badge,empty %}
+{% block title %}Báo cáo hệ thống · TiTiMi{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">SỐ LIỆU TỪ HỆ THỐNG</p><h1>Báo cáo hệ thống</h1><p>Thống kê được tổng hợp trực tiếp từ lịch hẹn đã lưu.</p></div></div>
+<div class="stats four">
+  <div class="stat stat-blue"><span>Bệnh nhân</span><strong>{{ counts.patients }}</strong><small>Tổng hồ sơ hiện có</small></div>
+  <div class="stat"><span>Bác sĩ</span><strong>{{ counts.doctors }}</strong><small>Tổng hồ sơ hiện có</small></div>
+  <div class="stat stat-pink"><span>Lịch hôm nay</span><strong>{{ counts.today }}</strong><small>Theo ngày phòng khám</small></div>
+  <div class="stat"><span>Đã đặt</span><strong>{{ counts.scheduled }}</strong><small>Trạng thái Scheduled</small></div>
+</div>
+<section class="panel dashboard-panel"><div class="panel-heading"><div><p class="eyebrow">TRẠNG THÁI</p><h2>Lịch hẹn theo trạng thái</h2></div></div>
+  {% if statuses %}<div class="table-wrap"><table><thead><tr><th>Trạng thái</th><th>Số lịch</th></tr></thead><tbody>{% for row in statuses %}<tr><td>{{ badge(row.status) }}</td><td>{{ row.total }}</td></tr>{% endfor %}</tbody></table></div>{% else %}{{ empty('Chưa có dữ liệu lịch hẹn.') }}{% endif %}
+</section>
+<section class="panel dashboard-panel"><div class="panel-heading"><div><p class="eyebrow">30 NGÀY GẦN NHẤT</p><h2>Lịch hẹn theo ngày</h2></div></div>
+  {% if daily %}<div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Số lịch</th></tr></thead><tbody>{% for row in daily %}<tr><td>{{ row.report_date.strftime('%d/%m/%Y') }}</td><td>{{ row.total }}</td></tr>{% endfor %}</tbody></table></div>{% else %}{{ empty('Chưa có lịch hẹn trong 30 ngày gần nhất.') }}{% endif %}
+</section>
+{% endblock %}

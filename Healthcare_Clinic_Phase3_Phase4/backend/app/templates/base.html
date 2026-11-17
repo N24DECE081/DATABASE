@@ -31,11 +31,14 @@
     <a href="{{ url_for('medications.index') }}" class="{{ 'active' if request.blueprint == 'medications' else '' }}"><span class="nav-icon" aria-hidden="true">＋</span>Danh mục thuốc</a>
     {% else %}
     <a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if request.endpoint == 'admin.dashboard' else '' }}"><span class="nav-icon" aria-hidden="true">⌂</span>Tổng quan</a>
-    <a href="{{ url_for('doctors.index') }}" class="{{ 'active' if request.blueprint == 'doctors' else '' }}"><span class="nav-icon" aria-hidden="true">♙</span>Bác sĩ & chuyên khoa</a>
-    <a href="{{ url_for('schedules.index') }}" class="{{ 'active' if request.blueprint == 'schedules' else '' }}"><span class="nav-icon" aria-hidden="true">▦</span>Lịch làm việc</a>
-    <a href="{{ url_for('appointments.index') }}" class="{{ 'active' if request.blueprint == 'appointments' else '' }}"><span class="nav-icon" aria-hidden="true">◷</span>Lịch hẹn</a>
+    <a href="{{ url_for('admin.dashboard') }}#accounts" class="{{ 'active' if request.endpoint in ('admin.create_account', 'admin.account_status') else '' }}"><span class="nav-icon" aria-hidden="true">♙</span>Quản lý người dùng</a>
+    <a href="{{ url_for('doctors.index') }}" class="{{ 'active' if request.blueprint == 'doctors' else '' }}"><span class="nav-icon" aria-hidden="true">♙</span>Quản lý bác sĩ</a>
+    <a href="{{ url_for('patients.admin_index') }}" class="{{ 'active' if request.endpoint in ('patients.admin_index', 'patients.edit_by_admin') else '' }}"><span class="nav-icon" aria-hidden="true">♡</span>Quản lý bệnh nhân</a>
+    <a href="{{ url_for('doctors.index') }}#specialties" class="{{ 'active' if request.endpoint == 'admin.create_specialty' else '' }}"><span class="nav-icon" aria-hidden="true">▱</span>Chuyên khoa</a>
+    <a href="{{ url_for('appointments.index') }}" class="{{ 'active' if request.blueprint == 'appointments' else '' }}"><span class="nav-icon" aria-hidden="true">◷</span>Quản lý lịch hẹn</a>
+    <a href="{{ url_for('schedules.index') }}" class="{{ 'active' if request.blueprint == 'schedules' else '' }}"><span class="nav-icon" aria-hidden="true">▦</span>Quản lý lịch làm việc</a>
+    <a href="{{ url_for('admin.reports') }}" class="{{ 'active' if request.endpoint == 'admin.reports' else '' }}"><span class="nav-icon" aria-hidden="true">⌁</span>Báo cáo hệ thống</a>
     <a href="{{ url_for('medications.index') }}" class="{{ 'active' if request.blueprint == 'medications' else '' }}"><span class="nav-icon" aria-hidden="true">＋</span>Danh mục thuốc</a>
-    <a href="{{ url_for('admin.dashboard') }}#accounts" class="sidebar-secondary"><span class="nav-icon" aria-hidden="true">♙</span>Tài khoản</a>
     {% endif %}
   </nav>
   <div class="sidebar-note"><span class="status-dot"></span> TiTiMi Clinic<br><small>Hệ thống quản lý phòng khám</small></div>

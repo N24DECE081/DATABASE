@@ -4,13 +4,22 @@ from flask import Blueprint
 
 bp = Blueprint("patients", __name__, url_prefix="/patients")
 
-from flask import flash, g, redirect, render_template, url_for
+from flask import flash, g, redirect, render_template, request, url_for
 from ...forms.patients import ProfileForm
 from ...security import require_roles
 from ...services import patients, appointments, medical_history, prescriptions
 from ...repositories.appointments import list_for
 from ...utils.forms import data_for
 from ...services.common import now
+
+
+@bp.get("/manage")
+@require_roles("ADMIN")
+def admin_index():
+    from ...repositories import patients as repository
+    search = request.args.get("q", "").strip()[:100]
+    rows = repository.list_patients(search)
+    return render_template("patients/admin_index.html", patients=rows, search=search)
 
 
 @bp.get("/")

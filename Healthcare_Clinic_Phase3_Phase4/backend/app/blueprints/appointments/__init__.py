@@ -20,6 +20,10 @@ from ...utils.filters import filter_day
 def index():
     status = request.args.get("status", "")[:15]
     day = filter_day()
+    created_id = request.args.get("created", "")[:20]
+    if created_id:
+        service.accessible(g.user, created_id)
+        flash("Lịch hẹn đã được lưu và tải lại trong danh sách.", "success")
     rows = appointments.list_for(g.user, status, day)
     context = {"appointments": rows}
     if g.user.role == "DOCTOR":
@@ -50,6 +54,11 @@ def index():
 @bp.route("/new", methods=["GET", "POST"])
 @require_roles()
 def create():
+    if request.method == "GET" and g.user.role in ("PATIENT", "ADMIN"):
+        return render_template(
+            "appointments/booking_wizard.html",
+            back_url=url_for("doctors.index") if g.user.role == "PATIENT" else url_for("appointments.index"),
+        )
     form = BookingForm()
     doctor_id = own_doctor(g.user).doctor_id if g.user.role == "DOCTOR" else request.args.get("doctor", "")[:20]
     shifts = schedules.list_schedules(doctor_id, available_only=True)

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, g, redirect, render_template, url_for
+from flask import Flask, g, jsonify, redirect, render_template, request, url_for
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from mysql.connector import Error as MySQLError
 from config import environment_config
@@ -61,10 +61,14 @@ def create_app(test_config=None) -> Flask:
 
     @app.errorhandler(BusinessError)
     def business_error(error):
+        if request.path.startswith("/api/"):
+            return jsonify(error=str(error)), 400
         return render_template("errors/error.html", code=400, message=str(error)), 400
 
     @app.errorhandler(CSRFError)
     def csrf_error(_error):
+        if request.path.startswith("/api/"):
+            return jsonify(error="Phiên bảo mật hết hạn. Hãy tải lại trang và thử lại."), 400
         return render_template("errors/error.html", code=400, message="Phiên biểu mẫu hết hạn. Hãy tải lại trang và thử lại."), 400
 
     @app.errorhandler(MySQLError)
@@ -81,12 +85,16 @@ def create_app(test_config=None) -> Flask:
         else:
             status = 400 if error.errno in messages else 503
             message = messages.get(error.errno, "Không thể kết nối dữ liệu. Hãy thử lại sau.")
+        if request.path.startswith("/api/"):
+            return jsonify(error=message), status
         return render_template("errors/error.html", code=status, message=message), status
 
-    for code in (400, 403, 404, 413, 500):
+    for code in (400, 401, 403, 404, 413, 500):
         def handler(_error, status=code):
-            message = {400: "Dữ liệu yêu cầu không hợp lệ.", 403: "Bạn không có quyền truy cập dữ liệu này.", 404: "Không tìm thấy nội dung.",
+            message = {400: "Dữ liệu yêu cầu không hợp lệ.", 401: "Vui lòng đăng nhập để tiếp tục.", 403: "Bạn không có quyền truy cập dữ liệu này.", 404: "Không tìm thấy nội dung.",
                        413: "Nội dung gửi lên quá lớn.", 500: "Không thể hoàn thành yêu cầu."}[status]
+            if request.path.startswith("/api/"):
+                return jsonify(error=getattr(_error, "description", None) or message), status
             return render_template("errors/error.html", code=status, message=message), status
         app.register_error_handler(code, handler)
     return app

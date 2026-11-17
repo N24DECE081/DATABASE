@@ -1,0 +1,95 @@
+<section id="booking-wizard" class="booking-wizard" data-role="{{ g.user.role }}" data-modal="{{ 'true' if modal|default(false) else 'false' }}" data-back-url="{{ back_url }}"
+         data-initial-schedule="{{ request.args.get('schedule', '') }}" data-initial-time="{{ request.args.get('time', '') }}">
+  <div class="booking-heading">
+    {% if g.user.role == 'ADMIN' and modal|default(false) %}<button type="button" id="booking-close" class="booking-close" aria-label="Đóng">×</button>{% else %}<a class="booking-back-link" href="{{ back_url }}">← Quay lại</a>{% endif %}
+    <p class="eyebrow">{{ 'ĐIỀU HÀNH PHÒNG KHÁM' if g.user.role == 'ADMIN' else 'CỔNG BỆNH NHÂN' }}</p>
+    <h1>{{ 'Tạo lịch hẹn' if g.user.role == 'ADMIN' else 'Đặt lịch khám' }}</h1>
+    <p>{{ 'Chọn bệnh nhân và khung giờ từ lịch làm việc thực tế.' if g.user.role == 'ADMIN' else 'Chọn bác sĩ và giờ khám còn trống.' }}</p>
+  </div>
+
+  <ol id="booking-progress" class="booking-progress" aria-label="Tiến trình đặt lịch"></ol>
+  <div id="booking-message" class="booking-message" role="alert" hidden></div>
+
+  <div class="booking-layout">
+    <div class="booking-card">
+      {% if g.user.role == 'ADMIN' %}
+      <section class="booking-step" data-step="patient">
+        <div class="booking-step-heading"><span>Bước 1</span><h2>Chọn bệnh nhân</h2><p>Tìm hồ sơ bệnh nhân đang có trong hệ thống.</p></div>
+        <label class="booking-field">Tìm bệnh nhân
+          <input id="patient-search" type="search" autocomplete="off" placeholder="Tên, mã bệnh nhân, số điện thoại hoặc email">
+        </label>
+        <div id="patient-options" class="booking-options" aria-live="polite"></div>
+      </section>
+      {% endif %}
+
+      <section class="booking-step" data-step="type" hidden>
+        <div class="booking-step-heading"><span data-step-number></span><h2>Chọn hình thức khám</h2><p>Chọn hình thức phù hợp với lịch hẹn.</p></div>
+        <div class="booking-choice-grid">
+          <button type="button" class="booking-choice" data-type="In-person"><strong>Khám trực tiếp</strong><small>Tại phòng khám</small></button>
+          <button type="button" class="booking-choice" data-type="Telemedicine"><strong>Tư vấn trực tuyến</strong><small>Khám từ xa</small></button>
+        </div>
+      </section>
+
+      <section class="booking-step" data-step="specialty" hidden>
+        <div class="booking-step-heading"><span data-step-number></span><h2>Chọn chuyên khoa</h2><p>Danh sách được lấy từ các chuyên khoa có ca khám còn trống.</p></div>
+        <div id="specialty-options" class="booking-options" aria-live="polite"></div>
+      </section>
+
+      <section class="booking-step" data-step="doctor" hidden>
+        <div class="booking-step-heading"><span data-step-number></span><h2>Chọn bác sĩ</h2><p>Chỉ hiện bác sĩ có ca làm tương lai còn khả dụng.</p></div>
+        <label class="booking-field">Tìm bác sĩ
+          <input id="doctor-search" type="search" autocomplete="off" placeholder="Tên bác sĩ">
+        </label>
+        <div id="doctor-options" class="booking-options" aria-live="polite"></div>
+      </section>
+
+      <section class="booking-step" data-step="datetime" hidden>
+        <div class="booking-step-heading"><span data-step-number></span><h2>Chọn ngày và giờ</h2><p>Giờ trống được tính từ ca làm và các lịch hẹn đang có.</p></div>
+        <label class="booking-field booking-duration">Thời lượng
+          <select id="appointment-duration" class="control">
+            <option value="15">15 phút</option><option value="30" selected>30 phút</option>
+            <option value="45">45 phút</option><option value="60">60 phút</option>
+          </select>
+        </label>
+        <div class="booking-calendar-panel">
+          <div class="booking-calendar-head">
+            <button type="button" id="month-prev" aria-label="Tháng trước">‹</button>
+            <strong id="month-label"></strong>
+            <button type="button" id="month-next" aria-label="Tháng sau">›</button>
+          </div>
+          <div class="booking-calendar-grid" id="booking-calendar" aria-label="Ngày còn lịch"></div>
+        </div>
+        <div class="booking-time-panel">
+          <h3 id="time-heading">Chọn một ngày để xem giờ trống</h3>
+          <div id="time-options" class="booking-time-options" aria-live="polite"></div>
+        </div>
+        {% if g.user.role == 'ADMIN' %}
+        <label class="booking-field">Lý do khám <span class="required-mark">*</span>
+          <textarea id="appointment-reason" rows="3" maxlength="4000" required placeholder="Nhập lý do đặt lịch"></textarea>
+        </label>
+        {% endif %}
+      </section>
+
+      <section class="booking-step" data-step="review" hidden>
+        <div class="booking-step-heading"><span data-step-number></span><h2>Xác nhận lịch hẹn</h2><p>Kiểm tra thông tin trước khi lưu vào hệ thống.</p></div>
+        <dl id="booking-review" class="booking-review"></dl>
+        <div id="patient-profile-review" class="booking-profile-review" hidden>
+          <h3>Thông tin bệnh nhân</h3><div id="patient-profile-fields" class="booking-profile-fields"></div>
+        </div>
+        <p class="booking-review-note">Sau khi xác nhận, lịch được lưu với trạng thái “Đã đặt”.</p>
+      </section>
+
+      <div class="booking-actions">
+        <button type="button" id="booking-previous" class="button secondary">Quay lại</button>
+        <button type="button" id="booking-next" class="button">Tiếp tục</button>
+        <button type="button" id="booking-confirm" class="button" hidden>Xác nhận đặt lịch</button>
+      </div>
+    </div>
+
+    <aside class="booking-summary-panel" aria-live="polite">
+      <p class="eyebrow">TÓM TẮT</p><h2>Lịch hẹn</h2>
+      <div id="booking-summary-items" class="booking-summary-items"></div>
+      <div class="booking-summary-patient" id="booking-summary-patient" hidden></div>
+    </aside>
+  </div>
+</section>

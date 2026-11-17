@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% from 'shared/macros.html' import empty %}
+{% block title %}Quản lý bệnh nhân · TiTiMi{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><p class="eyebrow">HỒ SƠ BỆNH NHÂN</p><h1>Quản lý bệnh nhân</h1><p>Tìm hồ sơ đã đăng ký và cập nhật thông tin bệnh nhân.</p></div>
+  <a class="button" href="{{ url_for('admin.create_account') }}">+ Tạo tài khoản</a>
+</div>
+<form class="filters" method="get">
+  <label>Tìm hồ sơ<input class="control" type="search" name="q" value="{{ search }}" placeholder="Tên, mã bệnh nhân, số điện thoại hoặc email"></label>
+  <button class="button secondary" type="submit">Tìm kiếm</button>
+</form>
+<section class="panel">
+  <div class="panel-heading"><div><p class="eyebrow">DANH SÁCH HỒ SƠ</p><h2>Bệnh nhân</h2></div><span class="tag">{{ patients|length }} kết quả{% if patients|length == 200 %} · tối đa 200{% endif %}</span></div>
+  {% if patients %}
+  <div class="table-wrap"><table><thead><tr><th>Mã hồ sơ</th><th>Họ và tên</th><th>Liên hệ</th><th>Ngày sinh</th><th>Giới tính</th><th></th></tr></thead><tbody>
+  {% for patient in patients %}<tr>
+    <td><strong>{{ patient.patient_id }}</strong></td><td>{{ patient.full_name }}</td>
+    <td>{{ patient.phone or '—' }}{% if patient.email %}<small>{{ patient.email }}</small>{% endif %}</td>
+    <td>{{ patient.date_of_birth.strftime('%d/%m/%Y') if patient.date_of_birth else '—' }}</td><td>{{ patient.gender or '—' }}</td>
+    <td><a class="text-link" href="{{ url_for('patients.edit_by_admin', account_id=patient.user_id) }}">Cập nhật hồ sơ →</a></td>
+  </tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}{{ empty('Không tìm thấy hồ sơ bệnh nhân phù hợp.') }}{% endif %}
+</section>
+{% endblock %}

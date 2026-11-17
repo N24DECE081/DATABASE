@@ -10,7 +10,8 @@ def for_user(user_id):
 
 
 def directory(search="", specialty_id=""):
-    sql = """SELECT d.*, CASE WHEN st.doctor_id IS NOT NULL THEN 'SPECIALIST' ELSE 'GENERAL_PRACTITIONER' END AS subtype,
+    sql = """SELECT d.*, st.specialty_id AS specialty_id,
+                    CASE WHEN st.doctor_id IS NOT NULL THEN 'SPECIALIST' ELSE 'GENERAL_PRACTITIONER' END AS subtype,
                     COALESCE(sp.specialty_name, 'General Practitioner') AS specialty_name
              FROM doctor d JOIN user_account u ON u.user_id = d.user_id
              LEFT JOIN general_practitioner gp ON gp.doctor_id = d.doctor_id

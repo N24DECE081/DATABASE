@@ -13,5 +13,14 @@ def counts():
          (SELECT COUNT(*) FROM appointment WHERE status = 'Scheduled') AS scheduled""", one=True)
 
 
+def appointment_reports():
+    statuses = query("SELECT status, COUNT(*) AS total FROM appointment GROUP BY status ORDER BY status")
+    daily = query("""SELECT DATE(appointment_date_time) AS report_date, COUNT(*) AS total
+                     FROM appointment
+                     WHERE appointment_date_time >= DATE_SUB(CURRENT_DATE(), INTERVAL 29 DAY)
+                     GROUP BY DATE(appointment_date_time) ORDER BY report_date""")
+    return statuses, daily
+
+
 def set_status(user_id, status):
     return execute("UPDATE user_account SET account_status = %s WHERE user_id = %s", (status, user_id))

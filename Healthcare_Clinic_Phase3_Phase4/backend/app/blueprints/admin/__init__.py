@@ -19,6 +19,14 @@ def dashboard():
                            appointments=appointments.list_for(g.user)[:8], form=AccountStatusForm())
 
 
+@bp.get("/reports")
+@require_roles("ADMIN")
+def reports():
+    statuses, daily = admin.appointment_reports()
+    return render_template("admin/reports.html", statuses=statuses, daily=daily,
+                           counts=admin.counts())
+
+
 @bp.route("/accounts/new", methods=["GET", "POST"])
 @require_roles("ADMIN")
 def create_account():

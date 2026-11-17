@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1480" viewBox="0 0 1200 1480" role="img" aria-labelledby="title desc">
+  <title id="title">Luồng dữ liệu đặt lịch của bệnh nhân TiTiMi</title>
+  <desc id="desc">Sơ đồ từ đăng nhập, tải hồ sơ, tra cứu lịch trống, tạo lịch đến hiển thị lịch theo quyền bệnh nhân.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#52708b"/></marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#173b59" flood-opacity=".10"/></filter>
+  </defs>
+  <rect width="1200" height="1480" fill="#f4f8fb"/>
+  <rect x="0" y="0" width="1200" height="178" fill="#173f60"/>
+  <text x="72" y="62" fill="#ff8fb3" font-family="Arial, Segoe UI, sans-serif" font-size="18" font-weight="700" letter-spacing="2">TiTiMi · SƠ ĐỒ NGHIỆP VỤ</text>
+  <text x="72" y="119" fill="#ffffff" font-family="Arial, Segoe UI, sans-serif" font-size="37" font-weight="700">Luồng dữ liệu · Bệnh nhân</text>
+  <text x="72" y="153" fill="#d8e7f2" font-family="Arial, Segoe UI, sans-serif" font-size="17">Đặt lịch khám qua hồ sơ đăng nhập và giờ trống trong database</text>
+
+  <g stroke="#52708b" stroke-width="3" marker-end="url(#arrow)">
+    <path d="M600 322V350"/><path d="M600 478V506"/><path d="M600 634V662"/>
+    <path d="M600 790V818"/><path d="M600 946V974"/><path d="M600 1102V1130"/>
+    <path d="M600 1258V1286"/>
+  </g>
+  <g filter="url(#shadow)" font-family="Arial, Segoe UI, sans-serif">
+    <rect x="170" y="204" width="860" height="118" rx="18" fill="#ffffff" stroke="#d8e4ee"/>
+    <circle cx="220" cy="263" r="25" fill="#e7f2fb"/><text x="220" y="271" text-anchor="middle" fill="#17628e" font-size="20" font-weight="700">1</text>
+    <text x="268" y="250" fill="#173b59" font-size="22" font-weight="700">Bệnh nhân đăng nhập</text>
+    <text x="268" y="283" fill="#546b7e" font-size="16">Phiên đăng nhập gắn với user_id; không nhập lại thông tin hồ sơ khi đặt lịch.</text>
+    <rect x="822" y="231" width="176" height="32" rx="16" fill="#eef3f7"/><text x="910" y="252" text-anchor="middle" fill="#536c80" font-size="14">user_account</text>
+
+    <rect x="170" y="360" width="860" height="118" rx="18" fill="#ffffff" stroke="#d8e4ee"/>
+    <circle cx="220" cy="419" r="25" fill="#e7f2fb"/><text x="220" y="427" text-anchor="middle" fill="#17628e" font-size="20" font-weight="700">2</text>
+    <text x="268" y="406" fill="#173b59" font-size="22" font-weight="700">Tải hồ sơ bệnh nhân từ tài khoản</text>
+    <text x="268" y="439" fill="#546b7e" font-size="16">GET /api/portal/me → tìm patient theo user_id đang đăng nhập.</text>
+    <rect x="831" y="387" width="167" height="32" rx="16" fill="#e8f6f1"/><text x="914" y="408" text-anchor="middle" fill="#28775c" font-size="14">patient</text>
+
+    <rect x="170" y="516" width="860" height="118" rx="18" fill="#ffffff" stroke="#d8e4ee"/>
+    <circle cx="220" cy="575" r="25" fill="#e7f2fb"/><text x="220" y="583" text-anchor="middle" fill="#17628e" font-size="20" font-weight="700">3</text>
+    <text x="268" y="562" fill="#173b59" font-size="22" font-weight="700">Chọn hình thức, chuyên khoa và bác sĩ</text>
+    <text x="268" y="595" fill="#546b7e" font-size="16">Wizard Patient: 5 bước — loại khám → chuyên khoa → bác sĩ → ngày/giờ → xác nhận.</text>
+
+    <rect x="170" y="672" width="860" height="118" rx="18" fill="#ffffff" stroke="#d8e4ee"/>
+    <circle cx="220" cy="731" r="25" fill="#e7f2fb"/><text x="220" y="739" text-anchor="middle" fill="#17628e" font-size="20" font-weight="700">4</text>
+    <text x="268" y="718" fill="#173b59" font-size="22" font-weight="700">Tải bác sĩ và khung giờ còn trống</text>
+    <text x="268" y="751" fill="#546b7e" font-size="16">GET /api/appointments/options dùng doctor, specialty, doctor_schedule và lịch hẹn hiện có.</text>
+    <rect x="824" y="759" width="174" height="24" rx="12" fill="#fff2df"/><text x="911" y="776" text-anchor="middle" fill="#93621c" font-size="13">chỉ ca còn trống</text>
+
+    <rect x="170" y="828" width="860" height="118" rx="18" fill="#ffffff" stroke="#d8e4ee"/>
+    <circle cx="220" cy="887" r="25" fill="#e7f2fb"/><text x="220" y="895" text-anchor="middle" fill="#17628e" font-size="20" font-weight="700">5</text>
+    <text x="268" y="874" fill="#173b59" font-size="22" font-weight="700">Bệnh nhân rà soát và xác nhận</text>
+    <text x="268" y="907" fill="#546b7e" font-size="16">POST /api/appointments gửi schedule, giờ bắt đầu, thời lượng, hình thức khám.</text>
+
+    <rect x="170" y="984" width="860" height="118" rx="18" fill="#fffaf0" stroke="#efd9a7"/>
+    <circle cx="220" cy="1043" r="25" fill="#ffedc9"/><text x="220" y="1051" text-anchor="middle" fill="#94631d" font-size="20" font-weight="700">6</text>
+    <text x="268" y="1030" fill="#5d471f" font-size="22" font-weight="700">Backend kiểm tra lại trước khi ghi</text>
+    <text x="268" y="1063" fill="#756344" font-size="16">appointments.book(): lấy patient_id từ phiên đăng nhập; khóa bác sĩ/ca, kiểm tra ca, thời lượng và trùng lịch.</text>
+
+    <rect x="170" y="1140" width="860" height="118" rx="18" fill="#eef8f4" stroke="#c7e5d8"/>
+    <circle cx="220" cy="1199" r="25" fill="#d7f0e4"/><text x="220" y="1207" text-anchor="middle" fill="#28775c" font-size="20" font-weight="700">7</text>
+    <text x="268" y="1186" fill="#214c3d" font-size="22" font-weight="700">Lưu một lịch hẹn thật vào database</text>
+    <text x="268" y="1219" fill="#526c61" font-size="16">appointment liên kết patient_id, doctor_id, schedule_id; trạng thái ban đầu Scheduled.</text>
+
+    <rect x="170" y="1296" width="860" height="118" rx="18" fill="#ffffff" stroke="#d8e4ee"/>
+    <circle cx="220" cy="1355" r="25" fill="#e7f2fb"/><text x="220" y="1363" text-anchor="middle" fill="#17628e" font-size="20" font-weight="700">8</text>
+    <text x="268" y="1342" fill="#173b59" font-size="22" font-weight="700">Lịch hiện trong danh sách theo quyền</text>
+    <text x="268" y="1375" fill="#546b7e" font-size="16">Patient thấy lịch của mình; Doctor thấy lịch được phân công; Admin thấy toàn bộ.</text>
+  </g>
+  <text x="600" y="1450" text-anchor="middle" fill="#637b8e" font-family="Arial, Segoe UI, sans-serif" font-size="14">Nguồn: Flask routes, appointment service, repositories và schema hiện có của đồ án</text>
+</svg>

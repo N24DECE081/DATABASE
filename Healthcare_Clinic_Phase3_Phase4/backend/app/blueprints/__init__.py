@@ -5,7 +5,7 @@ from importlib import import_module
 
 MODULE_NAMES = (
     "auth", "patients", "doctors", "schedules", "appointments",
-    "consultations", "medical_history", "prescriptions", "medications", "admin",
+    "appointment_api", "consultations", "medical_history", "prescriptions", "medications", "admin",
 )
 
 
