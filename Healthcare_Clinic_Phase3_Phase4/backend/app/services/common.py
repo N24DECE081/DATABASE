@@ -28,3 +28,11 @@ def found(value):
     if value is None:
         abort(404)
     return value
+
+
+def format_person_name(name):
+    """Normalize names to Title Case, stripping extra spaces (e.g. 'nGuyen vaN cu' -> 'Nguyen Van Cu')."""
+    if not name:
+        return ""
+    return " ".join(word.capitalize() for word in str(name).strip().split())
+

@@ -749,10 +749,16 @@ p {
   letter-spacing: -1.3px;
 }
 
+.login-layout {
+  min-height: auto;
+  overflow: visible;
+}
+
 .login-card {
   min-width: 0;
-  padding: 64px 48px;
+  padding: 40px 48px;
   background: #fff;
+  justify-content: flex-start;
 }
 
 .login-card form,
@@ -984,5 +990,127 @@ p {
 
   .link-button {
     font-size: 10px;
+  }
+}
+
+/* Patient Registration Portal */
+.register-layout {
+  display: grid;
+  grid-template-columns: 0.95fr 1.35fr;
+  min-height: 720px;
+  max-width: 1140px;
+  margin: 0 auto;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.register-card {
+  padding: 48px 45px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  background: linear-gradient(180deg, #fff 0%, #f9fbff 100%);
+  overflow-y: auto;
+}
+
+.register-card h2 {
+  font-size: 28px;
+  margin-bottom: 8px;
+  color: var(--navy);
+}
+
+.register-card > p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.form-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--primary-blue);
+  margin: 22px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(23, 63, 95, 0.08);
+}
+
+.form-section-title:first-of-type {
+  margin-top: 6px;
+}
+
+.register-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+}
+
+.register-grid .field {
+  margin-bottom: 0;
+}
+
+.register-grid .field.wide {
+  grid-column: 1 / -1;
+}
+
+.gender-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.gender-choice-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.gender-choice-card:hover {
+  border-color: var(--primary-blue);
+  background: #f0f7fc;
+}
+
+.gender-choice-card input[type="radio"] {
+  accent-color: var(--primary-blue);
+  cursor: pointer;
+}
+
+.auth-switch {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--line);
+  text-align: center;
+}
+
+.auth-switch p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+@media (max-width: 900px) {
+  .register-layout {
+    grid-template-columns: 1fr;
+  }
+  .register-card {
+    padding: 36px 24px;
+  }
+  .register-grid {
+    grid-template-columns: 1fr;
   }
 }

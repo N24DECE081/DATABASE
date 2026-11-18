@@ -1,6 +1,5 @@
 "use strict";
-const passwordToggle = document.querySelector(".password-toggle");
-if (passwordToggle) {
+document.querySelectorAll(".password-toggle").forEach(passwordToggle => {
   const targetId = passwordToggle.dataset.target;
   const passwordInput = document.getElementById(targetId);
   if (passwordInput) {
@@ -12,8 +11,38 @@ if (passwordToggle) {
       passwordToggle.setAttribute("aria-pressed", String(isHidden));
     });
   }
+});
+// Auto-format personal names to Title Case (e.g. 'nGuyen vaN cu' -> 'Nguyen Van Cu')
+const formatPersonName = str => {
+  if (!str) return "";
+  return str.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+};
+
+document.querySelectorAll('input[name="full_name"], input[name="emergency_contact_name"]').forEach(input => {
+  input.addEventListener("blur", () => {
+    if (input.value.trim()) {
+      input.value = formatPersonName(input.value);
+    }
+  });
+  input.addEventListener("change", () => {
+    if (input.value.trim()) {
+      input.value = formatPersonName(input.value);
+    }
+  });
+});
+
+// Restrict date of birth to past dates only (cannot be today or future)
+const dobInput = document.querySelector('input[name="date_of_birth"]');
+if (dobInput) {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yyyy = yesterday.getFullYear();
+  const mm = String(yesterday.getMonth() + 1).padStart(2, "0");
+  const dd = String(yesterday.getDate()).padStart(2, "0");
+  dobInput.max = `${yyyy}-${mm}-${dd}`;
 }
-// Toggle role-specific profile fields without changing server-side validation.
+
+
 const role = document.querySelector('select[name="role"]');
 if (role) {
   const sections = {
