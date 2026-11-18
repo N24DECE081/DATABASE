@@ -1,0 +1,113 @@
+{% extends 'base.html' %}{% from 'shared/macros.html' import field_row %}
+{% block title %}Đăng ký tài khoản bệnh nhân · TiTiMi Clinic{% endblock %}
+{% block content %}<div class="register-layout">
+<section class="login-story">
+  <a class="brand" href="{{ url_for('index') }}">
+    <span class="brand-mark" aria-hidden="true"><img src="{{ url_for('static',filename='img/titimi-logo.png') }}" alt=""></span>
+    <span>TiTiMi<span class="brand-sub">CLINIC & TELEMEDICINE</span></span>
+  </a>
+  <div>
+    <p class="eyebrow">CHĂM SÓC TOÀN DIỆN</p>
+    <h1>Khởi đầu hành trình<br>sức khỏe cùng TiTiMi.</h1>
+    <p>Đăng ký hồ sơ điện tử để đặt lịch khám trực tiếp tại phòng khám, kết nối bác sĩ từ xa và lưu trữ bệnh sử an toàn, trọn đời.</p>
+    <div class="story-tags">
+      <span>Đặt lịch nhanh chóng</span>
+      <span>Tư vấn Google Meet</span>
+      <span>Bệnh sử & Đơn thuốc</span>
+    </div>
+  </div>
+  <small>Dành riêng cho bệnh nhân · Bác sĩ và nhân sự y tế sử dụng tài khoản do phòng khám cấp nội bộ.</small>
+</section>
+
+<section class="register-card">
+  <p class="eyebrow">TẠO HỒ SƠ MỚI</p>
+  <h2>Đăng ký bệnh nhân</h2>
+  <p>Vui lòng điền thông tin để kích hoạt tài khoản và khởi tạo hồ sơ y tế của bạn.</p>
+
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="form-section-title">1. Tài khoản đăng nhập</div>
+    <div class="register-grid">
+      <div class="field wide">
+        {{ form.username.label }}
+        {{ form.username(class_='control', placeholder='Ví dụ: nguyen_van_a', **{'aria-invalid':'true' if form.username.errors else 'false'}) }}
+        {% for error in form.username.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="field">
+        <label for="password">Mật khẩu</label>
+        <div class="password-field">
+          <input class="control" id="password" name="password" type="password" value="" placeholder="Tối thiểu 8 ký tự" aria-invalid="{{ 'true' if form.password.errors else 'false' }}" required>
+          <button class="password-toggle" type="button" aria-label="Hiện mật khẩu" data-target="password">Hiện</button>
+        </div>
+        {% for error in form.password.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="field">
+        <label for="confirm_password">Xác nhận mật khẩu</label>
+        <div class="password-field">
+          <input class="control" id="confirm_password" name="confirm_password" type="password" value="" placeholder="Nhập lại mật khẩu" aria-invalid="{{ 'true' if form.confirm_password.errors else 'false' }}" required>
+          <button class="password-toggle" type="button" aria-label="Hiện mật khẩu" data-target="confirm_password">Hiện</button>
+        </div>
+        {% for error in form.confirm_password.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <div class="form-section-title">2. Thông tin cá nhân</div>
+    <div class="register-grid">
+      <div class="field wide">
+        {{ form.full_name.label }}
+        {{ form.full_name(class_='control', placeholder='Họ và tên đầy đủ', **{'aria-invalid':'true' if form.full_name.errors else 'false'}) }}
+        {% for error in form.full_name.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+      </div>
+      {{ field_row(form.date_of_birth) }}
+      <div class="field">
+        <label>Giới tính</label>
+        <div class="gender-choice-grid">
+          {% for subfield in form.gender %}
+            <label class="gender-choice-card">
+              {{ subfield }}
+              <span>{{ subfield.label.text }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        {% for error in form.gender.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+      </div>
+      {{ field_row(form.phone) }}
+      {{ field_row(form.email) }}
+      <div class="field wide">
+        {{ form.address.label }}
+        {{ form.address(class_='control', placeholder='Số nhà, đường, phường/xã, quận/huyện', **{'aria-invalid':'true' if form.address.errors else 'false'}) }}
+        {% for error in form.address.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <div class="form-section-title">3. Người liên hệ khẩn cấp</div>
+    <div class="register-grid">
+      {{ field_row(form.emergency_contact_name) }}
+      {{ field_row(form.emergency_contact_phone) }}
+    </div>
+
+    <div class="form-section-title">4. Thông tin y tế bổ sung (Tùy chọn)</div>
+    <div class="register-grid">
+      <div class="field wide">
+        {{ field_row(form.blood_type) }}
+      </div>
+      <div class="field wide">
+        {{ field_row(form.allergies) }}
+      </div>
+      <div class="field wide">
+        {{ field_row(form.chronic_diseases) }}
+      </div>
+    </div>
+
+    <div class="form-actions" style="margin-top: 24px;">
+      {{ form.submit(class_='button full') }}
+    </div>
+  </form>
+
+  <div class="auth-switch">
+    <p>Đã có tài khoản phòng khám?</p>
+    <a class="text-link" href="{{ url_for('auth.login') }}">Đăng nhập ngay →</a>
+  </div>
+</section>
+</div>{% endblock %}

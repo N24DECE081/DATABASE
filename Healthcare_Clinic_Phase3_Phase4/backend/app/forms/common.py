@@ -18,3 +18,11 @@ def https_url(form, field):
         value = urlsplit(field.data)
         if value.scheme != "https" or not value.netloc or value.username or value.password:
             raise ValidationError("Liên kết cuộc gọi phải là URL https hợp lệ.")
+
+
+def format_person_name(name):
+    """Capitalize each word and remove excess whitespace (e.g. 'nGuyen vaN cu' -> 'Nguyen Van Cu')."""
+    if not name:
+        return ""
+    return " ".join(word.capitalize() for word in str(name).strip().split())
+
