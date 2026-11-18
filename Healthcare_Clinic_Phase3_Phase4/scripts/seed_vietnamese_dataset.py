@@ -1,7 +1,6 @@
 """Seed 2,000 fictional Vietnamese clinic records into an empty schema."""
 from datetime import date, datetime, time, timedelta, timezone
 import argparse
-import hashlib
 import os
 from pathlib import Path
 import re
@@ -94,12 +93,6 @@ def email_address(name, ordinal):
     slug = normalized.encode("ascii", "ignore").decode("ascii").lower()
     slug = re.sub(r"[^a-z0-9]+", "", slug)
     return f"{slug}{ordinal:03d}@gmail.com"
-
-
-def meeting_url(index):
-    digest = hashlib.sha256(f"clinic-session-{index}".encode("ascii")).digest()
-    letters = "".join(chr(ord("a") + byte % 26) for byte in digest[:10])
-    return f"https://meet.google.com/{letters[:3]}-{letters[3:7]}-{letters[7:10]}"
 
 
 def build_dataset(today=None):
@@ -265,8 +258,7 @@ def build_dataset(today=None):
             "session_id": session_id, "appointment_id": appointment["appointment_id"],
             "start_time": start, "end_time": end, "actual_duration_minutes": duration,
             "session_type": "Virtual" if appointment["appointment_type"] == "Telemedicine" else "In-person",
-            "meeting_url": meeting_url(index)
-            if appointment["appointment_type"] == "Telemedicine" else None,
+            "meeting_url": None,
             "diagnosis_notes": "Bác sĩ đã trao đổi triệu chứng, tiền sử và kế hoạch theo dõi.",
         })
         if index <= 300:

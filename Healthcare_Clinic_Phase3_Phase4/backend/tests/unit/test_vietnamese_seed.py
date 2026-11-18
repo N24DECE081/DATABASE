@@ -37,8 +37,7 @@ def test_vietnamese_dataset_has_2000_relationally_consistent_rows():
     )
     assert all("đường" in row["address"] for row in patients)
     assert all(len(row["emergency_contact_name"].split()) == 3 for row in patients)
-    assert all(row["meeting_url"] is None or row["meeting_url"].startswith("https://meet.google.com/")
-               for row in sessions.values())
+    assert all(row["meeting_url"] is None for row in sessions.values())
 
     follow_ups = [row for row in rows["appointment"] if row["follow_up_from_appt_id"]]
     assert len(follow_ups) == 40
