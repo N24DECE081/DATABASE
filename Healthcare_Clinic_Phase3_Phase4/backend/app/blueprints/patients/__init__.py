@@ -4,13 +4,21 @@ from flask import Blueprint
 
 bp = Blueprint("patients", __name__, url_prefix="/patients")
 
-from flask import flash, g, redirect, render_template, request, url_for
+from pathlib import Path
+
+from flask import current_app, flash, g, redirect, render_template, request, send_from_directory, url_for
 from ...forms.patients import ProfileForm
 from ...security import require_roles
 from ...services import patients, appointments, medical_history, prescriptions
 from ...repositories.appointments import list_for
 from ...utils.forms import data_for
 from ...services.common import now
+
+
+@bp.get("/portal")
+@require_roles("PATIENT")
+def portal():
+    return send_from_directory(Path(current_app.static_folder) / "patient-portal", "index.html")
 
 
 @bp.get("/manage")

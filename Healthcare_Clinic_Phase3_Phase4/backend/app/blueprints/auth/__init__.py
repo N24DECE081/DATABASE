@@ -41,7 +41,7 @@ def register():
             session["user_id"] = user.user_id
             session.permanent = True
             flash(f"Chào mừng {patient.full_name}! Hồ sơ bệnh nhân của bạn đã được khởi tạo thành công.", "success")
-            return redirect(url_for("patients.dashboard"))
+            return redirect(url_for("patients.portal"))
         except BusinessError as exc:
             msg = str(exc)
             if "Tên đăng nhập" in msg:
