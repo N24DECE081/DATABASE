@@ -71,6 +71,7 @@ Tài khoản cho bộ nhỏ mặc định:
 
 ## Luồng chức năng
 
+0. Bệnh nhân mới có thể tạo tài khoản tại `/auth/register`; đăng ký thành công sẽ tự đăng nhập và mở cổng bệnh nhân.
 1. Patient xem bác sĩ/chuyên khoa và ca khả dụng, chọn giờ hoặc bác sĩ mong muốn, đặt lịch.
 2. Doctor xem lịch được phân công, check-in, bắt đầu phiên khám với EndTime NULL.
 3. Doctor kết thúc phiên khám: EndTime được ghi, thời lượng tính lại, appointment chuyển Completed.

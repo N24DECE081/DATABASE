@@ -19,7 +19,12 @@ def _save_profile(profile, data):
     allowed = {"full_name", "date_of_birth", "gender", "phone", "email", "address", "blood_type",
                "allergies", "chronic_diseases", "emergency_contact_name", "emergency_contact_phone"}
     ensure(set(data) <= allowed, "Trường hồ sơ không hợp lệ.")
-    ensure(data["date_of_birth"] <= now().date(), "Ngày sinh không được ở tương lai.")
+    if "date_of_birth" in data and data["date_of_birth"] is not None:
+        dob = data["date_of_birth"]
+        if isinstance(dob, str):
+            from datetime import date
+            dob = date.fromisoformat(dob)
+        ensure(dob <= now().date(), "Ngày sinh không được ở tương lai.")
     with transaction():
         return patients.update(replace(profile, **data))
 
