@@ -252,6 +252,18 @@ function StatCard({
   );
 }
 
+function formatApptTime(a?: { time?: string; rawDateTime?: string } | null): string {
+  if (!a) return "--:--";
+  if (a.rawDateTime) {
+    const match = a.rawDateTime.match(/\s(\d{2}:\d{2})/);
+    if (match) return match[1];
+  }
+  if (a.time && a.time.includes(":") && !a.time.includes("NaN") && !a.time.toLowerCase().includes("nov")) {
+    return a.time;
+  }
+  return a.time || "--:--";
+}
+
 function EmptyState() {
   return <div className="empty">Không tìm thấy dữ liệu phù hợp. Hãy thử thay đổi bộ lọc.</div>;
 }
@@ -709,7 +721,7 @@ function Dashboard({
               </span>
               <div>
                 <b>{a.patient} · BS. {a.doctor}</b>
-                <small>{a.date} lúc {a.time} · {a.specialty} ({a.reason})</small>
+                <small>{a.date} lúc {formatApptTime(a)} · {a.specialty} ({a.reason})</small>
               </div>
               <StatusBadge status={a.status} />
             </div>
@@ -2513,7 +2525,7 @@ function AppointmentDetail({
           ["Bác sĩ", `BS. ${appointment.doctor}`],
           ["Chuyên khoa", appointment.specialty],
           ["Ngày khám", appointment.date],
-          ["Giờ khám", appointment.time],
+          ["Giờ khám", formatApptTime(appointment)],
           ["Hình thức", appointment.visitType || "Khám trực tiếp"],
           ["Loại lịch", appointment.isFollowUp ? "Tái khám" : "Khám thông thường"],
           ["Phí khám", appointment.fee ? `${appointment.fee.toLocaleString("vi-VN")} ₫` : "250.000 ₫"],
@@ -2736,7 +2748,7 @@ function AppointmentsPage({
                   </td>
                   <td>
                     <b>{a.date}</b>
-                    <small className="block" style={{ color: "#64748b" }}>{a.time}</small>
+                    <small className="block" style={{ color: "#64748b" }}>{formatApptTime(a)}</small>
                   </td>
                   <td>
                     {Boolean(a.isFollowUp) && <span className="follow-up-tag">Tái khám</span>}
@@ -2883,17 +2895,6 @@ function getAppointmentHour(a: { time?: string; rawDateTime?: string }): number 
     if (!isNaN(h)) return h;
   }
   return -1;
-}
-
-function formatApptTime(a: { time?: string; rawDateTime?: string }): string {
-  if (a.rawDateTime) {
-    const match = a.rawDateTime.match(/\s(\d{2}:\d{2})/);
-    if (match) return match[1];
-  }
-  if (a.time && a.time.includes(":") && !a.time.includes("NaN") && !a.time.toLowerCase().includes("nov")) {
-    return a.time;
-  }
-  return a.time || "--:--";
 }
 
 function SchedulePage({
