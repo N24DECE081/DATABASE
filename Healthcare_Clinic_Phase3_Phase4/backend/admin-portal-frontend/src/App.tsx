@@ -502,16 +502,18 @@ function DataPageHeader({
 }) {
   return (
     <div className="data-header">
-      <div>
-        <span className="eyebrow">{eyebrow}</span>
-        <h2>{title}</h2>
-        <p>{description}</p>
+      <div className="data-header-text">
+        <span className="data-header-eyebrow">{eyebrow}</span>
+        <h1 className="data-header-title">{title}</h1>
+        <p className="data-header-desc">{description}</p>
       </div>
       {action && onAction && (
-        <Button onClick={onAction}>
-          <Icon name="plus" size={18} />
-          {action}
-        </Button>
+        <div className="data-header-action">
+          <button type="button" className="data-header-btn" onClick={onAction}>
+            <Icon name="plus" size={17} />
+            <span>{action}</span>
+          </button>
+        </div>
       )}
     </div>
   );
@@ -2854,6 +2856,46 @@ function AppointmentsPage({
 // SchedulePage (Work Shifts)
 // --------------------------------------------------------------------------
 
+const TIME_SLOTS = [
+  "08:00",
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+  "19:00",
+  "20:00",
+];
+
+function getAppointmentHour(a: { time?: string; rawDateTime?: string }): number {
+  if (a.rawDateTime) {
+    const match = a.rawDateTime.match(/\s(\d{2}):/);
+    if (match) return parseInt(match[1], 10);
+  }
+  if (a.time) {
+    const parts = a.time.split(":");
+    const h = parseInt(parts[0], 10);
+    if (!isNaN(h)) return h;
+  }
+  return -1;
+}
+
+function formatApptTime(a: { time?: string; rawDateTime?: string }): string {
+  if (a.rawDateTime) {
+    const match = a.rawDateTime.match(/\s(\d{2}:\d{2})/);
+    if (match) return match[1];
+  }
+  if (a.time && a.time.includes(":") && !a.time.includes("NaN") && !a.time.toLowerCase().includes("nov")) {
+    return a.time;
+  }
+  return a.time || "--:--";
+}
+
 function SchedulePage({
   schedules,
   appointments,
@@ -2902,6 +2944,7 @@ function SchedulePage({
       const formatted = `${dayStr}/${monthStr}`;
       return {
         label: `${names[i]}, ${formatted}`,
+        dayName: names[i],
         dateStr: formatted,
         iso,
         isToday: d.toDateString() === new Date().toDateString(),
@@ -3008,69 +3051,93 @@ function SchedulePage({
         </div>
 
         {view === "Tuần" ? (
-          <div className="week-grid">
-            <div className="time-col">
-              <span />
-              {["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"].map((t) => (
-                <small key={t}>{t}</small>
-              ))}
-            </div>
-            {weekDays.map((d, i) => {
-              const dayAppts = filteredAppointments.filter((a) => {
-                if (a.rawDateTime && a.rawDateTime.startsWith(d.iso)) return true;
-                if (a.date && (a.date.startsWith(d.dateStr) || a.date === d.iso)) return true;
-                return false;
-              });
-              const daySchedules = schedules.filter((s) => {
-                if (selectedDoctor !== "Tất cả bác sĩ" && s.doctorName !== selectedDoctor.replace("BS. ", "")) return false;
-                if (selectedSpecialty !== "Tất cả chuyên khoa" && s.specialty !== selectedSpecialty) return false;
-                return s.date === d.iso || s.formattedDate?.startsWith(d.dateStr);
-              });
-              return (
-                <div className={`day-col ${d.isToday ? "today" : ""}`} key={d.label}>
-                  <div className="day-header">
-                    <b>{d.label.split(", ")[0]}</b>
-                    <span>{d.label.split(", ")[1]}</span>
-                  </div>
-                  {daySchedules.length > 0 && (
-                    <div
-                      style={{
-                        padding: "3px 6px",
-                        margin: "4px",
-                        background: "#f0fdf4",
-                        border: "1px dashed #86efac",
-                        borderRadius: "5px",
-                        fontSize: "11px",
-                        color: "#166534",
-                        textAlign: "center",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                      title={`Có ${daySchedules.length} ca trực trong ngày`}
-                    >
-                      ⏰ {daySchedules.length} ca trực
-                    </div>
-                  )}
-                  {dayAppts.slice(0, 5).map((a, j) => (
-                    <button
-                      key={a.id}
-                      className={`cal-event ${a.status === "Chờ xác nhận" ? "pending" : a.status === "Hoàn thành" ? "done" : ""}`}
-                      style={{ top: `${66 + (daySchedules.length > 0 ? 28 : 0) + j * 75}px` }}
-                      onClick={() => onViewAppointment(a)}
-                    >
-                      <b>{a.time} · {a.patient}</b>
-                      <span>BS. {a.doctor}</span>
-                    </button>
-                  ))}
-                  {dayAppts.length === 0 && daySchedules.length === 0 && (
-                    <small style={{ display: "block", marginTop: "1.5rem", color: "#94a3b8", textAlign: "center", fontSize: "12px" }}>
-                      Trống
-                    </small>
-                  )}
-                </div>
-              );
-            })}
+          <div className="week-calendar-container">
+            <table className="week-calendar-table">
+              <thead>
+                <tr>
+                  <th className="time-header-col">Khung giờ</th>
+                  {weekDays.map((d) => {
+                    const daySchedules = schedules.filter((s) => {
+                      if (selectedDoctor !== "Tất cả bác sĩ" && s.doctorName !== selectedDoctor.replace("BS. ", "")) return false;
+                      if (selectedSpecialty !== "Tất cả chuyên khoa" && s.specialty !== selectedSpecialty) return false;
+                      return s.date === d.iso || s.formattedDate?.startsWith(d.dateStr);
+                    });
+                    return (
+                      <th key={d.label} className={d.isToday ? "today-header" : ""}>
+                        <div className={`day-header-cell ${d.isToday ? "is-today" : ""}`}>
+                          <b>{d.dayName}</b>
+                          <span>{d.dateStr}</span>
+                          {daySchedules.length > 0 ? (
+                            <span
+                              className="day-shift-pill"
+                              title={daySchedules.map((s) => `${s.doctorName} (${s.startTime} - ${s.endTime})`).join(", ")}
+                            >
+                              ⏰ {daySchedules.length} ca trực
+                            </span>
+                          ) : (
+                            <span className="day-shift-pill off">Không có ca</span>
+                          )}
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {TIME_SLOTS.map((slot) => {
+                  const slotHour = parseInt(slot.split(":")[0], 10);
+                  return (
+                    <tr key={slot}>
+                      <td className="time-label-cell">
+                        <span>{slot}</span>
+                      </td>
+                      {weekDays.map((d) => {
+                        const dayAppts = filteredAppointments.filter((a) => {
+                          if (a.rawDateTime && a.rawDateTime.startsWith(d.iso)) return true;
+                          if (a.date && (a.date.startsWith(d.dateStr) || a.date === d.iso)) return true;
+                          return false;
+                        });
+                        const slotAppts = dayAppts.filter((a) => getAppointmentHour(a) === slotHour);
+                        return (
+                          <td key={d.label} className={`slot-cell ${d.isToday ? "today-slot" : ""}`}>
+                            {slotAppts.length > 0 ? (
+                              <div className="slot-cell-inner">
+                                {slotAppts.map((a) => {
+                                  const statusClass =
+                                    a.status === "Chờ xác nhận"
+                                      ? "pending"
+                                      : a.status === "Hoàn thành"
+                                      ? "done"
+                                      : a.status === "Đã xác nhận"
+                                      ? "confirmed"
+                                      : "other";
+                                  const formattedTime = formatApptTime(a);
+                                  return (
+                                    <div
+                                      key={a.id}
+                                      className={`cal-slot-card ${statusClass}`}
+                                      onClick={() => onViewAppointment(a)}
+                                      title={`${formattedTime} - ${a.patient} (BS. ${a.doctor}) - ${a.status}`}
+                                    >
+                                      <div className="cal-card-top">
+                                        <span className="cal-time-tag">{formattedTime}</span>
+                                        <span className="cal-status-dot" />
+                                      </div>
+                                      <strong className="cal-patient-name">{a.patient}</strong>
+                                      <span className="cal-doctor-name">BS. {a.doctor}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         ) : (
           <div className="table-wrap" style={{ padding: "1rem" }}>
