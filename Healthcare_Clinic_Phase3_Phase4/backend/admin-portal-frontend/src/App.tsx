@@ -2041,122 +2041,322 @@ function CreateAppointmentModal({
       <div style={{ minHeight: "320px", marginTop: "1rem" }}>
         {step === 1 && (
           <div>
-            <h4>Bước 1: Chọn bệnh nhân</h4>
+            <h4 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "0.5rem" }}>Bước 1: Chọn bệnh nhân</h4>
             <SearchBar value={patientQuery} onChange={setPatientQuery} placeholder="Tìm tên, mã hoặc SĐT bệnh nhân..." />
-            <div className="select-list" style={{ maxHeight: "240px", overflowY: "auto", marginTop: "0.75rem" }}>
-              {patientResults.map((p) => (
-                <div
-                  key={p.id}
-                  className={`select-item ${patient?.id === p.id ? "selected" : ""}`}
-                  onClick={() => setPatient(p)}
-                  style={{
-                    padding: "0.75rem",
-                    border: "1px solid",
-                    borderColor: patient?.id === p.id ? "#286A9B" : "#e2e8f0",
-                    borderRadius: "8px",
-                    marginBottom: "0.5rem",
-                    cursor: "pointer",
-                    background: patient?.id === p.id ? "#f0f7fc" : "#fff",
-                  }}
-                >
-                  <b>{p.name}</b> ({p.id}) · SĐT: {p.phone}
-                </div>
-              ))}
-              {!patientResults.length && <p>Không tìm thấy bệnh nhân đang hoạt động.</p>}
+            <div className="select-list" style={{ maxHeight: "260px", overflowY: "auto", marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {patientResults.map((p) => {
+                const initials = p.name.split(" ").filter(Boolean).slice(-2).map((w: string) => w[0]).join("").toUpperCase() || "BN";
+                const isSelected = patient?.id === p.id;
+                return (
+                  <div
+                    key={p.id}
+                    className={`select-item ${isSelected ? "selected" : ""}`}
+                    onClick={() => setPatient(p)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "0.85rem 1rem",
+                      border: "1.5px solid",
+                      borderColor: isSelected ? "var(--primary)" : "#e2e8f0",
+                      borderRadius: "10px",
+                      cursor: "pointer",
+                      background: isSelected ? "#f0f7fc" : "#fff",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div
+                        style={{
+                          width: "38px",
+                          height: "38px",
+                          borderRadius: "50%",
+                          background: isSelected ? "var(--primary)" : "var(--light-blue)",
+                          color: isSelected ? "#fff" : "var(--navy)",
+                          display: "grid",
+                          placeItems: "center",
+                          fontWeight: 700,
+                          fontSize: "12px",
+                        }}
+                      >
+                        {initials}
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <b style={{ fontSize: "13.5px", color: "var(--text)" }}>{p.name}</b>
+                          <span style={{ fontSize: "11px", padding: "2px 7px", borderRadius: "4px", background: "#e2e8f0", color: "#334155", fontWeight: 600 }}>
+                            {p.id}
+                          </span>
+                        </div>
+                        <small style={{ color: "var(--muted)", display: "flex", alignItems: "center", gap: "6px", marginTop: "2px", fontSize: "12px" }}>
+                          <span>📞 {p.phone || "Chưa có SĐT"}</span>
+                          {p.email && <span>· ✉️ {p.email}</span>}
+                        </small>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        width: "22px",
+                        height: "22px",
+                        borderRadius: "50%",
+                        border: "2px solid",
+                        borderColor: isSelected ? "var(--primary)" : "#cbd5e1",
+                        background: isSelected ? "var(--primary)" : "transparent",
+                        display: "grid",
+                        placeItems: "center",
+                        color: "#fff",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {isSelected ? "✓" : ""}
+                    </div>
+                  </div>
+                );
+              })}
+              {!patientResults.length && (
+                <p style={{ textAlign: "center", padding: "1.5rem", color: "var(--muted)", fontSize: "13px" }}>
+                  Không tìm thấy bệnh nhân đang hoạt động phù hợp với từ khóa.
+                </p>
+              )}
             </div>
           </div>
         )}
 
         {step === 2 && (
           <div>
-            <h4>Bước 2: Chọn hình thức khám</h4>
+            <h4 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "0.5rem" }}>Bước 2: Chọn hình thức khám</h4>
             <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-              {(["Khám trực tiếp", "Tư vấn trực tuyến"] as const).map((vt) => (
-                <div
-                  key={vt}
-                  onClick={() => setVisitType(vt)}
-                  style={{
-                    flex: 1,
-                    padding: "1.5rem",
-                    border: "2px solid",
-                    borderColor: visitType === vt ? "#286A9B" : "#e2e8f0",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    background: visitType === vt ? "#f0f7fc" : "#fff",
-                    textAlign: "center",
-                  }}
-                >
-                  <Icon name={vt === "Khám trực tiếp" ? "doctor" : "calendar"} size={32} />
-                  <h4 style={{ marginTop: "0.5rem" }}>{vt}</h4>
-                  <small>{vt === "Khám trực tiếp" ? "Khám tại phòng khám TiTiMi" : "Video call bảo mật từ xa"}</small>
-                </div>
-              ))}
+              {(["Khám trực tiếp", "Tư vấn trực tuyến"] as const).map((vt) => {
+                const isSelected = visitType === vt;
+                return (
+                  <div
+                    key={vt}
+                    onClick={() => setVisitType(vt)}
+                    style={{
+                      flex: 1,
+                      padding: "1.5rem",
+                      border: "2px solid",
+                      borderColor: isSelected ? "var(--primary)" : "#e2e8f0",
+                      borderRadius: "12px",
+                      cursor: "pointer",
+                      background: isSelected ? "#f0f7fc" : "#fff",
+                      textAlign: "center",
+                      transition: "all 0.15s ease",
+                      position: "relative",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "50%",
+                        background: isSelected ? "var(--light-blue)" : "#f8fafc",
+                        color: isSelected ? "var(--primary)" : "var(--muted)",
+                        display: "grid",
+                        placeItems: "center",
+                        margin: "0 auto 0.75rem",
+                      }}
+                    >
+                      <Icon name={vt === "Khám trực tiếp" ? "doctor" : "calendar"} size={26} />
+                    </div>
+                    <h4 style={{ fontSize: "14px", fontWeight: 700, color: "var(--text)", marginBottom: "4px" }}>{vt}</h4>
+                    <small style={{ color: "var(--muted)", fontSize: "12px" }}>
+                      {vt === "Khám trực tiếp" ? "Khám trực tiếp tại TiTiMi Medical Centre" : "Tư vấn video call y tế từ xa bảo mật"}
+                    </small>
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "12px",
+                        right: "12px",
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        border: "2px solid",
+                        borderColor: isSelected ? "var(--primary)" : "#cbd5e1",
+                        background: isSelected ? "var(--primary)" : "transparent",
+                        display: "grid",
+                        placeItems: "center",
+                        color: "#fff",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {isSelected ? "✓" : ""}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
         {step === 3 && (
           <div>
-            <h4>Bước 3: Chọn chuyên khoa</h4>
+            <h4 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "0.5rem" }}>Bước 3: Chọn chuyên khoa</h4>
             <div className="grid-list" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginTop: "1rem" }}>
               <div
                 onClick={() => setSpecialty("Đa khoa")}
                 style={{
-                  padding: "1rem",
-                  border: "1px solid",
-                  borderColor: specialty === "Đa khoa" ? "#286A9B" : "#e2e8f0",
-                  borderRadius: "8px",
+                  padding: "1rem 1.2rem",
+                  border: "1.5px solid",
+                  borderColor: specialty === "Đa khoa" ? "var(--primary)" : "#e2e8f0",
+                  borderRadius: "10px",
                   cursor: "pointer",
                   background: specialty === "Đa khoa" ? "#f0f7fc" : "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  transition: "all 0.15s ease",
                 }}
               >
-                <b>Đa khoa</b>
-                <p style={{ margin: 0, fontSize: "0.85rem", color: "#666" }}>Khám và chăm sóc tổng quát</p>
-              </div>
-              {specialties.map((s) => (
+                <div>
+                  <b style={{ fontSize: "13.5px", color: "var(--text)", display: "block" }}>Đa khoa</b>
+                  <p style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--muted)" }}>Khám sức khỏe ban đầu và chăm sóc tổng quát</p>
+                </div>
                 <div
-                  key={s.id}
-                  onClick={() => setSpecialty(s.name)}
                   style={{
-                    padding: "1rem",
-                    border: "1px solid",
-                    borderColor: specialty === s.name ? "#286A9B" : "#e2e8f0",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    background: specialty === s.name ? "#f0f7fc" : "#fff",
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    border: "2px solid",
+                    borderColor: specialty === "Đa khoa" ? "var(--primary)" : "#cbd5e1",
+                    background: specialty === "Đa khoa" ? "var(--primary)" : "transparent",
+                    display: "grid",
+                    placeItems: "center",
+                    color: "#fff",
+                    fontSize: "11px",
+                    fontWeight: 700,
                   }}
                 >
-                  <b>{s.name}</b>
-                  <p style={{ margin: 0, fontSize: "0.85rem", color: "#666" }}>{s.description || "Chuyên khoa TiTiMi"}</p>
+                  {specialty === "Đa khoa" ? "✓" : ""}
                 </div>
-              ))}
+              </div>
+              {specialties.map((s) => {
+                const isSelected = specialty === s.name;
+                return (
+                  <div
+                    key={s.id}
+                    onClick={() => setSpecialty(s.name)}
+                    style={{
+                      padding: "1rem 1.2rem",
+                      border: "1.5px solid",
+                      borderColor: isSelected ? "var(--primary)" : "#e2e8f0",
+                      borderRadius: "10px",
+                      cursor: "pointer",
+                      background: isSelected ? "#f0f7fc" : "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <div>
+                      <b style={{ fontSize: "13.5px", color: "var(--text)", display: "block" }}>{s.name}</b>
+                      <p style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--muted)" }}>{s.description || "Chuyên khoa TiTiMi"}</p>
+                    </div>
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        border: "2px solid",
+                        borderColor: isSelected ? "var(--primary)" : "#cbd5e1",
+                        background: isSelected ? "var(--primary)" : "transparent",
+                        display: "grid",
+                        placeItems: "center",
+                        color: "#fff",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {isSelected ? "✓" : ""}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
         {step === 4 && (
           <div>
-            <h4>Bước 4: Chọn bác sĩ</h4>
+            <h4 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "0.5rem" }}>Bước 4: Chọn bác sĩ</h4>
             <SearchBar value={doctorQuery} onChange={setDoctorQuery} placeholder="Tìm tên bác sĩ..." />
-            <div style={{ maxHeight: "240px", overflowY: "auto", marginTop: "0.75rem" }}>
-              {doctorResults.map((d) => (
-                <div
-                  key={d.id}
-                  onClick={() => setDoctor(d)}
-                  style={{
-                    padding: "0.75rem",
-                    border: "1px solid",
-                    borderColor: doctor?.id === d.id ? "#286A9B" : "#e2e8f0",
-                    borderRadius: "8px",
-                    marginBottom: "0.5rem",
-                    cursor: "pointer",
-                    background: doctor?.id === d.id ? "#f0f7fc" : "#fff",
-                  }}
-                >
-                  <b>{d.name}</b> · {d.specialty} ({d.phone})
-                </div>
-              ))}
-              {!doctorResults.length && <p>Không tìm thấy bác sĩ phù hợp.</p>}
+            <div style={{ maxHeight: "260px", overflowY: "auto", marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {doctorResults.map((d) => {
+                const isSelected = doctor?.id === d.id;
+                const initials = d.name.split(" ").filter(Boolean).slice(-2).map((w: string) => w[0]).join("").toUpperCase() || "BS";
+                return (
+                  <div
+                    key={d.id}
+                    onClick={() => setDoctor(d)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "0.85rem 1rem",
+                      border: "1.5px solid",
+                      borderColor: isSelected ? "var(--primary)" : "#e2e8f0",
+                      borderRadius: "10px",
+                      cursor: "pointer",
+                      background: isSelected ? "#f0f7fc" : "#fff",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div
+                        style={{
+                          width: "38px",
+                          height: "38px",
+                          borderRadius: "50%",
+                          background: isSelected ? "var(--primary)" : "var(--light-blue)",
+                          color: isSelected ? "#fff" : "var(--navy)",
+                          display: "grid",
+                          placeItems: "center",
+                          fontWeight: 700,
+                          fontSize: "12px",
+                        }}
+                      >
+                        {initials}
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <b style={{ fontSize: "13.5px", color: "var(--text)" }}>{d.name}</b>
+                          <span style={{ fontSize: "11px", padding: "2px 7px", borderRadius: "4px", background: "#e0f2fe", color: "#0369a1", fontWeight: 600 }}>
+                            {d.specialty}
+                          </span>
+                        </div>
+                        <small style={{ color: "var(--muted)", display: "block", marginTop: "2px", fontSize: "12px" }}>
+                          📞 {d.phone || "Chưa có SĐT"} · ✉️ {d.email || "TiTiMi Medical"}
+                        </small>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        width: "22px",
+                        height: "22px",
+                        borderRadius: "50%",
+                        border: "2px solid",
+                        borderColor: isSelected ? "var(--primary)" : "#cbd5e1",
+                        background: isSelected ? "var(--primary)" : "transparent",
+                        display: "grid",
+                        placeItems: "center",
+                        color: "#fff",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {isSelected ? "✓" : ""}
+                    </div>
+                  </div>
+                );
+              })}
+              {!doctorResults.length && (
+                <p style={{ textAlign: "center", padding: "1.5rem", color: "var(--muted)", fontSize: "13px" }}>
+                  Không tìm thấy bác sĩ phù hợp trong chuyên khoa này.
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -2513,7 +2713,7 @@ function AppointmentsPage({
                 <th>Ngày & giờ</th>
                 <th>Lý do khám</th>
                 <th>Trạng thái</th>
-                <th>Thao tác</th>
+                <th style={{ minWidth: "200px" }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -2531,13 +2731,13 @@ function AppointmentsPage({
                     <small className="block" style={{ color: "#64748b" }}>{a.time}</small>
                   </td>
                   <td>
-                    {a.isFollowUp && <span className="follow-up-tag">Tái khám</span>}
+                    {Boolean(a.isFollowUp) && <span className="follow-up-tag">Tái khám</span>}
                     {a.reason}
                   </td>
                   <td><StatusBadge status={a.status} /></td>
-                  <td>
+                  <td style={{ minWidth: "200px", whiteSpace: "nowrap" }}>
                     <div className="row-actions">
-                      <button title="Xem chi tiết" onClick={() => setSelected(a)}>
+                      <button className="icon-btn" title="Xem chi tiết" onClick={() => setSelected(a)}>
                         <Icon name="eye" size={17} />
                       </button>
                       {a.status !== "Hoàn thành" && a.status !== "Đã hủy" && a.status !== "Không đến khám" && (
@@ -2810,26 +3010,55 @@ function SchedulePage({
               ))}
             </div>
             {weekDays.map((d, i) => {
-              const dayAppts = filteredAppointments.filter((a) => a.date === d.dateStr || a.date.endsWith(`/${d.dateStr}`));
+              const dayAppts = filteredAppointments.filter((a) => {
+                if (a.rawDateTime && a.rawDateTime.startsWith(d.iso)) return true;
+                if (a.date && (a.date.startsWith(d.dateStr) || a.date === d.iso)) return true;
+                return false;
+              });
+              const daySchedules = schedules.filter((s) => {
+                if (selectedDoctor !== "Tất cả bác sĩ" && s.doctorName !== selectedDoctor.replace("BS. ", "")) return false;
+                if (selectedSpecialty !== "Tất cả chuyên khoa" && s.specialty !== selectedSpecialty) return false;
+                return s.date === d.iso || s.formattedDate?.startsWith(d.dateStr);
+              });
               return (
                 <div className={`day-col ${d.isToday ? "today" : ""}`} key={d.label}>
-                  <div>
+                  <div className="day-header">
                     <b>{d.label.split(", ")[0]}</b>
                     <span>{d.label.split(", ")[1]}</span>
                   </div>
+                  {daySchedules.length > 0 && (
+                    <div
+                      style={{
+                        padding: "3px 6px",
+                        margin: "4px",
+                        background: "#f0fdf4",
+                        border: "1px dashed #86efac",
+                        borderRadius: "5px",
+                        fontSize: "11px",
+                        color: "#166534",
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                      title={`Có ${daySchedules.length} ca trực trong ngày`}
+                    >
+                      ⏰ {daySchedules.length} ca trực
+                    </div>
+                  )}
                   {dayAppts.slice(0, 5).map((a, j) => (
                     <button
                       key={a.id}
                       className={`cal-event ${a.status === "Chờ xác nhận" ? "pending" : a.status === "Hoàn thành" ? "done" : ""}`}
-                      style={{ top: `${66 + j * 75}px` }}
+                      style={{ top: `${66 + (daySchedules.length > 0 ? 28 : 0) + j * 75}px` }}
                       onClick={() => onViewAppointment(a)}
                     >
                       <b>{a.time} · {a.patient}</b>
                       <span>BS. {a.doctor}</span>
                     </button>
                   ))}
-                  {dayAppts.length === 0 && (
-                    <small style={{ display: "block", marginTop: "1rem", color: "#94a3b8", textAlign: "center" }}>
+                  {dayAppts.length === 0 && daySchedules.length === 0 && (
+                    <small style={{ display: "block", marginTop: "1.5rem", color: "#94a3b8", textAlign: "center", fontSize: "12px" }}>
                       Trống
                     </small>
                   )}

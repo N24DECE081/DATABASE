@@ -259,8 +259,8 @@ def portal_bootstrap():
                d.doctor_id AS doctorId,
                COALESCE(sp.specialty_name, 'Đa khoa') AS specialty,
                DATE_FORMAT(a.appointment_date_time, '%d/%m/%Y') AS date,
-               DATE_FORMAT(a.appointment_date_time, '%H:%M') AS time,
-               DATE_FORMAT(a.appointment_date_time, '%Y-%m-%d %H:%M') AS rawDateTime,
+               DATE_FORMAT(a.appointment_date_time, '%H:%i') AS time,
+               DATE_FORMAT(a.appointment_date_time, '%Y-%m-%d %H:%i') AS rawDateTime,
                COALESCE(a.reason, 'Khám sức khỏe tổng quát') AS reason,
                CASE a.appointment_type
                  WHEN 'Telemedicine' THEN 'Tư vấn trực tuyến'
@@ -299,8 +299,8 @@ def portal_bootstrap():
                DATE_FORMAT(s.schedule_date, '%Y-%m-%d') AS date,
                DATE_FORMAT(s.schedule_date, '%d/%m/%Y') AS formattedDate,
                DATE_FORMAT(s.schedule_date, '%w') AS dayOfWeek,
-               TIME_FORMAT(s.start_time, '%H:%M') AS startTime,
-               TIME_FORMAT(s.end_time, '%H:%M') AS endTime,
+               TIME_FORMAT(s.start_time, '%H:%i') AS startTime,
+               TIME_FORMAT(s.end_time, '%H:%i') AS endTime,
                s.availability_status AS status
         FROM doctor_schedule s
         JOIN doctor d ON s.doctor_id = d.doctor_id
@@ -852,8 +852,8 @@ def list_appointments():
                d.doctor_id AS doctorId,
                COALESCE(sp.specialty_name, 'Đa khoa') AS specialty,
                DATE_FORMAT(a.appointment_date_time, '%d/%m/%Y') AS date,
-               DATE_FORMAT(a.appointment_date_time, '%H:%M') AS time,
-               DATE_FORMAT(a.appointment_date_time, '%Y-%m-%d %H:%M') AS rawDateTime,
+               DATE_FORMAT(a.appointment_date_time, '%H:%i') AS time,
+               DATE_FORMAT(a.appointment_date_time, '%Y-%m-%d %H:%i') AS rawDateTime,
                COALESCE(a.reason, 'Khám sức khỏe tổng quát') AS reason,
                CASE a.appointment_type
                  WHEN 'Telemedicine' THEN 'Tư vấn trực tuyến'
@@ -1075,8 +1075,8 @@ def list_schedules():
                DATE_FORMAT(s.schedule_date, '%Y-%m-%d') AS date,
                DATE_FORMAT(s.schedule_date, '%d/%m/%Y') AS formattedDate,
                DATE_FORMAT(s.schedule_date, '%w') AS dayOfWeek,
-               TIME_FORMAT(s.start_time, '%H:%M') AS startTime,
-               TIME_FORMAT(s.end_time, '%H:%M') AS endTime,
+               TIME_FORMAT(s.start_time, '%H:%i') AS startTime,
+               TIME_FORMAT(s.end_time, '%H:%i') AS endTime,
                s.availability_status AS status
         FROM doctor_schedule s
         JOIN doctor d ON s.doctor_id = d.doctor_id
