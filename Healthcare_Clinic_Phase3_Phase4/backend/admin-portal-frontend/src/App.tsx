@@ -254,14 +254,33 @@ function StatCard({
 
 function formatApptTime(a?: { time?: string; rawDateTime?: string } | null): string {
   if (!a) return "--:--";
+  // 1. If a.time is a valid HH:mm format (e.g. "08:30", "13:00")
+  if (a.time && /^\d{1,2}:\d{2}$/.test(a.time.trim())) {
+    const [h, m] = a.time.trim().split(":");
+    return `${h.padStart(2, "0")}:${m}`;
+  }
+  // 2. Extract HH:mm from rawDateTime if available (e.g. "2026-11-18 08:30" or "2026-11-18T08:30:00")
   if (a.rawDateTime) {
-    const match = a.rawDateTime.match(/\s(\d{2}:\d{2})/);
-    if (match) return match[1];
+    const match = a.rawDateTime.match(/(\d{2}):(\d{2})/);
+    if (match) return `${match[1]}:${match[2]}`;
   }
-  if (a.time && a.time.includes(":") && !a.time.includes("NaN") && !a.time.toLowerCase().includes("nov")) {
-    return a.time;
+  // 3. Fallback: if a.time has an hour like "08:November" or "08"
+  if (a.time) {
+    const hourMatch = a.time.match(/(\d{1,2})/);
+    if (hourMatch) {
+      return `${hourMatch[1].padStart(2, "0")}:00`;
+    }
   }
-  return a.time || "--:--";
+  return "--:--";
+}
+
+function getAppointmentHour(a: { time?: string; rawDateTime?: string }): number {
+  const formatted = formatApptTime(a);
+  if (formatted !== "--:--") {
+    const h = parseInt(formatted.split(":")[0], 10);
+    if (!isNaN(h)) return h;
+  }
+  return -1;
 }
 
 function EmptyState() {
@@ -2883,19 +2902,6 @@ const TIME_SLOTS = [
   "19:00",
   "20:00",
 ];
-
-function getAppointmentHour(a: { time?: string; rawDateTime?: string }): number {
-  if (a.rawDateTime) {
-    const match = a.rawDateTime.match(/\s(\d{2}):/);
-    if (match) return parseInt(match[1], 10);
-  }
-  if (a.time) {
-    const parts = a.time.split(":");
-    const h = parseInt(parts[0], 10);
-    if (!isNaN(h)) return h;
-  }
-  return -1;
-}
 
 function SchedulePage({
   schedules,

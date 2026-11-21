@@ -2,6 +2,7 @@
 Strictly adheres to all clinic Business Rules (BR1-57) and database constraints.
 """
 
+import re
 from datetime import date, datetime, time, timedelta
 from flask import Blueprint, abort, g, jsonify, request, session
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -292,6 +293,16 @@ def portal_bootstrap():
     for r in appointments_rows:
         r["isFollowUp"] = bool(r.get("isFollowUp"))
         r["hasSession"] = bool(r.get("hasSession"))
+        t = str(r.get("time") or "")
+        if "nov" in t.lower() or not re.match(r"^\d{2}:\d{2}$", t):
+            raw_dt = str(r.get("rawDateTime") or "")
+            m = re.search(r"(\d{2}):(\d{2})", raw_dt)
+            if m:
+                r["time"] = f"{m.group(1)}:{m.group(2)}"
+            else:
+                m_h = re.search(r"(\d{1,2})", t)
+                if m_h:
+                    r["time"] = f"{int(m_h.group(1)):02d}:00"
 
     # Schedules
     schedules_rows = query("""
@@ -888,6 +899,16 @@ def list_appointments():
     for r in rows:
         r["isFollowUp"] = bool(r.get("isFollowUp"))
         r["hasSession"] = bool(r.get("hasSession"))
+        t = str(r.get("time") or "")
+        if "nov" in t.lower() or not re.match(r"^\d{2}:\d{2}$", t):
+            raw_dt = str(r.get("rawDateTime") or "")
+            m = re.search(r"(\d{2}):(\d{2})", raw_dt)
+            if m:
+                r["time"] = f"{m.group(1)}:{m.group(2)}"
+            else:
+                m_h = re.search(r"(\d{1,2})", t)
+                if m_h:
+                    r["time"] = f"{int(m_h.group(1)):02d}:00"
     return jsonify({"appointments": rows})
 
 
