@@ -1,6 +1,6 @@
 """JSON API for the authenticated patient portal."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from flask import Blueprint, abort, g, jsonify, request
 
 from ...db import query
@@ -93,8 +93,21 @@ def portal_data():
         "emergencyContactPhone": patient.emergency_contact_phone or "",
     }
 
-    # 2. Doctors directory with GP / Specialist
+    # 2. Doctors directory with GP / Specialist and dynamic live shifts
     all_doctors = doctors.directory()
+    upcoming_shifts = query(
+        """SELECT s.doctor_id, s.schedule_date, s.start_time, s.end_time
+           FROM (
+               SELECT doctor_id, schedule_date, start_time, end_time,
+                      ROW_NUMBER() OVER (PARTITION BY doctor_id ORDER BY schedule_date ASC, start_time ASC) as rn
+               FROM doctor_schedule
+               WHERE schedule_date >= CURRENT_DATE() AND availability_status = 'Available'
+           ) s
+           WHERE s.rn = 1"""
+    )
+    shift_by_doc = {r["doctor_id"]: r for r in upcoming_shifts}
+    today = date.today()
+
     doctor_list = []
     for d in all_doctors:
         sp_name = d["specialty_name"]
@@ -102,14 +115,31 @@ def portal_data():
             specialty_display = "Đa khoa"
         else:
             specialty_display = sp_name
+
+        shift = shift_by_doc.get(d["doctor_id"])
+        if shift:
+            s_date = shift["schedule_date"]
+            s_time = shift["start_time"]
+            time_str = s_time.strftime("%H:%M") if hasattr(s_time, "strftime") else str(s_time)[:5]
+            if s_date == today:
+                next_display = f"Hôm nay, {time_str}"
+            elif s_date == today + timedelta(days=1):
+                next_display = f"Ngày mai, {time_str}"
+            else:
+                next_display = f"{s_date.strftime('%d/%m/%Y')}, {time_str}"
+            is_available = True
+        else:
+            next_display = "Tạm thời hết lịch"
+            is_available = False
+
         doctor_list.append({
             "id": d["doctor_id"],
             "name": d["full_name"],
             "specialty": specialty_display,
             "subtype": d["subtype"],
             "experience": "10 năm kinh nghiệm",
-            "next": "Hôm nay, 2:30 PM",
-            "available": True,
+            "next": next_display,
+            "available": is_available,
             "rating": "4.9",
             "phone": d["phone"],
             "email": d["email"],
@@ -187,11 +217,11 @@ def portal_data():
             "meetingUrl": s["meeting_url"] or "",
             "complaint": fields["complaint"] or s.get("appt_reason") or "Theo dõi sức khỏe",
             "symptoms": fields["symptoms"] or ("Không ghi nhận bất thường đặc biệt." if not is_active else ""),
-            "diagnosis": fields["diagnosis"] or ("Khám và tư vấn sức khỏe" if not is_active else ""),
-            "notes": fields["notes"] or s["diagnosis_notes"] or ("Đã tư vấn chế độ sinh hoạt và theo dõi định kỳ." if not is_active else ""),
+            "diagnosis": fields["diagnosis"] if is_active else (fields["diagnosis"] or "Khám và tư vấn sức khỏe"),
+            "notes": fields["notes"] if is_active else (fields["notes"] or s["diagnosis_notes"] or "Đã tư vấn chế độ sinh hoạt và theo dõi định kỳ."),
             "plan": fields["plan"] or "",
-            "prescriptionId": rx_match["prescription_id"] if rx_match else None,
-            "prescriptionSummary": f"{rx_match['item_count']} loại thuốc" if rx_match else None,
+            "prescriptionId": rx_match["prescription_id"] if (rx_match and not is_active) else None,
+            "prescriptionSummary": f"{rx_match['item_count']} loại thuốc" if (rx_match and not is_active) else None,
         })
 
     # 5. Medical records / history

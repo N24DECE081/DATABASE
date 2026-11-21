@@ -512,10 +512,16 @@ function Dashboard({
     { title: "Đơn thuốc", text: "Xem danh sách thuốc", icon: "pill", page: "prescriptions" },
   ];
 
-  const upcomingAppts = appointments.filter(
-    (a) => a.status === "Đã xác nhận" || a.status === "Đã tiếp nhận"
-  );
-  const nextAppt = upcomingAppts[0] || appointments[0];
+  const todayIso = new Date().toISOString().split("T")[0];
+  const upcomingAppts = useMemo(() => {
+    return appointments
+      .filter((a) => {
+        const isFuture = !a.rawDate || a.rawDate >= todayIso;
+        return isFuture && (a.status === "Đã xác nhận" || a.status === "Đã tiếp nhận");
+      })
+      .sort((a, b) => (a.rawDate || "").localeCompare(b.rawDate || "") || a.time.localeCompare(b.time));
+  }, [appointments, todayIso]);
+  const nextAppt = upcomingAppts[0] || appointments.find((a) => a.status === "Đã xác nhận" || a.status === "Đã tiếp nhận") || appointments[0];
   const activeRxCount = prescriptions.filter((p) => p.status === "Đang dùng").length;
 
   return (
@@ -767,16 +773,10 @@ function FindDoctors({
   const [specialty, setSpecialty] = useState("Tất cả chuyên khoa");
   const [availability, setAvailability] = useState("Mọi lịch trống");
 
-  const specialtiesList = [
-    "Tất cả chuyên khoa",
-    "Đa khoa",
-    "Tim mạch",
-    "Nội tổng quát",
-    "Da liễu",
-    "Nhi khoa",
-    "Tai Mũi Họng",
-    "Cơ xương khớp",
-  ];
+  const specialtiesList = useMemo(() => {
+    const list = Array.from(new Set(doctors.map((d) => d.specialty).filter(Boolean))).sort();
+    return ["Tất cả chuyên khoa", ...list];
+  }, [doctors]);
 
   const filtered = useMemo(
     () =>
@@ -1046,9 +1046,33 @@ function Booking({
   }, [initialDoctor]);
 
   // Month navigation & dynamic doctor working shifts
-  const [currentMonth, setCurrentMonth] = useState("2026-11");
+  const [calendarYear, setCalendarYear] = useState(2026);
+  const [calendarMonth, setCalendarMonth] = useState(11);
+  const currentYearMonth = `${calendarYear}-${calendarMonth < 10 ? "0" + calendarMonth : calendarMonth}`;
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [loadingDates, setLoadingDates] = useState(false);
+
+  const handlePrevMonth = () => {
+    if (calendarMonth === 1) {
+      setCalendarYear((y) => y - 1);
+      setCalendarMonth(12);
+    } else {
+      setCalendarMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (calendarMonth === 12) {
+      setCalendarYear((y) => y + 1);
+      setCalendarMonth(1);
+    } else {
+      setCalendarMonth((m) => m + 1);
+    }
+  };
+
+  const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
+  const startDayOfWeek = new Date(calendarYear, calendarMonth - 1, 1).getDay();
+  const todayIso = new Date().toISOString().split("T")[0];
 
   // Selected date & doctor slots
   const [selectedDateIso, setSelectedDateIso] = useState<string>("");
@@ -1117,7 +1141,7 @@ function Booking({
   useEffect(() => {
     if (!selectedDoctorObj) return;
     setLoadingDates(true);
-    fetchBookingOptions({ doctor_id: selectedDoctorObj.id, month: currentMonth })
+    fetchBookingOptions({ doctor_id: selectedDoctorObj.id, month: currentYearMonth })
       .then((data) => {
         setAvailableDates(data.available_dates || []);
       })
@@ -1127,7 +1151,7 @@ function Booking({
       .finally(() => {
         setLoadingDates(false);
       });
-  }, [selectedDoctorObj, currentMonth]);
+  }, [selectedDoctorObj, currentYearMonth]);
 
   const handleSelectDate = (dayIso: string, dayFormatted: string) => {
     setSelectedDateIso(dayIso);
@@ -1429,18 +1453,24 @@ function Booking({
                 <div className="date-time-layout">
                   <div className="mini-calendar">
                     <div className="calendar-head">
-                      <button aria-label="Tháng trước">‹</button>
-                      <strong>Tháng 11, 2026</strong>
-                      <button aria-label="Tháng sau">›</button>
+                      <button aria-label="Tháng trước" onClick={handlePrevMonth}>‹</button>
+                      <strong>{`Tháng ${calendarMonth}, ${calendarYear}`}</strong>
+                      <button aria-label="Tháng sau" onClick={handleNextMonth}>›</button>
                     </div>
                     <div className="calendar-grid">
                       {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((day, index) => (
                         <b key={`${day}-${index}`}>{day}</b>
                       ))}
-                      {Array.from({ length: 30 }, (_, index) => index + 1).map((day) => {
-                        const dayIso = `2026-11-${day < 10 ? "0" + day : day}`;
-                        const dayFormatted = `${day < 10 ? "0" + day : day}/11/2026`;
-                        const isAvailable = availableDates.includes(dayIso);
+                      {Array.from({ length: startDayOfWeek }).map((_, i) => (
+                        <span key={`empty-${i}`} className="calendar-empty" />
+                      ))}
+                      {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => {
+                        const dayStr = day < 10 ? "0" + day : `${day}`;
+                        const monthStr = calendarMonth < 10 ? "0" + calendarMonth : `${calendarMonth}`;
+                        const dayIso = `${calendarYear}-${monthStr}-${dayStr}`;
+                        const dayFormatted = `${dayStr}/${monthStr}/${calendarYear}`;
+                        const isPast = dayIso < todayIso;
+                        const isAvailable = !isPast && availableDates.includes(dayIso);
                         const isSelected = selectedDateIso === dayIso;
                         return (
                           <button
@@ -1812,10 +1842,17 @@ function AppointmentDetail({
     );
   }
 
-  // Ràng buộc hủy lịch hẹn theo quy tắc y khoa:
+  // Ràng buộc hủy lịch hẹn theo quy tắc y khoa (BR26-36 & service.change_status):
   // 1. Chỉ lịch "Đã xác nhận" (Scheduled) mới được hủy
-  // 2. Chưa có phiên khám liên kết
-  const canCancel = appointment.status === "Đã xác nhận" && !appointment.sessionId;
+  // 2. Thời gian khám phải ở tương lai (> now)
+  // 3. Chưa có phiên khám liên kết
+  const isPast = useMemo(() => {
+    if (!appointment.rawDate) return false;
+    const apptDateTimeStr = `${appointment.rawDate}T${appointment.time || "00:00"}:00`;
+    return new Date(apptDateTimeStr) <= new Date();
+  }, [appointment.rawDate, appointment.time]);
+
+  const canCancel = appointment.status === "Đã xác nhận" && !appointment.sessionId && !isPast;
 
   return (
     <>
@@ -1912,7 +1949,7 @@ function AppointmentDetail({
             </Button>
           )}
 
-          {canCancel && (
+          {canCancel ? (
             <Button
               className="full-btn"
               variant="danger"
@@ -1920,7 +1957,13 @@ function AppointmentDetail({
             >
               Hủy lịch hẹn này
             </Button>
-          )}
+          ) : appointment.status === "Đã xác nhận" ? (
+            <div style={{ fontSize: "12px", color: "var(--muted)", margin: "8px 0", lineHeight: "1.5" }}>
+              {isPast
+                ? "ℹ️ Lịch hẹn đã qua giờ khám theo lịch, không thể hủy."
+                : "ℹ️ Lịch hẹn đã gắn với phiên khám, không thể hủy trên cổng bệnh nhân."}
+            </div>
+          ) : null}
 
           <hr />
           <small className="support-copy">
@@ -2148,7 +2191,7 @@ function ConsultationDetail({
 
           <div className="record-section">
             <h3>Đánh giá và chẩn đoán của bác sĩ</h3>
-            {consultation.isActive && !consultation.diagnosis ? (
+            {consultation.isActive ? (
               <div
                 style={{
                   padding: "14px 16px",
@@ -2163,6 +2206,11 @@ function ConsultationDetail({
                 <strong style={{ color: "var(--text)", display: "block", marginBottom: "4px" }}>
                   ⏳ Bác sĩ đang tiến hành thăm khám
                 </strong>
+                {consultation.diagnosis ? (
+                  <p style={{ margin: "4px 0", color: "var(--text)" }}>
+                    <strong>Ghi chú sơ bộ:</strong> {consultation.diagnosis}
+                  </p>
+                ) : null}
                 Kết luận chẩn đoán, đánh giá lâm sàng và dặn dò chi tiết sẽ được bác sĩ{" "}
                 {consultation.doctor} ghi nhận và cập nhật vào hồ sơ ngay sau khi hoàn thành phiên
                 khám.
@@ -2179,9 +2227,10 @@ function ConsultationDetail({
 
           <div className="record-section">
             <h3>Kế hoạch điều trị & Dặn dò</h3>
-            {consultation.isActive && !consultation.plan ? (
+            {consultation.isActive ? (
               <p style={{ color: "var(--muted)", fontStyle: "italic", margin: 0, fontSize: "13px" }}>
-                Kế hoạch điều trị và hướng dẫn chăm sóc sẽ được bác sĩ chỉ định khi kết thúc buổi khám.
+                {consultation.plan ||
+                  "Kế hoạch điều trị và hướng dẫn chăm sóc sẽ được bác sĩ chỉ định khi kết thúc buổi khám."}
               </p>
             ) : (
               <p>
@@ -2193,7 +2242,7 @@ function ConsultationDetail({
 
           <div className="record-section">
             <h3>Đơn thuốc liên quan</h3>
-            {matchingRx ? (
+            {matchingRx && !consultation.isActive ? (
               <button
                 className="related-link"
                 onClick={() => {
@@ -2577,10 +2626,13 @@ function Profile({
     setSaving(true);
     try {
       await updateProfile({
+        email: form.email,
         phone: form.phone,
         address: form.address,
         allergies: form.allergies,
         chronicDiseases: form.chronicDiseases,
+        emergencyContactName: form.emergencyContactName,
+        emergencyContactPhone: form.emergencyContactPhone,
       });
       onProfileUpdated(form);
       setEditing(false);
