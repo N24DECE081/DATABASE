@@ -144,3 +144,98 @@ def test_admin_portal_bootstrap_and_crud(app_client, monkeypatch):
     })
     assert prof_res.status_code == 200
     assert prof_res.json["admin"]["name"] == "Quản trị viên Trưởng"
+
+
+def test_business_rules_and_integrity_constraints(app_client, monkeypatch):
+    admin_user = SimpleNamespace(user_id="USER-ADM-001", username="admin", role="ADMIN", account_status="Active")
+    monkeypatch.setattr("app.security.find_by_id", lambda _user_id: admin_user)
+    client = app_client.test_client()
+    with client.session_transaction() as session:
+        session["user_id"] = admin_user.user_id
+
+    # BR1-5: Cannot lock currently active admin user
+    lock_self_res = client.patch(f"/api/admin/users/{admin_user.user_id}/status", json={"status": "Tạm khóa"})
+    assert lock_self_res.status_code == 400
+    assert "Không thể khóa tài khoản quản trị đang sử dụng" in lock_self_res.json.get("error", "")
+
+    # BR6-12: Patient DOB in the future must be rejected
+    future_pat_res = client.post("/api/admin/patients", json={
+        "name": "Bệnh Nhân Tương Lai",
+        "phone": "0909999888",
+        "dob": "2099-01-01",
+    })
+    assert future_pat_res.status_code == 400
+    assert "Ngày sinh không được ở tương lai" in future_pat_res.json.get("error", "")
+
+    # BR13-20: Doctor subtype cannot be switched
+    docs_res = client.get("/api/admin/doctors")
+    assert docs_res.status_code == 200
+    gp_doc = next((d for d in docs_res.json["doctors"] if d["subtype"] == "GENERAL_PRACTITIONER"), None)
+    if gp_doc:
+        invalid_switch = client.patch(f"/api/admin/doctors/{gp_doc['id']}", json={"specialty": "Tim mạch"})
+        assert invalid_switch.status_code == 400
+        assert "không thể chuyển sang Chuyên khoa" in invalid_switch.json.get("error", "")
+
+    sp_doc = next((d for d in docs_res.json["doctors"] if d["subtype"] == "SPECIALIST"), None)
+    if sp_doc:
+        invalid_sp_switch = client.patch(f"/api/admin/doctors/{sp_doc['id']}", json={"specialty": "Đa khoa"})
+        assert invalid_sp_switch.status_code == 400
+        assert "không thể chuyển sang Đa khoa" in invalid_sp_switch.json.get("error", "")
+
+    # BR21-25: Schedule validation
+    if len(docs_res.json["doctors"]) > 0:
+        d_id = docs_res.json["doctors"][0]["id"]
+        # In past
+        past_sched = client.post("/api/admin/schedules", json={
+            "doctorId": d_id,
+            "date": "2020-01-01",
+            "startTime": "08:00",
+            "endTime": "12:00",
+        })
+        assert past_sched.status_code == 400
+        assert "quá khứ" in past_sched.json.get("error", "")
+
+        # End time before start time
+        inv_time_sched = client.post("/api/admin/schedules", json={
+            "doctorId": d_id,
+            "date": "2030-01-01",
+            "startTime": "12:00",
+            "endTime": "08:00",
+        })
+        assert inv_time_sched.status_code == 400
+        assert "sau giờ bắt đầu" in inv_time_sched.json.get("error", "")
+
+    # BR26-36: Appointment validation
+    pats_res = client.get("/api/admin/patients")
+    if len(pats_res.json["patients"]) > 0 and len(docs_res.json["doctors"]) > 0:
+        p_id = pats_res.json["patients"][0]["id"]
+        d_id = docs_res.json["doctors"][0]["id"]
+
+        # Past appointment booking
+        past_appt = client.post("/api/admin/appointments", json={
+            "patientId": p_id,
+            "doctorId": d_id,
+            "dateTime": "2020-01-01 09:00:00",
+            "duration": 30,
+        })
+        assert past_appt.status_code == 400
+        assert "quá khứ" in past_appt.json.get("error", "")
+
+        # Booking without doctor shift on that date
+        no_shift_appt = client.post("/api/admin/appointments", json={
+            "patientId": p_id,
+            "doctorId": d_id,
+            "dateTime": "2030-06-15 09:00:00",
+            "duration": 30,
+        })
+        assert no_shift_appt.status_code == 400
+        assert "ca trực" in no_shift_appt.json.get("error", "")
+
+    # BR26-36: Appointment with consultation session cannot be Cancelled
+    appts_res = client.get("/api/admin/appointments")
+    session_appt = next((a for a in appts_res.json["appointments"] if a.get("hasSession")), None)
+    if session_appt:
+        cancel_attempt = client.patch(f"/api/admin/appointments/{session_appt['id']}/status", json={"status": "Đã hủy"})
+        assert cancel_attempt.status_code == 400
+        assert "phiên khám" in cancel_attempt.json.get("error", "")
+

@@ -85,6 +85,7 @@ export type Appointment = {
   rawStatus?: string;
   scheduleId?: string;
   duration?: number;
+  hasSession?: boolean;
 };
 
 export type Schedule = {

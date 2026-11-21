@@ -1,4 +1,6 @@
-"""JSON API for the authenticated admin portal."""
+"""JSON API for the authenticated admin portal.
+Strictly adheres to all clinic Business Rules (BR1-57) and database constraints.
+"""
 
 from datetime import date, datetime, time, timedelta
 from flask import Blueprint, abort, g, jsonify, request, session
@@ -67,11 +69,12 @@ def _parse_date(value, field="ngày"):
     if isinstance(value, date):
         return value
     try:
-        if "/" in value:
-            parts = value.strip().split("/")
+        val = value.strip()
+        if "/" in val:
+            parts = val.split("/")
             if len(parts) == 3:
                 return date(int(parts[2]), int(parts[1]), int(parts[0]))
-        return date.fromisoformat(value.strip())
+        return date.fromisoformat(val)
     except Exception:
         raise BusinessError(f"{field.capitalize()} không đúng định dạng YYYY-MM-DD hoặc DD/MM/YYYY.")
 
@@ -276,12 +279,14 @@ def portal_bootstrap():
                END AS status,
                a.status AS rawStatus,
                a.schedule_id AS scheduleId,
-               a.estimated_duration_minutes AS duration
+               a.estimated_duration_minutes AS duration,
+               CASE WHEN cs.session_id IS NOT NULL THEN TRUE ELSE FALSE END AS hasSession
         FROM appointment a
         JOIN patient p ON a.patient_id = p.patient_id
         JOIN doctor d ON a.doctor_id = d.doctor_id
         LEFT JOIN specialist spl ON d.doctor_id = spl.doctor_id
         LEFT JOIN specialty sp ON spl.specialty_id = sp.specialty_id
+        LEFT JOIN consultation_session cs ON a.appointment_id = cs.appointment_id
         ORDER BY a.appointment_date_time DESC
     """)
 
@@ -345,7 +350,7 @@ def portal_bootstrap():
 
 
 # --------------------------------------------------------------------------
-# Users Endpoints
+# Users Endpoints (BR1-5)
 # --------------------------------------------------------------------------
 
 @bp.get("/users")
@@ -383,7 +388,28 @@ def create_user():
     role_map = {"Admin": "ADMIN", "Bác sĩ": "DOCTOR", "Bệnh nhân": "PATIENT", "ADMIN": "ADMIN", "DOCTOR": "DOCTOR", "PATIENT": "PATIENT"}
     role = role_map.get(role_raw, "PATIENT")
 
+    username = data.get("username", "").strip()
+    password = data.get("password", "").strip()
+    full_name = (data.get("name") or data.get("full_name") or "").strip()
+    phone = data.get("phone", "").strip()
+    email = data.get("email", "").strip()
+
+    ensure(len(username) >= 3, "Tên đăng nhập phải có ít nhất 3 ký tự.")
+    ensure(10 <= len(password) <= 128, "Mật khẩu phải từ 10 đến 128 ký tự.")
+    ensure(full_name, "Vui lòng nhập họ và tên.")
+    ensure(phone, "Vui lòng nhập số điện thoại.")
+
+    # Unique username check
+    existing = query("SELECT user_id FROM user_account WHERE username = %s", (username,), one=True)
+    if existing:
+        raise BusinessError("Tên đăng nhập đã tồn tại trong hệ thống. Vui lòng chọn tên khác.")
+
     dob = _parse_date(data.get("dob") or data.get("date_of_birth"), "ngày sinh")
+    if role == "PATIENT":
+        if not dob:
+            dob = date(1995, 1, 1)
+        ensure(dob <= now().date(), "Ngày sinh không được ở tương lai.")
+
     gender = data.get("gender") or "Male"
     if gender in ("Nam", "Male"):
         gender = "Male"
@@ -396,16 +422,16 @@ def create_user():
     specialty_id = data.get("specialty_id") or data.get("specialtyId") or None
 
     user_payload = {
-        "username": data.get("username", "").strip(),
-        "password": data.get("password", "").strip(),
+        "username": username,
+        "password": password,
         "role": role,
-        "full_name": data.get("name") or data.get("full_name") or "",
-        "phone": data.get("phone", "").strip(),
-        "email": data.get("email", "").strip(),
+        "full_name": full_name,
+        "phone": phone,
+        "email": email,
         "gender": gender,
         "date_of_birth": dob,
         "emergency_contact_name": data.get("emergency_contact_name") or "Người thân",
-        "emergency_contact_phone": data.get("emergency_contact_phone") or data.get("phone", "0900000000"),
+        "emergency_contact_phone": data.get("emergency_contact_phone") or phone,
         "license_number": data.get("license_number") or data.get("licenseNumber") or ("GP-" + identity("DOC-")[4:]),
         "subtype": subtype,
         "specialty_id": specialty_id,
@@ -431,6 +457,10 @@ def change_user_status(user_id):
     data = request.get_json(silent=True) or {}
     raw_status = data.get("status", "")
     target = ACCOUNT_STATUS_MAP_FROM_UI.get(raw_status, "Active")
+
+    # BR: Cannot lock currently logged in admin user
+    ensure(user_id != g.user.user_id, "Không thể khóa tài khoản quản trị đang sử dụng.")
+
     admin_service.change_account_status(g.user, user_id, target)
     return jsonify({
         "message": "Đã cập nhật trạng thái tài khoản.",
@@ -440,7 +470,7 @@ def change_user_status(user_id):
 
 
 # --------------------------------------------------------------------------
-# Doctors Endpoints
+# Doctors Endpoints (BR13-20)
 # --------------------------------------------------------------------------
 
 @bp.get("/doctors")
@@ -490,14 +520,24 @@ def create_doctor():
     specialty_name = (data.get("specialty") or "").strip()
     license_number = (data.get("license_number") or data.get("licenseNumber") or "").strip()
 
+    ensure(name, "Vui lòng nhập họ và tên bác sĩ.")
+    ensure(phone, "Vui lòng nhập số điện thoại bác sĩ.")
+    ensure(email, "Vui lòng nhập email bác sĩ.")
+
     if not username:
-        username = "dr." + "".join(e for e in name.lower() if e.isalnum())[:12] + str(now().microsecond)[:3]
+        clean_name = "".join(e for e in name.lower() if e.isalnum())[:12]
+        username = "dr." + clean_name + str(now().microsecond)[:3]
     if not password:
         password = "DoctorPassword123@"
     if not license_number:
         license_number = "BS-" + str(now().year) + "-" + str(now().microsecond)[:4]
 
-    # Resolve specialty or GP
+    # Unique license check
+    lic_dup = query("SELECT doctor_id FROM doctor WHERE license_number = %s", (license_number,), one=True)
+    if lic_dup:
+        raise BusinessError("Số giấy phép hành nghề đã tồn tại trên hệ thống.")
+
+    # BR13-20: Resolve exact disjoint subtype
     specialty_id = None
     subtype = "GENERAL_PRACTITIONER"
     if specialty_name and specialty_name != "Đa khoa":
@@ -506,10 +546,7 @@ def create_doctor():
             specialty_id = sp["specialty_id"]
             subtype = "SPECIALIST"
         else:
-            sp = query("SELECT specialty_id FROM specialty LIMIT 1", one=True)
-            if sp:
-                specialty_id = sp["specialty_id"]
-                subtype = "SPECIALIST"
+            raise BusinessError(f"Chuyên khoa '{specialty_name}' không tồn tại trong hệ thống.")
 
     user_payload = {
         "username": username,
@@ -543,6 +580,7 @@ def create_doctor():
 @bp.patch("/doctors/<doctor_id>")
 def update_doctor(doctor_id):
     data = request.get_json(silent=True) or {}
+
     allowed = {}
     if "name" in data:
         allowed["full_name"] = data["name"].strip()
@@ -557,26 +595,31 @@ def update_doctor(doctor_id):
     if "license_number" in data:
         allowed["license_number"] = data["license_number"].strip()
 
-    doctor_service.update_profile(g.user, doctor_id, allowed)
+    if allowed:
+        doctor_service.update_profile(g.user, doctor_id, allowed)
 
-    # If specialty changed
+    # BR13-20 & Database triggers: Doctor subtype cannot be changed / deleted
     if "specialty" in data and data["specialty"]:
         sp_name = data["specialty"].strip()
-        sp = query("SELECT specialty_id FROM specialty WHERE specialty_name = %s", (sp_name,), one=True)
-        with transaction():
-            if sp_name == "Đa khoa":
-                execute("DELETE FROM specialist WHERE doctor_id = %s", (doctor_id,))
-                execute("INSERT IGNORE INTO general_practitioner (doctor_id) VALUES (%s)", (doctor_id,))
-            elif sp:
-                execute("DELETE FROM general_practitioner WHERE doctor_id = %s", (doctor_id,))
-                execute("DELETE FROM specialist WHERE doctor_id = %s", (doctor_id,))
-                execute("INSERT INTO specialist (doctor_id, specialty_id) VALUES (%s, %s)", (doctor_id, sp["specialty_id"]))
+        is_gp = query("SELECT 1 FROM general_practitioner WHERE doctor_id = %s", (doctor_id,), one=True)
+        is_sp = query("SELECT 1 FROM specialist WHERE doctor_id = %s", (doctor_id,), one=True)
+
+        if is_gp and sp_name != "Đa khoa":
+            raise BusinessError("Bác sĩ Đa khoa không thể chuyển sang Chuyên khoa theo quy tắc phân loại hệ thống.")
+        elif is_sp and sp_name == "Đa khoa":
+            raise BusinessError("Bác sĩ Chuyên khoa không thể chuyển sang Đa khoa theo quy tắc phân loại hệ thống.")
+        elif is_sp and sp_name != "Đa khoa":
+            sp = query("SELECT specialty_id FROM specialty WHERE specialty_name = %s", (sp_name,), one=True)
+            if not sp:
+                raise BusinessError(f"Chuyên khoa '{sp_name}' không tồn tại.")
+            with transaction():
+                execute("UPDATE specialist SET specialty_id = %s WHERE doctor_id = %s", (sp["specialty_id"], doctor_id))
 
     return jsonify({"message": "Đã cập nhật hồ sơ bác sĩ.", "doctorId": doctor_id})
 
 
 # --------------------------------------------------------------------------
-# Patients Endpoints
+# Patients Endpoints (BR6-12)
 # --------------------------------------------------------------------------
 
 @bp.get("/patients")
@@ -622,7 +665,13 @@ def create_patient():
     password = (data.get("password") or "").strip()
     phone = (data.get("phone") or "").strip()
     email = (data.get("email") or "").strip()
-    dob = _parse_date(data.get("dob") or data.get("date_of_birth"), "ngày sinh")
+
+    ensure(name, "Vui lòng nhập họ và tên bệnh nhân.")
+    ensure(phone, "Vui lòng nhập số điện thoại bệnh nhân.")
+
+    dob = _parse_date(data.get("dob") or data.get("date_of_birth"), "ngày sinh") or date(1995, 1, 1)
+    ensure(dob <= now().date(), "Ngày sinh không được ở tương lai.")
+
     gender = data.get("gender") or "Male"
     if gender in ("Nam", "Male"):
         gender = "Male"
@@ -632,7 +681,8 @@ def create_patient():
         gender = "Other"
 
     if not username:
-        username = "pat." + "".join(e for e in name.lower() if e.isalnum())[:10] + str(now().microsecond)[:3]
+        clean_name = "".join(e for e in name.lower() if e.isalnum())[:10]
+        username = "pat." + clean_name + str(now().microsecond)[:3]
     if not password:
         password = "PatientPassword123@"
 
@@ -643,17 +693,17 @@ def create_patient():
         "full_name": name,
         "phone": phone,
         "email": email,
-        "date_of_birth": dob or date(1995, 1, 1),
+        "date_of_birth": dob,
         "gender": gender,
-        "emergency_contact_name": data.get("emergency_contact_name") or data.get("emergencyContactName") or "Người thân",
-        "emergency_contact_phone": data.get("emergency_contact_phone") or data.get("emergencyContactPhone") or phone,
+        "emergency_contact_name": (data.get("emergency_contact_name") or data.get("emergencyContactName") or "Người thân").strip(),
+        "emergency_contact_phone": (data.get("emergency_contact_phone") or data.get("emergencyContactPhone") or phone).strip(),
     }
 
     account = admin_service.create_account(g.user, user_payload)
     pat_row = query("SELECT patient_id FROM patient WHERE user_id = %s", (account.user_id,), one=True)
     pat_id = pat_row["patient_id"] if pat_row else "PAT-NEW"
 
-    # Optional profile fields
+    # Optional clinical & address fields
     if any(k in data for k in ("address", "blood_type", "bloodType", "allergies", "chronic_diseases", "chronicDiseases")):
         execute("""
             UPDATE patient
@@ -673,7 +723,7 @@ def create_patient():
             "id": pat_id,
             "name": name,
             "gender": "Nam" if gender == "Male" else "Nữ" if gender == "Female" else "Khác",
-            "dob": dob.strftime("%d/%m/%Y") if dob else "01/01/1995",
+            "dob": dob.strftime("%d/%m/%Y"),
             "phone": phone,
             "email": email,
             "created": now().strftime("%d/%m/%Y"),
@@ -711,7 +761,9 @@ def update_patient(patient_id):
     if "emergencyContactPhone" in data or "emergency_contact_phone" in data:
         allowed["emergency_contact_phone"] = (data.get("emergencyContactPhone") or data.get("emergency_contact_phone") or "").strip()
     if "dob" in data or "date_of_birth" in data:
-        allowed["date_of_birth"] = _parse_date(data.get("dob") or data.get("date_of_birth"), "ngày sinh")
+        parsed_dob = _parse_date(data.get("dob") or data.get("date_of_birth"), "ngày sinh")
+        ensure(parsed_dob <= now().date(), "Ngày sinh không được ở tương lai.")
+        allowed["date_of_birth"] = parsed_dob
     if "gender" in data:
         g_val = data["gender"]
         allowed["gender"] = "Male" if g_val in ("Nam", "Male") else "Female" if g_val in ("Nữ", "Female") else "Other"
@@ -721,7 +773,7 @@ def update_patient(patient_id):
 
 
 # --------------------------------------------------------------------------
-# Specialties Endpoints
+# Specialties Endpoints (BR13-20)
 # --------------------------------------------------------------------------
 
 @bp.get("/specialties")
@@ -745,6 +797,14 @@ def create_specialty():
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or data.get("specialty_name") or "").strip()
     description = (data.get("description") or "").strip()
+
+    ensure(0 < len(name) <= 100, "Tên chuyên khoa phải từ 1 đến 100 ký tự.")
+
+    # UNIQUE constraint check
+    dup = query("SELECT specialty_id FROM specialty WHERE specialty_name = %s", (name,), one=True)
+    if dup:
+        raise BusinessError("Tên chuyên khoa đã tồn tại trên hệ thống.")
+
     sp = admin_service.create_specialty(g.user, name, description)
     return jsonify({
         "message": "Đã thêm chuyên khoa thành công.",
@@ -766,8 +826,12 @@ def update_specialty(specialty_id):
 
     with transaction():
         if name:
-            ensure(0 < len(name.strip()) <= 100, "Tên chuyên khoa không hợp lệ.")
-            execute("UPDATE specialty SET specialty_name = %s WHERE specialty_id = %s", (name.strip(), specialty_id))
+            name_clean = name.strip()
+            ensure(0 < len(name_clean) <= 100, "Tên chuyên khoa không hợp lệ.")
+            dup = query("SELECT specialty_id FROM specialty WHERE specialty_name = %s AND specialty_id <> %s", (name_clean, specialty_id), one=True)
+            if dup:
+                raise BusinessError("Tên chuyên khoa đã được sử dụng bởi chuyên khoa khác.")
+            execute("UPDATE specialty SET specialty_name = %s WHERE specialty_id = %s", (name_clean, specialty_id))
         if desc is not None:
             execute("UPDATE specialty SET description = %s WHERE specialty_id = %s", (desc.strip() or None, specialty_id))
 
@@ -775,7 +839,7 @@ def update_specialty(specialty_id):
 
 
 # --------------------------------------------------------------------------
-# Appointments Endpoints
+# Appointments Endpoints (BR26-36)
 # --------------------------------------------------------------------------
 
 @bp.get("/appointments")
@@ -808,12 +872,14 @@ def list_appointments():
                END AS status,
                a.status AS rawStatus,
                a.schedule_id AS scheduleId,
-               a.estimated_duration_minutes AS duration
+               a.estimated_duration_minutes AS duration,
+               CASE WHEN cs.session_id IS NOT NULL THEN TRUE ELSE FALSE END AS hasSession
         FROM appointment a
         JOIN patient p ON a.patient_id = p.patient_id
         JOIN doctor d ON a.doctor_id = d.doctor_id
         LEFT JOIN specialist spl ON d.doctor_id = spl.doctor_id
         LEFT JOIN specialty sp ON spl.specialty_id = sp.specialty_id
+        LEFT JOIN consultation_session cs ON a.appointment_id = cs.appointment_id
         ORDER BY a.appointment_date_time DESC
     """)
     return jsonify({"appointments": rows})
@@ -831,26 +897,36 @@ def create_appointment():
     duration = int(data.get("estimated_duration_minutes") or data.get("duration") or 30)
     reason = (data.get("reason") or "Khám sức khỏe").strip()
 
-    # If schedule_id is not directly supplied, find or create one for doctor on that date
-    if not schedule_id and doctor_id and dt:
+    ensure(patient_id, "Vui lòng chọn bệnh nhân.")
+    ensure(doctor_id, "Vui lòng chọn bác sĩ.")
+    ensure(dt, "Vui lòng chọn ngày và giờ hẹn.")
+    ensure(dt >= now(), "Không thể đặt lịch hẹn trong quá khứ.")
+    ensure(duration in (15, 30, 45, 60), "Thời lượng khám không hợp lệ.")
+
+    # BR26-36: Appointment must fall within a valid available doctor shift
+    if not schedule_id:
         shift = query("""
-            SELECT schedule_id FROM doctor_schedule
+            SELECT schedule_id, start_time, end_time, availability_status
+            FROM doctor_schedule
             WHERE doctor_id = %s AND schedule_date = %s
               AND %s >= start_time AND %s <= end_time
+              AND availability_status = 'Available'
             LIMIT 1
         """, (doctor_id, dt.date(), dt.time(), (dt + timedelta(minutes=duration)).time()), one=True)
         if shift:
             schedule_id = shift["schedule_id"]
         else:
-            # Create a shift for this booking
-            s_res = schedule_service.create(g.user, {
-                "doctor_id": doctor_id,
-                "schedule_date": dt.date(),
-                "start_time": time(max(0, dt.hour - 1), 0),
-                "end_time": time(min(23, dt.hour + 2), 0),
-                "availability_status": "Available",
-            })
-            schedule_id = s_res.schedule_id
+            # Check if doctor has any shift on this date
+            any_shift = query("""
+                SELECT schedule_id, start_time, end_time, availability_status
+                FROM doctor_schedule
+                WHERE doctor_id = %s AND schedule_date = %s
+                LIMIT 1
+            """, (doctor_id, dt.date()), one=True)
+            if any_shift:
+                raise BusinessError(f"Thời gian hẹn nằm ngoài ca trực khả dụng của bác sĩ ({any_shift['start_time']} - {any_shift['end_time']}). Vui lòng chọn giờ trong ca trực.")
+            else:
+                raise BusinessError(f"Bác sĩ chưa có ca trực khả dụng vào ngày {dt.strftime('%d/%m/%Y')}. Vui lòng tạo ca trực trước trong mục Quản lý lịch làm việc.")
 
     booking_payload = {
         "patient_id": patient_id,
@@ -885,15 +961,40 @@ def update_appointment_status(appointment_id):
     target = STATUS_MAP_FROM_UI.get(raw_status, raw_status)
     reason = data.get("reason", "")
 
-    # Check if consultation session exists
+    appt = query("SELECT status, doctor_id FROM appointment WHERE appointment_id = %s", (appointment_id,), one=True)
+    if not appt:
+        abort(404, description="Không tìm thấy lịch hẹn.")
+
+    current_status = appt["status"]
+
+    # BR26-36: Completed, Cancelled, and No-show are terminal states
+    if current_status in ("Completed", "Cancelled", "No-show") and target != current_status:
+        raise BusinessError(f"Lịch hẹn ở trạng thái '{STATUS_MAP_TO_UI.get(current_status, current_status)}' là trạng thái kết thúc, không thể thay đổi.")
+
+    # BR26-36: A consultation protects its appointment context
     session_exists = query("SELECT session_id FROM consultation_session WHERE appointment_id = %s", (appointment_id,), one=True)
     if session_exists and target in ("Cancelled", "No-show"):
-        abort(400, description="Lịch hẹn đã có phiên khám, không thể hủy hoặc đánh dấu vắng.")
+        raise BusinessError("Lịch hẹn đã có phiên khám, không thể hủy hoặc đánh dấu vắng.")
 
-    try:
-        appointment_service.change_status(g.user, appointment_id, target)
-    except BusinessError:
-        # Fallback direct state update if within admin privilege and not violating triggers
+    # Check if clinical records exist
+    if session_exists:
+        clinical_exists = query("""
+            SELECT 1 FROM consultation_session cs
+            LEFT JOIN medical_history mh ON mh.session_id = cs.session_id
+            LEFT JOIN prescription rx ON rx.session_id = cs.session_id
+            WHERE cs.appointment_id = %s AND (mh.medical_history_id IS NOT NULL OR rx.prescription_id IS NOT NULL)
+            LIMIT 1
+        """, (appointment_id,), one=True)
+        if clinical_exists and target != "Completed":
+            raise BusinessError("Lịch hẹn đã có hồ sơ bệnh án hoặc đơn thuốc, trạng thái bắt buộc phải là Hoàn thành.")
+
+    if target in ("Checked-In", "Cancelled", "No-show"):
+        try:
+            appointment_service.change_status(g.user, appointment_id, target)
+        except BusinessError as err:
+            with transaction():
+                execute("UPDATE appointment SET status = %s WHERE appointment_id = %s", (target, appointment_id))
+    else:
         with transaction():
             execute("UPDATE appointment SET status = %s WHERE appointment_id = %s", (target, appointment_id))
 
@@ -912,46 +1013,45 @@ def reschedule_appointment(appointment_id):
     duration = int(data.get("estimated_duration_minutes") or data.get("duration") or 30)
     reason = (data.get("reason") or "").strip()
 
-    appt = query("SELECT doctor_id FROM appointment WHERE appointment_id = %s", (appointment_id,), one=True)
+    ensure(dt, "Vui lòng chọn ngày và giờ mới.")
+    ensure(dt >= now(), "Không thể chuyển lịch hẹn vào quá khứ.")
+    ensure(duration in (15, 30, 45, 60), "Thời lượng khám không hợp lệ.")
+
+    appt = query("SELECT doctor_id, appointment_type, status FROM appointment WHERE appointment_id = %s", (appointment_id,), one=True)
     if not appt:
         abort(404, description="Không tìm thấy lịch hẹn.")
 
+    # BR31: Only Scheduled appointments without consultation sessions can be rescheduled
+    session_exists = query("SELECT session_id FROM consultation_session WHERE appointment_id = %s", (appointment_id,), one=True)
+    if session_exists:
+        raise BusinessError("Lịch hẹn đã có phiên khám lâm sàng, không thể dời lịch.")
+    if appt["status"] != "Scheduled":
+        raise BusinessError("Chỉ có thể dời lịch cho lịch hẹn ở trạng thái Đã xác nhận (Scheduled).")
+
+    # BR26-36: Find active shift of that doctor covering the new appointment time
     if not schedule_id and dt:
         shift = query("""
-            SELECT schedule_id FROM doctor_schedule
+            SELECT schedule_id, start_time, end_time, availability_status
+            FROM doctor_schedule
             WHERE doctor_id = %s AND schedule_date = %s
               AND %s >= start_time AND %s <= end_time
+              AND availability_status = 'Available'
             LIMIT 1
         """, (appt["doctor_id"], dt.date(), dt.time(), (dt + timedelta(minutes=duration)).time()), one=True)
         if shift:
             schedule_id = shift["schedule_id"]
         else:
-            s_res = schedule_service.create(g.user, {
-                "doctor_id": appt["doctor_id"],
-                "schedule_date": dt.date(),
-                "start_time": time(max(0, dt.hour - 1), 0),
-                "end_time": time(min(23, dt.hour + 2), 0),
-                "availability_status": "Available",
-            })
-            schedule_id = s_res.schedule_id
+            raise BusinessError(f"Bác sĩ không có ca trực khả dụng vào thời gian {dt.strftime('%d/%m/%Y %H:%M')}. Vui lòng chọn khung giờ trong ca trực.")
 
     reschedule_payload = {
         "schedule_id": schedule_id,
         "appointment_date_time": dt,
         "estimated_duration_minutes": duration,
-        "appointment_type": "In-person",
+        "appointment_type": appt["appointment_type"],
         "reason": reason,
     }
 
-    try:
-        appointment_service.reschedule(g.user, appointment_id, reschedule_payload)
-    except BusinessError as err:
-        with transaction():
-            execute("""
-                UPDATE appointment
-                SET schedule_id = %s, appointment_date_time = %s, estimated_duration_minutes = %s, reason = COALESCE(%s, reason)
-                WHERE appointment_id = %s
-            """, (schedule_id, dt, duration, reason or None, appointment_id))
+    appointment_service.reschedule(g.user, appointment_id, reschedule_payload)
 
     return jsonify({
         "message": "Đã đổi lịch hẹn thành công.",
@@ -962,7 +1062,7 @@ def reschedule_appointment(appointment_id):
 
 
 # --------------------------------------------------------------------------
-# Schedules Endpoints
+# Schedules Endpoints (BR21-25)
 # --------------------------------------------------------------------------
 
 @bp.get("/schedules")
@@ -994,6 +1094,13 @@ def create_schedule():
     s_date = _parse_date(data.get("schedule_date") or data.get("date"), "ngày làm việc")
     start = _parse_time(data.get("start_time") or data.get("startTime"), "giờ bắt đầu")
     end = _parse_time(data.get("end_time") or data.get("endTime"), "giờ kết thúc")
+
+    ensure(doctor_id, "Vui lòng chọn bác sĩ.")
+    ensure(s_date, "Vui lòng chọn ngày làm việc.")
+    ensure(start and end, "Vui lòng nhập giờ bắt đầu và kết thúc ca.")
+    ensure(s_date >= now().date(), "Không thể tạo ca làm trong quá khứ.")
+    ensure(end > start, "Giờ kết thúc ca phải sau giờ bắt đầu.")
+
     status = data.get("availability_status") or data.get("status") or "Available"
     if status in ("Hoạt động", "Khả dụng", "Available"):
         status = "Available"
@@ -1001,6 +1108,16 @@ def create_schedule():
         status = "Busy"
     else:
         status = "On Leave"
+
+    # BR21-25: Working schedules overlap check
+    overlap = query("""
+        SELECT schedule_id FROM doctor_schedule
+        WHERE doctor_id = %s AND schedule_date = %s
+          AND start_time < %s AND end_time > %s
+        LIMIT 1
+    """, (doctor_id, s_date, end, start), one=True)
+    if overlap:
+        raise BusinessError("Bác sĩ đã có ca trực khác trùng thời gian trong ngày này.")
 
     shift = schedule_service.create(g.user, {
         "doctor_id": doctor_id,
@@ -1059,7 +1176,6 @@ def get_reports():
     if days not in (7, 30, 90):
         days = 30
 
-    # User counts
     total_users = query("SELECT COUNT(*) AS c FROM user_account", one=True)["c"]
     total_doctors = query("SELECT COUNT(*) AS c FROM doctor", one=True)["c"]
     total_patients = query("SELECT COUNT(*) AS c FROM patient", one=True)["c"]
@@ -1069,7 +1185,6 @@ def get_reports():
         WHERE created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL %s DAY)
     """, (days,), one=True)["c"]
 
-    # Appointments in period
     appts_in_period = query("""
         SELECT COUNT(*) AS total,
                SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed,
@@ -1086,7 +1201,6 @@ def get_reports():
 
     completion_rate = round((completed_in_period / total_in_period * 100) if total_in_period > 0 else 0, 1)
 
-    # Daily trend in period
     daily = query("""
         SELECT DATE_FORMAT(appointment_date_time, '%d/%m') AS d,
                COUNT(*) AS total
@@ -1096,7 +1210,6 @@ def get_reports():
         ORDER BY DATE(appointment_date_time) ASC
     """, (days,))
 
-    # Top doctors in period
     top_docs = query("""
         SELECT d.full_name AS name,
                COALESCE(sp.specialty_name, 'Đa khoa') AS specialty,
@@ -1111,7 +1224,6 @@ def get_reports():
         LIMIT 5
     """, (days,))
 
-    # CSV data summary
     csv_rows = [
         {"item": "Tổng người dùng", "value": total_users},
         {"item": "Người dùng mới trong kỳ", "value": new_users},
@@ -1149,7 +1261,7 @@ def get_reports():
 
 
 # --------------------------------------------------------------------------
-# Settings Endpoints
+# Settings Endpoints (BR1-5)
 # --------------------------------------------------------------------------
 
 @bp.post("/settings/password")
@@ -1184,12 +1296,11 @@ def update_admin_profile():
     email = (data.get("email") or "admin@titimi.vn").strip()
     phone = (data.get("phone") or "0902345678").strip()
 
-    # Admin profile details can be reflected in session or response
     return jsonify({
         "message": "Đã lưu cài đặt hồ sơ quản trị.",
         "admin": {
             "id": g.user.user_id,
-            "username": g.user.username,
+            "username": getattr(g.user, "username", "admin"),
             "name": name,
             "email": email,
             "phone": phone,

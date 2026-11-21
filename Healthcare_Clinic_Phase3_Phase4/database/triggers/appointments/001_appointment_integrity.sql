@@ -42,7 +42,6 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Follow-up must reference a valid preceding appointment.';
     END IF;
 END$$
-DROP TRIGGER IF EXISTS session_before_insert;
 CREATE TRIGGER appointment_before_insert BEFORE INSERT ON appointment FOR EACH ROW
 BEGIN
     CALL validate_appointment(NEW.appointment_id, NEW.patient_id, NEW.doctor_id, NEW.schedule_id,
