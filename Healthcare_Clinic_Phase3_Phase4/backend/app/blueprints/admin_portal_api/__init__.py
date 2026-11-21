@@ -289,6 +289,9 @@ def portal_bootstrap():
         LEFT JOIN consultation_session cs ON a.appointment_id = cs.appointment_id
         ORDER BY a.appointment_date_time DESC
     """)
+    for r in appointments_rows:
+        r["isFollowUp"] = bool(r.get("isFollowUp"))
+        r["hasSession"] = bool(r.get("hasSession"))
 
     # Schedules
     schedules_rows = query("""
@@ -882,6 +885,9 @@ def list_appointments():
         LEFT JOIN consultation_session cs ON a.appointment_id = cs.appointment_id
         ORDER BY a.appointment_date_time DESC
     """)
+    for r in rows:
+        r["isFollowUp"] = bool(r.get("isFollowUp"))
+        r["hasSession"] = bool(r.get("hasSession"))
     return jsonify({"appointments": rows})
 
 

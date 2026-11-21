@@ -90,7 +90,7 @@
   color: #fff;
 }
 .brand small {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--pink);
   font-weight: 700;
   letter-spacing: 1.2px;
@@ -157,7 +157,7 @@
   color: #fff;
 }
 .sidebar-profile small {
-  font-size: 9px;
+  font-size: 11.5px;
   color: rgba(255, 255, 255, 0.6);
   margin-top: 3px;
 }
@@ -267,7 +267,7 @@ header {
   font-size: 11px;
 }
 .profile-trigger small {
-  font-size: 9px;
+  font-size: 11.5px;
   color: var(--muted);
   margin-top: 2px;
 }
@@ -412,7 +412,7 @@ header {
   color: #fff;
 }
 .system-status small {
-  font-size: 9px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.68);
   margin-top: 3px;
 }
@@ -569,7 +569,7 @@ header {
   margin: 4px 0;
 }
 .stat-card small {
-  font-size: 9px;
+  font-size: 11.5px;
   color: #769089;
   white-space: nowrap;
 }
@@ -617,7 +617,7 @@ header {
   display: flex;
   justify-content: space-between;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11.5px;
   padding: 0 5px;
   margin-top: 8px;
 }
@@ -656,7 +656,7 @@ header {
   font-size: 18px;
 }
 .donut small {
-  font-size: 8px;
+  font-size: 11px;
   color: var(--muted);
 }
 .legend {
@@ -668,7 +668,7 @@ header {
   gap: 7px;
   align-items: center;
   margin: 9px 0;
-  font-size: 9px;
+  font-size: 12px;
 }
 .legend i {
   width: 7px;
@@ -676,7 +676,7 @@ header {
   border-radius: 50%;
 }
 .legend b {
-  font-size: 9px;
+  font-size: 12px;
 }
 .bars {
   height: 160px;
@@ -702,7 +702,7 @@ header {
   min-height: 10px;
 }
 .bars small {
-  font-size: 8px;
+  font-size: 11px;
   color: var(--muted);
   margin-top: 6px;
   white-space: nowrap;
@@ -710,7 +710,7 @@ header {
   overflow: hidden;
 }
 .bar-tooltip {
-  font-size: 8px;
+  font-size: 11px;
   margin-bottom: 3px;
   color: var(--muted);
 }
@@ -770,7 +770,7 @@ header {
   font-size: 11px;
 }
 .activity small {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   margin-top: 4px;
 }
@@ -899,7 +899,7 @@ td b {
 .avatar-sm {
   width: 30px;
   height: 30px;
-  font-size: 9px;
+  font-size: 11px;
 }
 .avatar-md {
   width: 38px;
@@ -985,7 +985,7 @@ td b {
   justify-content: space-between;
   margin-top: 17px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 .pagination > div {
   display: flex;
@@ -993,7 +993,7 @@ td b {
 }
 .pagination .btn {
   padding: 6px 10px;
-  font-size: 9px;
+  font-size: 12px;
 }
 .page-active {
   border: 0;
@@ -1117,7 +1117,7 @@ td b {
   display: block;
 }
 .detail-grid small {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   margin-bottom: 6px;
 }
@@ -1144,7 +1144,7 @@ td b {
 .detail-panels p,
 .privacy-note p {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 .detail-panels strong {
@@ -1191,7 +1191,7 @@ td b {
   display: block;
 }
 .mini-person small {
-  font-size: 9px;
+  font-size: 11.5px;
   color: var(--muted);
   margin-top: 3px;
 }
@@ -1211,7 +1211,7 @@ td b {
   border-radius: 9px;
 }
 .appointment-code small {
-  font-size: 9px;
+  font-size: 11.5px;
   color: var(--muted);
 }
 .appointment-code h3 {
@@ -1328,7 +1328,7 @@ td b {
 }
 .step-heading > span {
   color: var(--primary);
-  font-size: 9px;
+  font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
@@ -1382,7 +1382,7 @@ td b {
 .selection-card small {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11.5px;
 }
 .selection-check {
   width: 21px;
@@ -1435,7 +1435,7 @@ td b {
 }
 .visit-type-grid small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11.5px;
   line-height: 1.5;
 }
 .visit-type-grid i {
@@ -1497,7 +1497,7 @@ td b {
 .specialty-choice-grid small {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.4;
 }
 .date-reason-grid {
@@ -1560,7 +1560,7 @@ td b {
 .follow-up-option small {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11.5px;
 }
 .slot-label {
   display: flex;
@@ -1599,7 +1599,7 @@ td b {
 .time-slots small {
   display: block;
   margin-top: 2px;
-  font-size: 7px;
+  font-size: 10.5px;
   font-weight: 400;
 }
 .slot-message {
@@ -1644,7 +1644,7 @@ td b {
 .summary-person small,
 .summary-person span {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11.5px;
 }
 .summary-person b {
   margin: 3px 0;
@@ -1668,7 +1668,7 @@ td b {
 .summary-grid small {
   margin-bottom: 5px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11.5px;
 }
 .summary-grid b {
   font-size: 10px;
@@ -1682,13 +1682,13 @@ td b {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
 }
 .summary-note {
   padding: 13px 15px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 .appointment-wizard-actions {
@@ -1758,7 +1758,7 @@ td b {
 .schedule-legend {
   display: flex;
   gap: 13px;
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 .schedule-legend span {
@@ -1792,7 +1792,7 @@ td b {
 .time-col small {
   text-align: center;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11.5px;
   padding-top: 8px;
   border-top: 1px solid #edf1ef;
 }
@@ -1955,7 +1955,7 @@ td b {
 .avatar-edit small {
   display: block;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11.5px;
   margin-top: 7px;
 }
 .settings-save {
@@ -1974,7 +1974,7 @@ td b {
   font-size: 11px;
 }
 .setting-row p {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 4px;
 }
@@ -2026,7 +2026,7 @@ td b {
 }
 .system-info small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11.5px;
 }
 .system-info b {
   font-size: 10px;

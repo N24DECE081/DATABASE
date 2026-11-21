@@ -945,7 +945,7 @@ function UsersPage({
                 <th>Vai trò</th>
                 <th>Trạng thái</th>
                 <th>Ngày tạo</th>
-                <th>Thao tác</th>
+                <th style={{ minWidth: "120px" }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -963,7 +963,7 @@ function UsersPage({
                   <td><span className="badge badge-info">{u.role}</span></td>
                   <td><StatusBadge status={u.status} /></td>
                   <td>{u.created}</td>
-                  <td>
+                  <td style={{ minWidth: "120px", whiteSpace: "nowrap" }}>
                     <div className="row-actions">
                       <Button
                         variant={u.status === "Hoạt động" ? "secondary" : "primary"}
@@ -1269,7 +1269,7 @@ function DoctorsPage({
                 <th>Số điện thoại</th>
                 <th>Số GPLX</th>
                 <th>Trạng thái</th>
-                <th>Thao tác</th>
+                <th style={{ minWidth: "160px" }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -1287,9 +1287,10 @@ function DoctorsPage({
                   <td>{d.phone}</td>
                   <td>{d.licenseNumber || "Chưa cấp"}</td>
                   <td><StatusBadge status={d.status} /></td>
-                  <td>
+                  <td style={{ minWidth: "160px", whiteSpace: "nowrap" }}>
                     <div className="row-actions">
                       <button
+                        className="icon-btn"
                         title="Xem hồ sơ"
                         onClick={() => {
                           setSelected(d);
@@ -1299,6 +1300,7 @@ function DoctorsPage({
                         <Icon name="eye" size={17} />
                       </button>
                       <button
+                        className="icon-btn"
                         title="Chỉnh sửa"
                         onClick={() => {
                           setSelected(d);
@@ -1589,7 +1591,7 @@ function PatientsPage({
                 <th>Email</th>
                 <th>Nhóm máu</th>
                 <th>Trạng thái</th>
-                <th>Thao tác</th>
+                <th style={{ minWidth: "160px" }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -1608,9 +1610,10 @@ function PatientsPage({
                   <td>{p.email || "—"}</td>
                   <td><span className="badge badge-info">{p.bloodType || "Chưa rõ"}</span></td>
                   <td><StatusBadge status={p.status} /></td>
-                  <td>
+                  <td style={{ minWidth: "160px", whiteSpace: "nowrap" }}>
                     <div className="row-actions">
                       <button
+                        className="icon-btn"
                         title="Xem hồ sơ"
                         onClick={() => {
                           setSelected(p);
@@ -1620,6 +1623,7 @@ function PatientsPage({
                         <Icon name="eye" size={17} />
                       </button>
                       <button
+                        className="icon-btn"
                         title="Chỉnh sửa"
                         onClick={() => {
                           setSelected(p);
@@ -1812,7 +1816,7 @@ function SpecialtiesPage({
                 <th>Mô tả</th>
                 <th>Số lượng bác sĩ</th>
                 <th>Trạng thái</th>
-                <th>Thao tác</th>
+                <th style={{ minWidth: "120px" }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -1834,9 +1838,10 @@ function SpecialtiesPage({
                     </button>
                   </td>
                   <td><StatusBadge status={s.status} /></td>
-                  <td>
+                  <td style={{ minWidth: "120px", whiteSpace: "nowrap" }}>
                     <div className="row-actions">
                       <button
+                        className="icon-btn"
                         title="Xem danh sách bác sĩ"
                         onClick={() => {
                           setSelected(s);
@@ -1846,6 +1851,7 @@ function SpecialtiesPage({
                         <Icon name="users" size={17} />
                       </button>
                       <button
+                        className="icon-btn"
                         title="Chỉnh sửa"
                         onClick={() => {
                           setSelected(s);
@@ -2518,7 +2524,7 @@ function AppointmentDetail({
         ))}
       </div>
 
-      {appointment.hasSession && (
+      {Boolean(appointment.hasSession) && (
         <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "0.75rem 1rem", borderRadius: "8px", margin: "1rem 0", display: "flex", alignItems: "center", gap: "0.5rem", color: "#1e40af", fontSize: "0.85rem" }}>
           <span>ℹ️</span>
           <span><b>Lịch hẹn đã gắn với phiên khám:</b> Để bảo toàn tính toàn vẹn y khoa (BR26–36 & trigger toàn vẹn), không thể hủy hoặc dời lịch khi phiên khám đã khởi tạo.</span>
@@ -3077,7 +3083,7 @@ function SchedulePage({
                   <th>Ngày làm việc</th>
                   <th>Khung giờ</th>
                   <th>Trạng thái</th>
-                  <th>Thao tác</th>
+                  <th style={{ minWidth: "130px" }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -3089,7 +3095,7 @@ function SchedulePage({
                     <td>{s.formattedDate}</td>
                     <td>{s.startTime} – {s.endTime}</td>
                     <td><StatusBadge status={s.status === "Available" ? "Khả dụng" : s.status} /></td>
-                    <td>
+                    <td style={{ minWidth: "130px", whiteSpace: "nowrap" }}>
                       <Button
                         variant="secondary"
                         onClick={() => onToggleStatus(s.id, s.status === "Available" ? "Busy" : "Available")}
