@@ -63,7 +63,7 @@ def register_patient(data):
     chronic = (data.get("chronic_diseases") or "").strip() or None
 
     created_time = now()
-    user_id = identity("USER-")
+    user_id = identity("USER-PAT-")
     patient_id = identity("PAT-")
     password_hash = generate_password_hash(password, method="pbkdf2:sha256:600000")
 

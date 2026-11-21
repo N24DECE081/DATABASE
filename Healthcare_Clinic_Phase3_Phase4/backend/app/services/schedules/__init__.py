@@ -17,7 +17,7 @@ def create(user, data):
     ensure(data["schedule_date"] >= now().date(), "Không thể tạo ca làm trong quá khứ.")
     with transaction():
         classified_doctor(data["doctor_id"], lock=True)
-        return schedules.insert(DoctorSchedule(schedule_id=identity("S"), **data))
+        return schedules.insert(DoctorSchedule(schedule_id=identity("SCH-"), **data))
 
 
 def change_availability(user, schedule_id, status):
