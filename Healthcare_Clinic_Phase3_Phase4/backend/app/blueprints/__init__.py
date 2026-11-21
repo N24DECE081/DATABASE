@@ -9,7 +9,7 @@ MODULE_NAMES = (
 )
 
 API_MODULE_NAMES = (
-    "appointment_api", "doctor_portal_api", "patient_portal_api",
+    "appointment_api", "doctor_portal_api", "patient_portal_api", "admin_portal_api",
 )
 
 
