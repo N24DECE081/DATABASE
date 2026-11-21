@@ -32,13 +32,13 @@ def create(user, session_id, data):
         session = accessible_session(user, session_id)
         appointment = accessible(user, session.appointment_id, lock=True)
         ensure(appointment.status == "Completed", "Chỉ kê đơn sau khi lịch hẹn Completed.")
-        prescription = prescriptions.insert(Prescription(prescription_id=identity("R"), session_id=session_id,
+        prescription = prescriptions.insert(Prescription(prescription_id=identity("RX-"), session_id=session_id,
             diagnosis_icd=data.get("diagnosis_icd") or None, prescription_date=now(),
             instructions=data.get("instructions") or None))
         for item in items:
             found(medications.get(Medication, item["medication_id"]))
             ensure(all(item.get(k) for k in ("dosage", "frequency", "duration")), "Thiếu thông tin mục thuốc.")
-            prescriptions.insert(PrescriptionItem(prescription_item_id=identity("I"),
+            prescriptions.insert(PrescriptionItem(prescription_item_id=identity("RXI-"),
                 prescription_id=prescription.prescription_id, medication_id=item["medication_id"],
                 dosage=item["dosage"], frequency=item["frequency"], duration=item["duration"],
                 special_instructions=item.get("special_instructions") or None))

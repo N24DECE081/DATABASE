@@ -21,6 +21,6 @@ def create(user, session_id, data):
         session = accessible_session(user, session_id)
         appointment = accessible(user, session.appointment_id, lock=True)
         ensure(appointment.status == "Completed", "Chỉ ghi bệnh sử sau khi lịch hẹn Completed.")
-        return medical_history.insert(MedicalHistory(medical_history_id=identity("H"), session_id=session_id,
+        return medical_history.insert(MedicalHistory(medical_history_id=identity("HIS-"), session_id=session_id,
             record_date=now(), diagnosis=data["diagnosis"], symptoms=data["symptoms"],
             progress_notes=data.get("progress_notes") or None))
