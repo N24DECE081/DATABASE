@@ -33,7 +33,7 @@ def create(user, appointment_id, data):
         appointment = accessible(user, appointment_id, lock=True)
         ensure(appointment.status in ("Checked-In", "Completed"), "Cần check-in trước khi tạo phiên khám.")
         ensure(consultations.for_appointment(appointment_id) is None, "Lịch hẹn đã có một phiên khám.")
-        session = consultations.insert(ConsultationSession(session_id=identity("C"), appointment_id=appointment_id,
+        session = consultations.insert(ConsultationSession(session_id=identity("SES-"), appointment_id=appointment_id,
             start_time=data["start_time"], end_time=data.get("end_time"), actual_duration_minutes=minutes,
             session_type="Virtual" if appointment.appointment_type == "Telemedicine" else "In-person",
             meeting_url=data.get("meeting_url") or None, diagnosis_notes=data.get("diagnosis_notes") or None))

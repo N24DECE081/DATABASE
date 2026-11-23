@@ -11,5 +11,5 @@ def create(user, name, description):
         abort(403)
     ensure(0 < len(name.strip()) <= 100, "Tên thuốc không hợp lệ.")
     with transaction():
-        return medications.insert(Medication(medication_id=identity("M"), medication_name=name.strip(),
+        return medications.insert(Medication(medication_id=identity("MED-"), medication_name=name.strip(),
                                               description=description or None))

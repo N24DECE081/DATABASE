@@ -1,22 +1,27 @@
 """admin: HTTP routes with role and ownership checks."""
 
-from flask import Blueprint
+from pathlib import Path
+from flask import Blueprint, current_app, flash, g, redirect, render_template, request, send_from_directory, url_for
 
-bp = Blueprint("admin", __name__, url_prefix="/admin")
-
-from flask import g, flash, redirect, render_template, url_for
 from ...forms.admin import AccountForm, AccountStatusForm, SpecialtyForm
-from ...repositories import admin, doctors, appointments
+from ...repositories import admin, appointments, doctors
 from ...security import require_roles
 from ...services import admin as service
 from ...utils.forms import data_for
+
+bp = Blueprint("admin", __name__, url_prefix="/admin")
+
+
+@bp.get("/portal")
+@require_roles("ADMIN")
+def portal():
+    return send_from_directory(Path(current_app.static_folder) / "admin-portal", "index.html")
 
 
 @bp.get("/")
 @require_roles("ADMIN")
 def dashboard():
-    return render_template("admin/dashboard.html", counts=admin.counts(), accounts=admin.accounts(),
-                           appointments=appointments.list_for(g.user)[:8], form=AccountStatusForm())
+    return portal()
 
 
 @bp.get("/reports")
@@ -35,7 +40,7 @@ def create_account():
     if form.validate_on_submit():
         service.create_account(g.user, data_for(form, "username password role full_name phone email date_of_birth gender emergency_contact_name emergency_contact_phone license_number subtype specialty_id"))
         flash("Đã tạo tài khoản cùng hồ sơ theo vai trò.", "success")
-        return redirect(url_for("admin.dashboard"))
+        return redirect(url_for("admin.portal"))
     return render_template("shared/form.html", title="Tạo tài khoản", subtitle="Chọn vai trò và điền các trường hồ sơ tương ứng. Bác sĩ cần đúng một phân loại.", form=form)
 
 
@@ -46,7 +51,7 @@ def account_status(user_id):
     if form.validate_on_submit():
         service.change_account_status(g.user, user_id, form.account_status.data)
         flash("Đã cập nhật trạng thái tài khoản.", "success")
-    return redirect(url_for("admin.dashboard"))
+    return redirect(url_for("admin.portal"))
 
 
 @bp.route("/specialties/new", methods=["GET", "POST"])

@@ -15,7 +15,7 @@ def create_account(user, data):
     ensure(role in ("ADMIN", "DOCTOR", "PATIENT"), "Role không hợp lệ.")
     ensure(10 <= len(data["password"]) <= 128, "Mật khẩu cần từ 10 đến 128 ký tự.")
     with transaction():
-        account = insert(UserAccount(user_id=identity("U"), username=data["username"].strip(),
+        account = insert(UserAccount(user_id=identity("U", role=role), username=data["username"].strip(),
             password_hash=generate_password_hash(data["password"], method="pbkdf2:sha256:600000"),
             role=role, account_status="Active", created_at=now()))
         if role != "ADMIN":
@@ -23,13 +23,13 @@ def create_account(user, data):
         if role == "PATIENT":
             ensure(data.get("date_of_birth") and data["date_of_birth"] <= now().date(), "Ngày sinh không hợp lệ.")
             ensure(data.get("emergency_contact_name") and data.get("emergency_contact_phone"), "Cần thông tin liên hệ khẩn cấp.")
-            insert(Patient(patient_id=identity("P"), user_id=account.user_id, full_name=data["full_name"],
+            insert(Patient(patient_id=identity("PAT-"), user_id=account.user_id, full_name=data["full_name"],
                 date_of_birth=data["date_of_birth"], gender=data["gender"], phone=data["phone"],
                 email=data.get("email") or None, emergency_contact_name=data["emergency_contact_name"],
                 emergency_contact_phone=data["emergency_contact_phone"]))
         elif role == "DOCTOR":
             ensure(data.get("email") and data.get("license_number"), "Cần email và số giấy phép bác sĩ.")
-            doctor = insert(Doctor(doctor_id=identity("D"), user_id=account.user_id,
+            doctor = insert(Doctor(doctor_id=identity("DOC-"), user_id=account.user_id,
                 full_name=data["full_name"], phone=data["phone"], email=data["email"], license_number=data["license_number"]))
             if data["subtype"] == "GENERAL_PRACTITIONER":
                 insert(GeneralPractitioner(doctor_id=doctor.doctor_id))
@@ -54,4 +54,4 @@ def create_specialty(user, name, description):
         abort(403)
     ensure(0 < len(name.strip()) <= 100, "Tên chuyên khoa không hợp lệ.")
     with transaction():
-        return insert(Specialty(specialty_id=identity("T"), specialty_name=name.strip(), description=description or None))
+        return insert(Specialty(specialty_id=identity("SPC-"), specialty_name=name.strip(), description=description or None))

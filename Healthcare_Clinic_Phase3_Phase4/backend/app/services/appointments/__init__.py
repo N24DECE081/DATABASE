@@ -57,7 +57,7 @@ def book(user, data):
             ensure(preceding.patient_id == patient_id and preceding.doctor_id == shift.doctor_id
                    and preceding.appointment_date_time < begins and preceding.status not in ("Cancelled", "No-show"),
                    "Lịch tái khám phải tham chiếu lần hẹn trước hợp lệ của cùng bệnh nhân/bác sĩ.")
-        return appointments.insert(Appointment(appointment_id=identity("A"), patient_id=patient_id,
+        return appointments.insert(Appointment(appointment_id=identity("APT-"), patient_id=patient_id,
             doctor_id=shift.doctor_id, schedule_id=shift.schedule_id, booked_by_user_id=user.user_id,
             follow_up_from_appt_id=parent, appointment_date_time=begins, estimated_duration_minutes=minutes,
             appointment_type=data["appointment_type"], status="Scheduled", reason=data.get("reason") or None))

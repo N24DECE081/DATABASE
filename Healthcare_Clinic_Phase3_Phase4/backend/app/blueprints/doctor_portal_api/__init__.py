@@ -58,13 +58,16 @@ def _clinical_fields(notes):
     }
     values = {key: "" for key in labels.values()}
     current = None
-    for line in (notes or "").splitlines():
+    has_labels = False
+    for raw_line in (notes or "").splitlines():
+        line = raw_line.strip()
         label = next((name for name in labels if line == f"{name}:"), None)
         if label:
             current = labels[label]
+            has_labels = True
         elif current:
-            values[current] = f"{values[current]}\n{line}".strip()
-    if notes and not any(values.values()):
+            values[current] = f"{values[current]}\n{raw_line}".strip()
+    if notes and not has_labels and not any(values.values()):
         values["notes"] = notes
     return values
 
