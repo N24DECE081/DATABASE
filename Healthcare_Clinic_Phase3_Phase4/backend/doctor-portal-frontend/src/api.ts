@@ -100,6 +100,26 @@ export type DoctorProfile = {
   specialty: string;
 };
 
+export type MedicationCatalogItem = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
+export type PrescriptionItemInput = {
+  medication_id: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  special_instructions?: string;
+};
+
+export type CreatePrescriptionPayload = {
+  diagnosis_icd?: string;
+  instructions?: string;
+  items: PrescriptionItemInput[];
+};
+
 export type DoctorPortalData = {
   profile: DoctorProfile;
   appointments: Appointment[];
@@ -107,6 +127,7 @@ export type DoctorPortalData = {
   consultations: Consultation[];
   records: MedicalRecord[];
   prescriptions: Prescription[];
+  medications?: MedicationCatalogItem[];
   schedules: Schedule[];
 };
 
@@ -148,6 +169,9 @@ async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
 
 export const loadDoctorPortal = () => request<DoctorPortalData>("/api/doctor/portal");
 
+export const loadMedications = () =>
+  request<{ medications: MedicationCatalogItem[] }>("/api/doctor/medications");
+
 const appointmentStatusValues: Record<AppointmentStatus, string> = {
   "Chờ xác nhận": "Scheduled",
   "Đã xác nhận": "Checked-In",
@@ -187,6 +211,16 @@ export function finishConsultation(sessionId: string) {
   return request<{ session_id: string; status: string }>(
     `/api/doctor/consultations/${encodeURIComponent(sessionId)}/finish`,
     { method: "POST", body: JSON.stringify({}) },
+  );
+}
+
+export function createPrescription(sessionId: string, payload: CreatePrescriptionPayload) {
+  return request<{ message: string; prescription: Prescription }>(
+    `/api/doctor/consultations/${encodeURIComponent(sessionId)}/prescription`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
   );
 }
 

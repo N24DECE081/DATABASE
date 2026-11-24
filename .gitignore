@@ -1,0 +1,3 @@
+# Ignore office lock files
+~$*
+.pytest_cache/

@@ -166,7 +166,7 @@ def booking_options():
 
     all_directory = doctors.directory()
     matching_directory = doctors.directory(search)
-    if specialty_id == "__gp__":
+    if specialty_id in ("__gp__", "gp", "dakhoa", "Đa khoa", "Bác sĩ đa khoa"):
         doctor_rows = [row for row in matching_directory if row["subtype"] == "GENERAL_PRACTITIONER"]
     elif specialty_id:
         doctor_rows = [row for row in matching_directory if row["specialty_id"] == specialty_id]
@@ -209,7 +209,11 @@ def booking_options():
             "full_name": row["full_name"],
             "specialty_id": row["specialty_id"],
             "subtype": row["subtype"],
-            "specialty_name": row["specialty_name"],
+            "specialty_name": (
+                "Đa khoa"
+                if row["subtype"] == "GENERAL_PRACTITIONER" or row["specialty_name"] in ("General Practitioner", "General Practice", "Bác sĩ đa khoa")
+                else row["specialty_name"]
+            ),
         }
         for row in doctor_rows if row["doctor_id"] in available_doctor_ids
     ]

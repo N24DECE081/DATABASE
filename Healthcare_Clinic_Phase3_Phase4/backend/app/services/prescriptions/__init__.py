@@ -1,4 +1,5 @@
 """Atomic prescription + items workflow. Empty headers never commit through the app."""
+import re
 from flask import abort
 from ...db import transaction
 from ...entities import Prescription, PrescriptionItem, Medication
@@ -28,12 +29,15 @@ def create(user, session_id, data):
     items = data.get("items", [])
     ensure(1 <= len(items) <= 10, "Đơn thuốc cần từ 1 đến 10 mục thuốc.")
     ensure(len({item["medication_id"] for item in items}) == len(items), "Mỗi thuốc chỉ xuất hiện một lần trong đơn.")
+    icd = (data.get("diagnosis_icd") or "").strip().upper() or None
+    if icd:
+        ensure(bool(re.match(r'^[A-Z][0-9]{2}(\.[0-9]{1,2})?$', icd)), "Mã chẩn đoán ICD-10 không đúng định dạng (Ví dụ: J02.9, E11, I10, K29, M54.5).")
     with transaction():
         session = accessible_session(user, session_id)
         appointment = accessible(user, session.appointment_id, lock=True)
-        ensure(appointment.status == "Completed", "Chỉ kê đơn sau khi lịch hẹn Completed.")
+        ensure(appointment.status in ("Checked-In", "Completed"), "Chỉ kê đơn thuốc khi phiên khám đang diễn ra hoặc đã hoàn thành.")
         prescription = prescriptions.insert(Prescription(prescription_id=identity("RX-"), session_id=session_id,
-            diagnosis_icd=data.get("diagnosis_icd") or None, prescription_date=now(),
+            diagnosis_icd=icd, prescription_date=now(),
             instructions=data.get("instructions") or None))
         for item in items:
             found(medications.get(Medication, item["medication_id"]))

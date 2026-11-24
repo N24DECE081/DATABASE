@@ -27,3 +27,11 @@ def overlap(doctor_id, begins, ends, exclude=""):
                     AND appointment_date_time < %s
                     AND DATE_ADD(appointment_date_time, INTERVAL estimated_duration_minutes MINUTE) > %s
                     LIMIT 1""", (doctor_id, exclude, ends, begins), one=True)
+
+
+def patient_overlap(patient_id, begins, ends, exclude=""):
+    return query("""SELECT appointment_id FROM appointment WHERE patient_id = %s
+                    AND appointment_id <> %s AND status NOT IN ('Cancelled','No-show')
+                    AND appointment_date_time < %s
+                    AND DATE_ADD(appointment_date_time, INTERVAL estimated_duration_minutes MINUTE) > %s
+                    LIMIT 1""", (patient_id, exclude, ends, begins), one=True)

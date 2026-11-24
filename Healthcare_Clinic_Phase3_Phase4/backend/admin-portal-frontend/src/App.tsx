@@ -13,12 +13,47 @@ import type {
   User,
 } from "./api";
 
+function normalizeVietnameseName(name: string): string {
+  if (!name) return "";
+  const honorifics: Record<string, string> = {
+    BS: "BS",
+    "BS.": "BS.",
+    TS: "TS",
+    "TS.": "TS.",
+    THS: "ThS",
+    "THS.": "ThS.",
+    PGS: "PGS",
+    "PGS.": "PGS.",
+    GS: "GS",
+    "GS.": "GS.",
+  };
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((word) => {
+      const upper = word.toUpperCase();
+      if (honorifics[upper]) return honorifics[upper];
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
+}
+
+function normalizePhone(phone: string): string {
+  if (!phone) return "";
+  return phone.replace(/[^\d+]/g, "").replace(/^\+84/, "0");
+}
+
+function isValidVietnamesePhone(phone: string): boolean {
+  return /^0[35789]\d{8}$/.test(normalizePhone(phone));
+}
+
 const NAV: { page: Page; label: string; icon: string }[] = [
   { page: "dashboard", label: "Dashboard", icon: "grid" },
   { page: "users", label: "Quản lý người dùng", icon: "users" },
   { page: "doctors", label: "Quản lý bác sĩ", icon: "doctor" },
   { page: "patients", label: "Quản lý bệnh nhân", icon: "heart" },
   { page: "specialties", label: "Chuyên khoa", icon: "briefcase" },
+  { page: "medications", label: "Danh mục thuốc", icon: "pill" },
   { page: "appointments", label: "Quản lý lịch hẹn", icon: "calendar" },
   { page: "schedule", label: "Quản lý lịch làm việc", icon: "clock" },
   { page: "reports", label: "Báo cáo hệ thống", icon: "chart" },
@@ -56,6 +91,15 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
         <rect x="3" y="7" width="18" height="13" rx="2" />
         <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" />
       </>
+    ),
+    pill: (
+      <>
+        <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z" />
+        <path d="m8.5 8.5 7 7" />
+      </>
+    ),
+    shield: (
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     ),
     calendar: (
       <>
@@ -704,6 +748,7 @@ function Dashboard({
             ["doctor", "Quản lý bác sĩ", "doctors"],
             ["users", "Quản lý người dùng", "users"],
             ["briefcase", "Quản lý chuyên khoa", "specialties"],
+            ["pill", "Danh mục thuốc", "medications"],
             ["calendar", "Xem lịch hẹn", "appointments"],
           ].map((x) => (
             <button key={x[1]} onClick={() => setPage(x[2] as Page)}>
@@ -786,15 +831,21 @@ function UserForm({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
+    const cleanName = normalizeVietnameseName(name);
+    const cleanPhone = normalizePhone(phone);
+    if (!cleanName) {
       setError("Vui lòng nhập họ và tên.");
+      return;
+    }
+    if (!isValidVietnamesePhone(cleanPhone)) {
+      setError("Số điện thoại phải là số di động Việt Nam gồm 10 chữ số (bắt đầu bằng 03, 05, 07, 08, 09).");
       return;
     }
     if (!initial && (!username.trim() || password.length < 10 || password.length > 128)) {
       setError("Tên đăng nhập và mật khẩu (từ 10 đến 128 ký tự) là bắt buộc khi tạo tài khoản mới.");
       return;
     }
-    onSave({ name, email, phone, role, status, username, password });
+    onSave({ name: cleanName, email: email.trim(), phone: cleanPhone, role, status, username: username.trim(), password });
   };
 
   return (
@@ -802,7 +853,13 @@ function UserForm({
       <div className="form-grid">
         <label className="span-2">
           Họ và tên *
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nguyễn Văn A" required />
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => setName(normalizeVietnameseName(name))}
+            placeholder="Nguyễn Văn A"
+            required
+          />
         </label>
         {!initial && (
           <>
@@ -838,12 +895,18 @@ function UserForm({
         </label>
         <label>
           Số điện thoại *
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="090 123 4567" required />
+          <Input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            onBlur={() => setPhone(normalizePhone(phone))}
+            placeholder="090 123 4567"
+            required
+          />
         </label>
         <label>
           Vai trò
           <Select value={role} disabled={Boolean(initial)} onChange={(e) => setRole(e.target.value as User["role"])}>
-            <option>Admin</option>
+            {initial?.role === "Admin" && <option>Admin</option>}
             <option>Bác sĩ</option>
             <option>Bệnh nhân</option>
           </Select>
@@ -876,15 +939,21 @@ function UsersPage({
   users,
   onAddUser,
   onToggleStatus,
+  specialties,
+  onAddDoctor,
+  onAddPatient,
 }: {
   users: User[];
   onAddUser: (payload: any) => Promise<void>;
   onToggleStatus: (user: User) => Promise<void>;
+  specialties: Specialty[];
+  onAddDoctor: (payload: any) => Promise<void>;
+  onAddPatient: (payload: any) => Promise<void>;
 }) {
   const [q, setQ] = useState("");
   const [role, setRole] = useState("Tất cả");
   const [status, setStatus] = useState("Tất cả");
-  const [modal, setModal] = useState<"add" | "confirm" | null>(null);
+  const [modal, setModal] = useState<"choice" | "doctor" | "patient" | "confirm" | null>(null);
   const [selected, setSelected] = useState<User>();
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -903,11 +972,6 @@ function UsersPage({
     return filtered.slice(start, start + pageSize);
   }, [filtered, page]);
 
-  const handleSave = async (payload: any) => {
-    await onAddUser(payload);
-    setModal(null);
-  };
-
   const handleToggle = async () => {
     if (selected) {
       await onToggleStatus(selected);
@@ -923,7 +987,7 @@ function UsersPage({
         title="Quản lý người dùng"
         description="Quản lý tài khoản và quyền truy cập trên toàn hệ thống."
         action="Thêm người dùng"
-        onAction={() => setModal("add")}
+        onAction={() => setModal("choice")}
       />
 
       <div className="stat-grid three">
@@ -1018,9 +1082,98 @@ function UsersPage({
         <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
       </div>
 
-      {modal === "add" && (
-        <Modal title="Thêm người dùng mới" onClose={() => setModal(null)}>
-          <UserForm onSave={handleSave} onClose={() => setModal(null)} />
+      {modal === "choice" && (
+        <Modal title="Thêm người dùng mới vào hệ thống" onClose={() => setModal(null)}>
+          <div style={{ padding: "0.5rem 0" }}>
+            <p style={{ color: "#475569", marginBottom: "1.25rem", fontSize: "0.95rem" }}>
+              Vui lòng chọn vai trò người dùng cần thêm để khởi tạo đồng bộ tài khoản truy cập và hồ sơ chuyên môn tương ứng:
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
+              <div
+                style={{
+                  border: "1.5px solid #cbd5e1",
+                  borderRadius: "10px",
+                  padding: "1.25rem",
+                  cursor: "pointer",
+                  background: "#f8fafc",
+                  transition: "all 0.2s ease",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                }}
+                onClick={() => setModal("doctor")}
+              >
+                <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#e0f2fe", color: "#0284c7", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.75rem" }}>
+                  <Icon name="doctor" size={24} />
+                </div>
+                <b style={{ color: "#0f172a", fontSize: "1rem" }}>Bác sĩ (Doctor)</b>
+                <span style={{ fontSize: "0.85rem", color: "#64748b", marginTop: "0.35rem" }}>
+                  Khởi tạo tài khoản bác sĩ kèm chuyên khoa, chứng chỉ hành nghề và hồ sơ chuyên môn.
+                </span>
+                <Button variant="primary" style={{ marginTop: "1rem", width: "100%" }}>
+                  Thêm Bác sĩ
+                </Button>
+              </div>
+
+              <div
+                style={{
+                  border: "1.5px solid #cbd5e1",
+                  borderRadius: "10px",
+                  padding: "1.25rem",
+                  cursor: "pointer",
+                  background: "#f8fafc",
+                  transition: "all 0.2s ease",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                }}
+                onClick={() => setModal("patient")}
+              >
+                <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#fce7f3", color: "#db2777", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.75rem" }}>
+                  <Icon name="heart" size={24} />
+                </div>
+                <b style={{ color: "#0f172a", fontSize: "1rem" }}>Bệnh nhân (Patient)</b>
+                <span style={{ fontSize: "0.85rem", color: "#64748b", marginTop: "0.35rem" }}>
+                  Đăng ký tài khoản người bệnh kèm thông tin cá nhân, liên hệ khẩn cấp và tiền sử y tế.
+                </span>
+                <Button variant="primary" style={{ marginTop: "1rem", width: "100%" }}>
+                  Thêm Bệnh nhân
+                </Button>
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button variant="secondary" onClick={() => setModal(null)}>
+                Đóng
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {modal === "doctor" && (
+        <Modal title="Thêm bác sĩ mới (Tạo tài khoản & Hồ sơ)" onClose={() => setModal(null)}>
+          <DoctorForm
+            specialties={specialties}
+            onSave={async (payload) => {
+              await onAddDoctor(payload);
+              setModal(null);
+            }}
+            onClose={() => setModal(null)}
+          />
+        </Modal>
+      )}
+
+      {modal === "patient" && (
+        <Modal title="Thêm bệnh nhân mới (Tạo tài khoản & Hồ sơ)" onClose={() => setModal(null)}>
+          <PatientForm
+            onSave={async (payload) => {
+              await onAddPatient(payload);
+              setModal(null);
+            }}
+            onClose={() => setModal(null)}
+          />
         </Modal>
       )}
 
@@ -1059,7 +1212,7 @@ function DoctorForm({
     licenseNumber?: string;
     gender?: string;
     dob?: string;
-  }) => void;
+  }) => Promise<void> | void;
   onClose: () => void;
 }) {
   const isGP = Boolean(initial && (initial.subtype === "GENERAL_PRACTITIONER" || initial.specialty === "Đa khoa"));
@@ -1075,15 +1228,44 @@ function DoctorForm({
   const [dob, setDob] = useState(initial?.dob || "15/05/1985");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !phone.trim() || !email.trim()) {
+    const cleanName = normalizeVietnameseName(name);
+    const cleanPhone = normalizePhone(phone);
+    if (!cleanName || !cleanPhone || !email.trim()) {
       setError("Vui lòng điền họ tên, số điện thoại và email bác sĩ.");
       return;
     }
-    onSave({ name, specialty: isGP ? "Đa khoa" : specialty, email, phone, licenseNumber, gender, dob, username, password });
+    if (!isValidVietnamesePhone(cleanPhone)) {
+      setError("Số điện thoại bác sĩ phải là số di động Việt Nam gồm 10 chữ số (bắt đầu bằng 03, 05, 07, 08, 09).");
+      return;
+    }
+    if (password && password.length < 8) {
+      setError("Mật khẩu phải có tối thiểu 8 ký tự.");
+      return;
+    }
+    setError("");
+    setSaving(true);
+    try {
+      await onSave({
+        name: cleanName,
+        specialty: isGP ? "Đa khoa" : specialty,
+        email: email.trim(),
+        phone: cleanPhone,
+        licenseNumber: licenseNumber.trim(),
+        gender,
+        dob,
+        username: username.trim(),
+        password,
+      });
+    } catch (err: any) {
+      setError(err?.message || "Không thể lưu thông tin bác sĩ. Vui lòng kiểm tra lại dữ liệu.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -1091,7 +1273,13 @@ function DoctorForm({
       <div className="form-grid">
         <label className="span-2">
           Họ và tên bác sĩ *
-          <Input required value={name} onChange={(e) => setName(e.target.value)} placeholder="BS. Nguyễn Văn A" />
+          <Input
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => setName(normalizeVietnameseName(name))}
+            placeholder="BS. Nguyễn Văn A"
+          />
         </label>
         {!initial && (
           <>
@@ -1109,7 +1297,7 @@ function DoctorForm({
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mặc định: DoctorPassword123@"
+                placeholder="Tối thiểu 8 ký tự (Mặc định: DoctorPassword123@)"
               />
             </label>
           </>
@@ -1159,7 +1347,13 @@ function DoctorForm({
         </label>
         <label>
           Số điện thoại *
-          <Input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="090 123 4567" />
+          <Input
+            required
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            onBlur={() => setPhone(normalizePhone(phone))}
+            placeholder="090 123 4567"
+          />
         </label>
         <label>
           Số giấy phép hành nghề
@@ -1172,10 +1366,12 @@ function DoctorForm({
       </div>
       {error && <p className="form-error" style={{ color: "red", marginTop: "0.5rem" }}>{error}</p>}
       <div className="modal-actions">
-        <Button variant="secondary" onClick={onClose}>
+        <Button variant="secondary" onClick={onClose} disabled={saving}>
           Hủy
         </Button>
-        <Button type="submit">Lưu thông tin</Button>
+        <Button type="submit" disabled={saving}>
+          {saving ? "Đang lưu..." : "Lưu thông tin"}
+        </Button>
       </div>
     </form>
   );
@@ -1418,10 +1614,13 @@ function PatientForm({
   onClose,
 }: {
   initial?: Patient;
-  onSave: (payload: any) => void;
+  onSave: (payload: any) => Promise<void> | void;
   onClose: () => void;
 }) {
   const [name, setName] = useState(initial?.name || "");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [gender, setGender] = useState(initial?.gender || "Nam");
   const [dob, setDob] = useState(
     initial?.rawDob || (initial?.dob && initial.dob.includes("/") ? initial.dob.split("/").reverse().join("-") : "1995-01-01")
@@ -1434,35 +1633,113 @@ function PatientForm({
   const [chronicDiseases, setChronicDiseases] = useState(initial?.chronicDiseases || "Không");
   const [emergencyName, setEmergencyName] = useState(initial?.emergencyContactName || "");
   const [emergencyPhone, setEmergencyPhone] = useState(initial?.emergencyContactPhone || "");
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !phone.trim()) {
+    const cleanName = normalizeVietnameseName(name);
+    const cleanPhone = normalizePhone(phone);
+    const cleanEmName = normalizeVietnameseName(emergencyName);
+    const cleanEmPhone = normalizePhone(emergencyPhone);
+
+    if (!cleanName || !cleanPhone) {
       setError("Họ và tên và số điện thoại là bắt buộc.");
       return;
     }
-    onSave({
-      name,
-      gender,
-      dob,
-      phone,
-      email,
-      address,
-      bloodType,
-      allergies,
-      chronicDiseases,
-      emergencyContactName: emergencyName,
-      emergencyContactPhone: emergencyPhone,
-    });
+    if (!isValidVietnamesePhone(cleanPhone)) {
+      setError("Số điện thoại bệnh nhân phải là số di động Việt Nam gồm 10 chữ số (bắt đầu bằng 03, 05, 07, 08, 09).");
+      return;
+    }
+    if (cleanEmPhone && !isValidVietnamesePhone(cleanEmPhone)) {
+      setError("Số điện thoại người liên hệ khẩn cấp phải là số di động Việt Nam gồm 10 chữ số (bắt đầu bằng 03, 05, 07, 08, 09).");
+      return;
+    }
+
+    if (!initial) {
+      if (password && password.length < 8) {
+        setError("Mật khẩu phải có tối thiểu 8 ký tự.");
+        return;
+      }
+      if (password && password !== confirmPassword) {
+        setError("Mật khẩu xác nhận không khớp.");
+        return;
+      }
+    }
+    setError("");
+    setSaving(true);
+    try {
+      await onSave({
+        name: cleanName,
+        username: username.trim() || undefined,
+        password: password || undefined,
+        confirmPassword: confirmPassword || undefined,
+        gender,
+        dob,
+        phone: cleanPhone,
+        email: email.trim() || undefined,
+        address: address.trim(),
+        bloodType,
+        allergies,
+        chronicDiseases,
+        emergencyContactName: cleanEmName,
+        emergencyContactPhone: cleanEmPhone,
+      });
+    } catch (err: any) {
+      setError(err?.message || "Không thể lưu thông tin bệnh nhân. Vui lòng kiểm tra lại dữ liệu.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <form onSubmit={submit}>
       <div className="form-grid">
+        {!initial && (
+          <>
+            <div className="span-2" style={{ borderBottom: "1.5px solid #e2e8f0", paddingBottom: "0.35rem", marginBottom: "0.25rem" }}>
+              <b style={{ color: "#1e293b", fontSize: "0.95rem" }}>1. Tài khoản đăng nhập bệnh nhân</b>
+            </div>
+            <label className="span-2">
+              Tên đăng nhập
+              <Input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Ví dụ: nguyen_van_b (tùy chọn, để trống sẽ tạo tự động)"
+              />
+            </label>
+            <label>
+              Mật khẩu tạm thời
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Tối thiểu 8 ký tự (Mặc định: PatientPassword123@)"
+              />
+            </label>
+            <label>
+              Xác nhận mật khẩu
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Nhập lại mật khẩu"
+              />
+            </label>
+            <div className="span-2" style={{ borderBottom: "1.5px solid #e2e8f0", paddingBottom: "0.35rem", margin: "0.5rem 0 0.25rem 0" }}>
+              <b style={{ color: "#1e293b", fontSize: "0.95rem" }}>2. Thông tin cá nhân & Liên hệ</b>
+            </div>
+          </>
+        )}
         <label className="span-2">
           Họ và tên bệnh nhân *
-          <Input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nguyễn Văn A" />
+          <Input
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => setName(normalizeVietnameseName(name))}
+            placeholder="Nguyễn Văn A"
+          />
         </label>
         <label>
           Giới tính
@@ -1484,7 +1761,13 @@ function PatientForm({
         </label>
         <label>
           Số điện thoại *
-          <Input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="090 123 4567" />
+          <Input
+            required
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            onBlur={() => setPhone(normalizePhone(phone))}
+            placeholder="090 123 4567"
+          />
         </label>
         <label>
           Email
@@ -1493,6 +1776,29 @@ function PatientForm({
         <label className="span-2">
           Địa chỉ
           <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Số nhà, đường, quận/huyện, tỉnh/thành" />
+        </label>
+        {!initial && (
+          <div className="span-2" style={{ borderBottom: "1.5px solid #e2e8f0", paddingBottom: "0.35rem", margin: "0.5rem 0 0.25rem 0" }}>
+            <b style={{ color: "#1e293b", fontSize: "0.95rem" }}>3. Người liên hệ khẩn cấp & Thông tin y tế</b>
+          </div>
+        )}
+        <label>
+          Người liên hệ khẩn cấp
+          <Input
+            value={emergencyName}
+            onChange={(e) => setEmergencyName(e.target.value)}
+            onBlur={() => setEmergencyName(normalizeVietnameseName(emergencyName))}
+            placeholder="Họ tên người thân"
+          />
+        </label>
+        <label>
+          Số điện thoại khẩn cấp
+          <Input
+            value={emergencyPhone}
+            onChange={(e) => setEmergencyPhone(e.target.value)}
+            onBlur={() => setEmergencyPhone(normalizePhone(emergencyPhone))}
+            placeholder="091 234 5678"
+          />
         </label>
         <label>
           Nhóm máu
@@ -1516,21 +1822,15 @@ function PatientForm({
           Bệnh mãn tính
           <Input value={chronicDiseases} onChange={(e) => setChronicDiseases(e.target.value)} placeholder="Cao huyết áp, tiểu đường..." />
         </label>
-        <label>
-          Người liên hệ khẩn cấp
-          <Input value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} placeholder="Họ tên người thân" />
-        </label>
-        <label>
-          Số điện thoại khẩn cấp
-          <Input value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} placeholder="091 234 5678" />
-        </label>
       </div>
       {error && <p className="form-error" style={{ color: "red", marginTop: "0.5rem" }}>{error}</p>}
       <div className="modal-actions">
-        <Button variant="secondary" onClick={onClose}>
+        <Button variant="secondary" onClick={onClose} disabled={saving}>
           Hủy
         </Button>
-        <Button type="submit">Lưu thông tin</Button>
+        <Button type="submit" disabled={saving}>
+          {saving ? "Đang lưu..." : "Lưu thông tin"}
+        </Button>
       </div>
     </form>
   );
@@ -1753,11 +2053,12 @@ function SpecialtyForm({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
+    const cleanName = normalizeVietnameseName(name);
+    if (!cleanName) {
       setError("Tên chuyên khoa không được để trống.");
       return;
     }
-    onSave({ name, description });
+    onSave({ name: cleanName, description: description.trim() });
   };
 
   return (
@@ -1765,7 +2066,13 @@ function SpecialtyForm({
       <div className="form-grid one">
         <label>
           Tên chuyên khoa *
-          <Input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Tai Mũi Họng, Răng Hàm Mặt..." />
+          <Input
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => setName(normalizeVietnameseName(name))}
+            placeholder="Tai Mũi Họng, Răng Hàm Mặt..."
+          />
         </label>
         <label>
           Mô tả chuyên môn
@@ -1968,6 +2275,196 @@ function SpecialtiesPage({
 }
 
 // --------------------------------------------------------------------------
+// MedicationForm & MedicationsPage (Table 3.11 & BR46–BR50)
+// --------------------------------------------------------------------------
+
+function MedicationForm({
+  onSave,
+  onClose,
+}: {
+  onSave: (payload: { name: string; description: string }) => Promise<void> | void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = normalizeVietnameseName(name);
+    if (!cleanName) {
+      setError("Vui lòng nhập tên thuốc / biệt dược.");
+      return;
+    }
+    setError("");
+    setSaving(true);
+    try {
+      await onSave({ name: cleanName, description: description.trim() });
+    } catch (err: any) {
+      setError(err?.message || "Không thể lưu thông tin thuốc.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit}>
+      <div className="form-grid one">
+        <label>
+          Tên thuốc / Biệt dược & Hàm lượng *
+          <Input
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => setName(normalizeVietnameseName(name))}
+            placeholder="Ví dụ: Paracetamol 500 mg, Amoxicillin 500 mg..."
+          />
+        </label>
+        <label>
+          Mô tả / Thông tin dược lý & Hướng dẫn sử dụng
+          <textarea
+            className="field"
+            rows={4}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Chỉ định, chống chỉ định, dạng bào chế và hướng dẫn bảo quản..."
+          />
+        </label>
+      </div>
+      {error && <p className="form-error" style={{ color: "red", marginTop: "0.5rem" }}>{error}</p>}
+      <div className="modal-actions" style={{ marginTop: "1.5rem" }}>
+        <Button variant="secondary" onClick={onClose} disabled={saving}>
+          Hủy
+        </Button>
+        <Button type="submit" disabled={saving}>
+          {saving ? "Đang lưu..." : "Thêm thuốc"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function MedicationsPage({
+  medications,
+  onAddMedication,
+}: {
+  medications: api.Medication[];
+  onAddMedication: (payload: { name: string; description: string }) => Promise<void>;
+}) {
+  const [q, setQ] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
+  const filtered = useMemo(() => {
+    return medications.filter(
+      (m) =>
+        m.name.toLowerCase().includes(q.toLowerCase()) ||
+        m.id.toLowerCase().includes(q.toLowerCase()) ||
+        (m.description && m.description.toLowerCase().includes(q.toLowerCase()))
+    );
+  }, [medications, q]);
+
+  const pagedList = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page]);
+
+  return (
+    <div className="page-stack">
+      <DataPageHeader
+        eyebrow="Danh mục dược phẩm chuẩn hóa (Table 3.11 & BR46–BR50)"
+        title="Danh mục thuốc"
+        description="Quản lý danh mục biệt dược, hoạt chất và thông tin hướng dẫn sử dụng trong phòng khám."
+        action="Thêm thuốc mới"
+        onAction={() => setAdding(true)}
+      />
+
+      <div className="stat-grid three">
+        <StatCard
+          label="Tổng số thuốc"
+          value={medications.length.toLocaleString("vi-VN")}
+          detail="Thuốc trong danh mục CSDL"
+          icon="pill"
+        />
+        <StatCard
+          label="Đang lưu hành"
+          value={medications.filter((m) => m.status === "Hoạt động").length.toLocaleString("vi-VN")}
+          detail="Khả dụng để kê đơn"
+          icon="check"
+          tone="green"
+        />
+        <StatCard
+          label="Đạt chuẩn DDL"
+          value="100%"
+          detail="Chuẩn hóa PK MedicationID & Unique Name"
+          icon="shield"
+          tone="blue"
+        />
+      </div>
+
+      <div className="card table-card">
+        <div className="toolbar">
+          <SearchBar
+            value={q}
+            onChange={(v) => {
+              setQ(v);
+              setPage(1);
+            }}
+            placeholder="Tìm theo tên thuốc, biệt dược hoặc mã thuốc..."
+          />
+        </div>
+
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã thuốc</th>
+                <th>Tên biệt dược / Hoạt chất</th>
+                <th>Mô tả / Hướng dẫn chỉ định</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pagedList.map((m) => (
+                <tr key={m.id}>
+                  <td><b>{m.id}</b></td>
+                  <td>
+                    <div className="person">
+                      <div className="avatar-chip" style={{ background: "#e0f2fe", color: "#0369a1", fontWeight: 700 }}>
+                        Rx
+                      </div>
+                      <b>{m.name}</b>
+                    </div>
+                  </td>
+                  <td>{m.description || "Danh mục minh họa; không phải chỉ định điều trị."}</td>
+                  <td><StatusBadge status={m.status || "Hoạt động"} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!pagedList.length && <EmptyState />}
+        </div>
+        <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
+      </div>
+
+      {adding && (
+        <Modal title="Thêm thuốc mới vào danh mục" onClose={() => setAdding(false)}>
+          <MedicationForm
+            onSave={async (payload) => {
+              await onAddMedication(payload);
+              setAdding(false);
+            }}
+            onClose={() => setAdding(false)}
+          />
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// --------------------------------------------------------------------------
 // CreateAppointmentModal & AppointmentsPage
 // --------------------------------------------------------------------------
 
@@ -1976,6 +2473,7 @@ function CreateAppointmentModal({
   doctors,
   specialties,
   schedules,
+  appointments,
   onClose,
   onConfirm,
 }: {
@@ -1983,6 +2481,7 @@ function CreateAppointmentModal({
   doctors: Doctor[];
   specialties: Specialty[];
   schedules: Schedule[];
+  appointments?: Appointment[];
   onClose: () => void;
   onConfirm: (payload: any) => Promise<void>;
 }) {
@@ -1996,6 +2495,8 @@ function CreateAppointmentModal({
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [reason, setReason] = useState("");
+  const [isFollowUp, setIsFollowUp] = useState(false);
+  const [followUpParentId, setFollowUpParentId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -2049,6 +2550,10 @@ function CreateAppointmentModal({
     setSubmitting(true);
     setError("");
     try {
+      if (isFollowUp && !followUpParentId) {
+        setError("Vui lòng chọn ca khám gốc đã hoàn thành của bệnh nhân để đặt lịch tái khám.");
+        return;
+      }
       const dateTime = `${date} ${time}:00`;
       await onConfirm({
         patientId: patient.id,
@@ -2056,7 +2561,8 @@ function CreateAppointmentModal({
         dateTime,
         duration: 30,
         visitType,
-        reason: reason.trim() || "Khám sức khỏe tổng quát",
+        reason: reason.trim() || (isFollowUp ? "Tái khám theo hẹn." : "Khám sức khỏe tổng quát"),
+        followUpFromApptId: isFollowUp && followUpParentId ? followUpParentId : undefined,
       });
       onClose();
     } catch (err: any) {
@@ -2484,6 +2990,38 @@ function CreateAppointmentModal({
                 />
               </label>
             </div>
+            {patient && appointments && (
+              <div style={{ marginTop: "1rem", padding: "0.85rem", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={isFollowUp}
+                    onChange={(e) => {
+                      setIsFollowUp(e.target.checked);
+                      if (!e.target.checked) setFollowUpParentId("");
+                    }}
+                  />
+                  <span>Đặt lịch tái khám từ ca khám trước (Follow-up)</span>
+                </label>
+                {isFollowUp && (
+                  <div style={{ marginTop: "0.5rem" }}>
+                    <small style={{ color: "#64748b", display: "block", marginBottom: "0.25rem" }}>
+                      Chọn lịch hẹn gốc đã hoàn thành của bệnh nhân:
+                    </small>
+                    <Select value={followUpParentId} onChange={(e) => setFollowUpParentId(e.target.value)}>
+                      <option value="">-- Chọn lịch hẹn gốc --</option>
+                      {appointments
+                        .filter((a) => (a.patientId === patient.id || a.patient === patient.name) && (a.status === "Hoàn thành" || a.rawStatus === "Completed"))
+                        .map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.id} - Ngày {a.date} (BS. {a.doctor}) - {a.reason || "Đã hoàn thành"}
+                          </option>
+                        ))}
+                    </Select>
+                  </div>
+                )}
+              </div>
+            )}
             {error && <p style={{ color: "red", marginTop: "0.5rem" }}>{error}</p>}
           </div>
         )}
@@ -2770,7 +3308,9 @@ function AppointmentsPage({
                     <small className="block" style={{ color: "#64748b" }}>{formatApptTime(a)}</small>
                   </td>
                   <td>
-                    {Boolean(a.isFollowUp) && <span className="follow-up-tag">Tái khám</span>}
+                    {(Boolean(a.isFollowUp) || (a.reason && a.reason.toLowerCase().includes("tái khám"))) && (
+                      <span className="follow-up-tag">Tái khám</span>
+                    )}
                     {a.reason}
                   </td>
                   <td><StatusBadge status={a.status} /></td>
@@ -2830,6 +3370,7 @@ function AppointmentsPage({
           doctors={doctors}
           specialties={specialties}
           schedules={schedules}
+          appointments={appointments}
           onClose={() => setCreating(false)}
           onConfirm={onCreate}
         />
@@ -2925,12 +3466,32 @@ function SchedulePage({
   const [selectedDoctor, setSelectedDoctor] = useState("Tất cả bác sĩ");
   const [selectedSpecialty, setSelectedSpecialty] = useState("Tất cả chuyên khoa");
   const [adding, setAdding] = useState(false);
+  const [doctorSearch, setDoctorSearch] = useState("");
   const [newDoctorId, setNewDoctorId] = useState(doctors[0]?.id || "");
   const [newDate, setNewDate] = useState("");
   const [newStart, setNewStart] = useState("08:00");
   const [newEnd, setNewEnd] = useState("17:00");
   const [newStatus, setNewStatus] = useState("Available");
   const [addError, setAddError] = useState("");
+
+  const filteredModalDoctors = useMemo(() => {
+    if (!doctorSearch.trim()) return doctors;
+    const q = doctorSearch.toLowerCase();
+    return doctors.filter(
+      (d) => d.name.toLowerCase().includes(q) || (d.specialty && d.specialty.toLowerCase().includes(q))
+    );
+  }, [doctors, doctorSearch]);
+
+  const filteredSchedules = useMemo(() => {
+    return schedules.filter((s) => {
+      if (selectedDoctor !== "Tất cả bác sĩ" && s.doctorName !== selectedDoctor.replace("BS. ", "")) return false;
+      if (selectedSpecialty !== "Tất cả chuyên khoa") {
+        const spec = s.specialty || "Đa khoa";
+        if (spec !== selectedSpecialty) return false;
+      }
+      return true;
+    });
+  }, [schedules, selectedDoctor, selectedSpecialty]);
 
   // Generate week dates based on offset
   const weekDays = useMemo(() => {
@@ -2988,6 +3549,7 @@ function SchedulePage({
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((a) => {
+      if (a.status === "Đã hủy" || a.status === "Không đến khám") return false;
       if (selectedDoctor !== "Tất cả bác sĩ" && a.doctor !== selectedDoctor.replace("BS. ", "")) return false;
       if (selectedSpecialty !== "Tất cả chuyên khoa" && a.specialty !== selectedSpecialty) return false;
       return true;
@@ -3161,11 +3723,11 @@ function SchedulePage({
                 </tr>
               </thead>
               <tbody>
-                {schedules.map((s) => (
+                {filteredSchedules.map((s) => (
                   <tr key={s.id}>
                     <td><b>{s.id}</b></td>
                     <td>{s.doctorName}</td>
-                    <td>{s.specialty}</td>
+                    <td>{s.specialty || "Đa khoa"}</td>
                     <td>{s.formattedDate}</td>
                     <td>{s.startTime} – {s.endTime}</td>
                     <td><StatusBadge status={s.status === "Available" ? "Khả dụng" : s.status} /></td>
@@ -3186,15 +3748,38 @@ function SchedulePage({
       </div>
 
       {adding && (
-        <Modal title="Thêm ca trực bác sĩ" onClose={() => setAdding(false)}>
+        <Modal title="Thêm ca trực bác sĩ" onClose={() => { setAdding(false); setDoctorSearch(""); }}>
           <form onSubmit={handleAddSubmit}>
             <div className="form-grid">
+              <div className="span-2">
+                <label>
+                  Tìm kiếm bác sĩ hoặc chuyên khoa
+                  <Input
+                    placeholder="🔍 Nhập tên bác sĩ hoặc chuyên khoa để tìm nhanh..."
+                    value={doctorSearch}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setDoctorSearch(val);
+                      const q = val.toLowerCase();
+                      const matches = doctors.filter(
+                        (d) => d.name.toLowerCase().includes(q) || (d.specialty && d.specialty.toLowerCase().includes(q))
+                      );
+                      if (matches.length > 0 && !matches.some((d) => d.id === newDoctorId)) {
+                        setNewDoctorId(matches[0].id);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
               <label className="span-2">
-                Bác sĩ *
+                Bác sĩ trực * {doctorSearch ? `(Tìm thấy ${filteredModalDoctors.length}/${doctors.length} bác sĩ)` : ""}
                 <Select value={newDoctorId} onChange={(e) => setNewDoctorId(e.target.value)}>
-                  {doctors.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name} ({d.specialty})</option>
+                  {filteredModalDoctors.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name} ({d.specialty || "Đa khoa"})
+                    </option>
                   ))}
+                  {!filteredModalDoctors.length && <option value="">Không tìm thấy bác sĩ phù hợp</option>}
                 </Select>
               </label>
               <label>
@@ -3226,7 +3811,7 @@ function SchedulePage({
             </div>
             {addError && <p style={{ color: "red", marginTop: "0.5rem" }}>{addError}</p>}
             <div className="modal-actions" style={{ marginTop: "1.5rem" }}>
-              <Button variant="secondary" onClick={() => setAdding(false)}>
+              <Button variant="secondary" onClick={() => { setAdding(false); setDoctorSearch(""); }}>
                 Hủy
               </Button>
               <Button type="submit">Lưu ca trực</Button>
@@ -3984,6 +4569,7 @@ export default function App() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [specialties, setSpecialties] = useState<Specialty[]>([]);
+  const [medications, setMedications] = useState<api.Medication[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [charts, setCharts] = useState<api.ChartData>({
@@ -4007,6 +4593,14 @@ export default function App() {
       setDoctors(data.doctors);
       setPatients(data.patients);
       setSpecialties(data.specialties);
+      if (data.medications) {
+        setMedications(data.medications);
+      } else {
+        try {
+          const medRes = await api.fetchMedications();
+          setMedications(medRes.medications);
+        } catch {}
+      }
       setAppointments(data.appointments);
       setSchedules(data.schedules);
       setCharts(data.charts);
@@ -4039,6 +4633,17 @@ export default function App() {
   const handleAddDoctor = async (payload: any) => {
     const res = await api.createDoctor(payload);
     setDoctors((curr) => [...curr, res.doctor]);
+    const newUser: User = {
+      id: res.doctor.userId || ("USER-" + res.doctor.id),
+      name: res.doctor.name,
+      email: res.doctor.email,
+      phone: res.doctor.phone,
+      role: "Bác sĩ",
+      rawRole: "DOCTOR",
+      status: "Hoạt động",
+      created: new Date().toLocaleDateString("vi-VN"),
+    };
+    setUsers((curr) => [newUser, ...curr]);
     setCounts((prev) => ({ ...prev, doctors: prev.doctors + 1, totalUsers: prev.totalUsers + 1 }));
     notify(res.message || "Đã thêm bác sĩ mới thành công.");
   };
@@ -4054,6 +4659,17 @@ export default function App() {
   const handleAddPatient = async (payload: any) => {
     const res = await api.createPatient(payload);
     setPatients((curr) => [...curr, res.patient]);
+    const newUser: User = {
+      id: res.patient.userId || ("USER-" + res.patient.id),
+      name: res.patient.name,
+      email: res.patient.email,
+      phone: res.patient.phone,
+      role: "Bệnh nhân",
+      rawRole: "PATIENT",
+      status: "Hoạt động",
+      created: new Date().toLocaleDateString("vi-VN"),
+    };
+    setUsers((curr) => [newUser, ...curr]);
     setCounts((prev) => ({ ...prev, patients: prev.patients + 1, totalUsers: prev.totalUsers + 1 }));
     notify(res.message || "Đã tạo hồ sơ bệnh nhân thành công.");
   };
@@ -4080,6 +4696,12 @@ export default function App() {
     notify(res.message || "Đã cập nhật chuyên khoa.");
   };
 
+  const handleAddMedication = async (payload: { name: string; description: string }) => {
+    const res = await api.createMedication(payload);
+    setMedications((curr) => [...curr, res.medication]);
+    notify(res.message || "Đã thêm thuốc mới vào danh mục thành công.");
+  };
+
   const handleCreateAppointment = async (payload: any) => {
     const res = await api.createAppointment(payload);
     // Find patient and doctor names
@@ -4094,10 +4716,11 @@ export default function App() {
       specialty: doc ? doc.specialty : "Đa khoa",
       date: res.appointment.date,
       time: res.appointment.time,
-      reason: payload.reason || "Khám sức khỏe tổng quát",
+      reason: res.appointment?.reason || payload.reason || (payload.followUpFromApptId ? "Tái khám theo hẹn." : "Khám sức khỏe tổng quát"),
       visitType: payload.visitType || "Khám trực tiếp",
       status: "Đã xác nhận",
       fee: 250000,
+      isFollowUp: Boolean(res.appointment?.isFollowUp || payload.followUpFromApptId),
     };
     setAppointments((curr) => [newAppt, ...curr]);
     setCounts((prev) => ({
@@ -4182,6 +4805,9 @@ export default function App() {
             users={users}
             onAddUser={handleAddUser}
             onToggleStatus={handleToggleUserStatus}
+            specialties={specialties}
+            onAddDoctor={handleAddDoctor}
+            onAddPatient={handleAddPatient}
           />
         );
       case "doctors":
@@ -4225,6 +4851,13 @@ export default function App() {
             onSelectDoctor={() => setPage("doctors")}
           />
         );
+      case "medications":
+        return (
+          <MedicationsPage
+            medications={medications}
+            onAddMedication={handleAddMedication}
+          />
+        );
       case "appointments":
         return (
           <AppointmentsPage
@@ -4262,7 +4895,7 @@ export default function App() {
           />
         );
     }
-  }, [page, loading, counts, users, doctors, patients, specialties, appointments, schedules, charts, adminProfile]);
+  }, [page, loading, counts, users, doctors, patients, specialties, medications, appointments, schedules, charts, adminProfile]);
 
   return (
     <div className="app-shell">

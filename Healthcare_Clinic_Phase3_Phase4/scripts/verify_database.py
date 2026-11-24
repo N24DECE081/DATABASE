@@ -47,6 +47,7 @@ def main():
                     if "Unique" in expected["constraints"] and "PK" not in expected["constraints"]:
                         expected_unique.add((entity["table"], expected["field"]))
                     results["fields_checked"]+=1
+            expected_unique.add(("prescription_item", "prescription_id,medication_id"))
             cursor.execute("""SELECT TABLE_NAME AS table_name, INDEX_NAME AS index_name,
                 GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS columns_list
                 FROM information_schema.STATISTICS

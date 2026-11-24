@@ -40,18 +40,23 @@ def generate():
                 reference = re.match(r"(APPOINTMENT)\((AppointmentID)\)", "APPOINTMENT(AppointmentID)")
             if reference:
                 parent, logical_key = reference.groups()
-                cascade = "CASCADE" if table in ("general_practitioner", "specialist") and name == "doctor_id" else "RESTRICT"
+                cascade = "RESTRICT"
                 definitions.append(f"  CONSTRAINT `fk_{table}_{name}` FOREIGN KEY (`{name}`) "
                                    f"REFERENCES `{parent.lower()}` (`{names[parent, logical_key]}`) "
                                    f"ON DELETE {cascade} ON UPDATE RESTRICT")
             domain = re.search(r"CHECK\s*\((.*)\)\s*\.", col["constraints"])
             if domain:
                 expression = domain.group(1).replace(col["logical_name"], f"`{name}`")
+                if table == "consultation_session" and name == "actual_duration_minutes":
+                    expression = f"`{name}` IS NULL OR ({expression})"
                 definitions.append(f"  CONSTRAINT `ck_{table}_{name}` CHECK ({expression})")
         if table == "doctor_schedule":
             definitions.append("  CONSTRAINT `ck_schedule_time` CHECK (`end_time` > `start_time`)")
         elif table == "consultation_session":
             definitions.append("  CONSTRAINT `ck_session_time` CHECK (`end_time` IS NULL OR `end_time` > `start_time`)")
+            definitions.append("  CONSTRAINT `ck_session_duration_not_null_on_end` CHECK (`end_time` IS NULL OR `actual_duration_minutes` IS NOT NULL)")
+        elif table == "prescription_item":
+            definitions.append("  UNIQUE KEY `uq_prescription_item_medication` (`prescription_id`, `medication_id`)")
         blocks.append(f"CREATE TABLE `{table}` (\n" + ",\n".join(definitions) +
                       "\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;")
     output = ROOT / "database/migrations/001_initial_schema.sql"

@@ -6,7 +6,7 @@ from flask import Blueprint, abort, g, jsonify, request
 from ...db import query
 from ...repositories import appointments, doctors, medical_history, patients, prescriptions
 from ...security import require_roles
-from ...services import patients as patient_service
+from ...services import patients as patient_service, appointments as appointment_service
 from ...services.common import now
 
 bp = Blueprint("patient_portal_api", __name__, url_prefix="/api/patient")
@@ -74,6 +74,7 @@ def _clinical_fields(notes):
 @bp.get("/portal")
 @require_roles("PATIENT")
 def portal_data():
+    appointment_service.auto_noshow_appointments()
     patient = patient_service.own_profile(g.user)
     appointment_rows = appointments.list_for(g.user)
 

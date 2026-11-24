@@ -7,7 +7,7 @@ from flask import Blueprint, abort, g, jsonify, request
 from ...db import query
 from ...repositories import appointments, doctors, medical_history, patients, prescriptions, schedules
 from ...security import require_roles
-from ...services import consultations as consultation_service, doctors as doctor_service
+from ...services import consultations as consultation_service, doctors as doctor_service, appointments as appointment_service, prescriptions as prescription_service
 from ...services.common import now
 
 
@@ -94,6 +94,7 @@ def _consultation(row):
 @bp.get("/portal")
 @require_roles("DOCTOR")
 def portal_data():
+    appointment_service.auto_noshow_appointments()
     doctor = doctor_service.own_doctor(g.user)
     appointment_rows = appointments.list_for(g.user)
     patient_ids = list(dict.fromkeys(row["patient_id"] for row in appointment_rows))
@@ -235,7 +236,7 @@ def create_consultation(appointment_id):
     session = consultation_service.create(g.user, appointment_id, {
         "start_time": now(),
         "end_time": None,
-        "actual_duration_minutes": 5,
+        "actual_duration_minutes": None,
         "meeting_url": meeting_url.strip() or None,
         "diagnosis_notes": notes.strip() or None,
     })
@@ -278,6 +279,47 @@ def update_consultation(session_id):
 def finish_consultation(session_id):
     session = consultation_service.finish(g.user, session_id, now())
     return jsonify(session_id=session.session_id, status="Hoàn thành")
+
+
+@bp.get("/medications")
+@require_roles("DOCTOR")
+def list_medications():
+    medications_data = query(
+        "SELECT medication_id AS id, medication_name AS name, description FROM medication ORDER BY medication_name"
+    )
+    return jsonify(medications=medications_data)
+
+
+@bp.post("/consultations/<session_id>/prescription")
+@require_roles("DOCTOR")
+def add_prescription(session_id):
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        abort(400, description="Dữ liệu đơn thuốc không hợp lệ.")
+    rx = prescription_service.create(g.user, session_id, data)
+    items = prescriptions.items(rx.prescription_id)
+    return jsonify(
+        message="Kê đơn thuốc thành công.",
+        prescription={
+            "id": rx.prescription_id,
+            "sessionId": session_id,
+            "date": _iso(rx.prescription_date),
+            "count": len(items),
+            "status": "Đã kê",
+            "diagnosis": rx.diagnosis_icd or "",
+            "instructions": rx.instructions or "",
+            "items": [
+                {
+                    "name": item["medication_name"],
+                    "dosage": item["dosage"],
+                    "frequency": item["frequency"],
+                    "duration": item["duration"],
+                    "instructions": item["special_instructions"] or "",
+                }
+                for item in items
+            ],
+        },
+    ), 201
 
 
 @bp.patch("/profile")
