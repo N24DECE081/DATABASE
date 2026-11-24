@@ -2,3 +2,8 @@
 ~$*
 *.docx
 .pytest_cache/
+
+# Ignore database dump files
+*dump.sql
+dumps/
+healthcare_clinic_portal_full_dump.sql
