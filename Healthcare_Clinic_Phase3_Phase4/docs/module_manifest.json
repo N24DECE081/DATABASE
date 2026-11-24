@@ -985,6 +985,14 @@
       "nullable": true,
       "default": "NULL",
       "source": "User instruction 2026-10-05: cho phép NULL"
+    },
+    {
+      "id": "BASELINE-02",
+      "entity": "CONSULTATION_SESSION",
+      "field": "ActualDurationMinutes",
+      "nullable": true,
+      "default": "NULL",
+      "source": "Issue 7: cho phép NULL khi phiên khám dở dang"
     }
   ]
 }

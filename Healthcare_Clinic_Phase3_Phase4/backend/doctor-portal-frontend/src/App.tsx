@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   createConsultation,
   finishConsultation,
+  createPrescription,
   loadDoctorPortal,
+  loadMedications,
   logoutDoctor,
   updateAppointmentStatus,
   updateConsultationNotes,
@@ -10,11 +12,14 @@ import {
   type Appointment,
   type AppointmentStatus,
   type Consultation,
+  type CreatePrescriptionPayload,
   type DoctorPortalData,
   type DoctorProfile,
   type MedicalRecord,
+  type MedicationCatalogItem,
   type Patient,
   type Prescription,
+  type PrescriptionItemInput,
   type Schedule,
 } from "./api";
 import titimiLogo from "./assets/titimi-logo.png";
@@ -1309,10 +1314,12 @@ function SchedulePage({
     return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
   });
   const [selectedDay, setSelectedDay] = useState(todayKey);
-  const mapped = (day: string) => appointments.filter((appointment) => appointment.date === day);
+  const mapped = (day: string) => appointments.filter((appointment) => appointment.date === day && appointment.status !== "Đã hủy" && appointment.status !== "Vắng mặt");
   const weekLabel = `${new Intl.DateTimeFormat("vi-VN", { day: "numeric", month: "long" }).format(new Date(`${week[0]}T00:00:00`))} – ${new Intl.DateTimeFormat("vi-VN", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${week[6]}T00:00:00`))}`;
   const selectedSchedules = schedules.filter((schedule) => schedule.date === selectedDay);
-  const dayAppointments = mapped(selectedDay);
+  const dayAppointments = appointments.filter((appointment) => appointment.date === selectedDay);
+  const activeDayAppointments = dayAppointments.filter((a) => a.status !== "Đã hủy" && a.status !== "Vắng mặt");
+  const cancelledDayAppointments = dayAppointments.filter((a) => a.status === "Đã hủy" || a.status === "Vắng mặt");
   return (
     <div className="page">
       <PageHeading
@@ -1386,8 +1393,8 @@ function SchedulePage({
         <aside>
           <section className="card day-summary">
             <h2>Lịch ngày {new Date(`${selectedDay}T00:00:00`).toLocaleDateString("vi-VN")}</h2>
-            <p>{dayAppointments.length} lịch hẹn</p>
-            {dayAppointments.map((a) => (
+            <p>{activeDayAppointments.length} ca khám hoạt động{cancelledDayAppointments.length > 0 ? ` (${cancelledDayAppointments.length} đã hủy/vắng)` : ""}</p>
+            {activeDayAppointments.map((a) => (
               <button key={a.id} onClick={() => viewAppointment(a)}>
                 <time>{a.time}</time>
                 <div>
@@ -1397,8 +1404,23 @@ function SchedulePage({
                 <StatusBadge status={a.status} />
               </button>
             ))}
-            {dayAppointments.length === 0 && (
-              <div className="empty-small">Không có lịch hẹn.</div>
+            {activeDayAppointments.length === 0 && (
+              <div className="empty-small">Không có lịch hẹn đang hoạt động.</div>
+            )}
+            {cancelledDayAppointments.length > 0 && (
+              <div style={{ marginTop: "1rem", borderTop: "1px dashed #cbd5e1", paddingTop: "0.5rem" }}>
+                <small style={{ color: "#94a3b8", fontWeight: 600 }}>Lịch đã hủy / vắng mặt ({cancelledDayAppointments.length}):</small>
+                {cancelledDayAppointments.map((a) => (
+                  <button key={a.id} onClick={() => viewAppointment(a)} style={{ opacity: 0.6, background: "#f8fafc" }}>
+                    <time style={{ textDecoration: "line-through" }}>{a.time}</time>
+                    <div>
+                      <strong>{a.patient}</strong>
+                      <span>{a.reason}</span>
+                    </div>
+                    <StatusBadge status={a.status} />
+                  </button>
+                ))}
+              </div>
             )}
           </section>
           <section className="card slots">
@@ -1667,19 +1689,25 @@ function PatientDetail({
 function ConsultationsPage({
   consultations,
   appointments,
+  prescriptions,
+  medications,
   selected,
   setSelected,
   onSave,
   onFinish,
+  onAddPrescription,
   toast,
   createFollowUp,
 }: {
   consultations: Consultation[];
   appointments: Appointment[];
+  prescriptions: Prescription[];
+  medications: MedicationCatalogItem[];
   selected: string | null;
   setSelected: (id: string | null) => void;
   onSave: (appointmentId: string, sessionId: string | null, meetingUrl: string, notes: string) => Promise<void>;
   onFinish: (sessionId: string) => Promise<void>;
+  onAddPrescription: (sessionId: string, payload: CreatePrescriptionPayload) => Promise<void>;
   toast: (m: string) => void;
   createFollowUp: (appointment: Appointment) => void;
 }) {
@@ -1694,9 +1722,12 @@ function ConsultationsPage({
       <ConsultationDetail
         appointment={appointment}
         consultation={c}
+        prescriptions={prescriptions}
+        medications={medications}
         back={() => setSelected(null)}
         onSave={onSave}
         onFinish={onFinish}
+        onAddPrescription={onAddPrescription}
         toast={toast}
         createFollowUp={createFollowUp}
       />
@@ -1799,17 +1830,23 @@ function ConsultationsPage({
 function ConsultationDetail({
   appointment,
   consultation,
+  prescriptions,
+  medications,
   back,
   onSave,
   onFinish,
+  onAddPrescription,
   toast,
   createFollowUp,
 }: {
   appointment: Appointment;
   consultation?: Consultation;
+  prescriptions: Prescription[];
+  medications: MedicationCatalogItem[];
   back: () => void;
   onSave: (appointmentId: string, sessionId: string | null, meetingUrl: string, notes: string) => Promise<void>;
   onFinish: (sessionId: string) => Promise<void>;
+  onAddPrescription: (sessionId: string, payload: CreatePrescriptionPayload) => Promise<void>;
   toast: (m: string) => void;
   createFollowUp: (appointment: Appointment) => void;
 }) {
@@ -1821,6 +1858,95 @@ function ConsultationDetail({
     notes: consultation?.notes || "",
     plan: consultation?.plan || "",
   });
+
+  const existingPrescription = useMemo(() => {
+    if (!consultation) return null;
+    return prescriptions.find((rx) => rx.sessionId === consultation.id) || null;
+  }, [consultation, prescriptions]);
+
+  const [rxIcd, setRxIcd] = useState("");
+  const [rxInstructions, setRxInstructions] = useState("");
+  const [rxItems, setRxItems] = useState<PrescriptionItemInput[]>([
+    {
+      medication_id: medications[0]?.id || "",
+      dosage: "1 viên (500mg)",
+      frequency: "2 lần / ngày (sau ăn)",
+      duration: "5 ngày",
+      special_instructions: "Uống sau khi ăn no",
+    },
+  ]);
+  const [prescribing, setPrescribing] = useState(false);
+  const [rxError, setRxError] = useState("");
+
+  const handleAddRxItem = () => {
+    if (rxItems.length >= 10) {
+      setRxError("Đơn thuốc tối đa 10 loại thuốc theo quy định.");
+      return;
+    }
+    const unusedMed = medications.find((m) => !rxItems.some((item) => item.medication_id === m.id)) || medications[0];
+    setRxItems((curr) => [
+      ...curr,
+      {
+        medication_id: unusedMed?.id || "",
+        dosage: "1 viên",
+        frequency: "2 lần / ngày",
+        duration: "5 ngày",
+        special_instructions: "",
+      },
+    ]);
+  };
+
+  const handleRemoveRxItem = (idx: number) => {
+    setRxItems((curr) => curr.filter((_, i) => i !== idx));
+  };
+
+  const handleUpdateRxItem = (idx: number, field: keyof PrescriptionItemInput, val: string) => {
+    setRxItems((curr) =>
+      curr.map((item, i) => (i === idx ? { ...item, [field]: val } : item))
+    );
+  };
+
+  const handleSavePrescription = async () => {
+    if (!consultation) {
+      setRxError("Vui lòng lưu phiếu khám trước khi kê đơn thuốc.");
+      return;
+    }
+    if (rxItems.length === 0) {
+      setRxError("Vui lòng thêm ít nhất 1 loại thuốc vào đơn.");
+      return;
+    }
+    const medIds = rxItems.map((item) => item.medication_id);
+    if (new Set(medIds).size !== medIds.length) {
+      setRxError("Mỗi loại thuốc chỉ được xuất hiện một lần trong đơn thuốc.");
+      return;
+    }
+    for (const item of rxItems) {
+      if (!item.medication_id || !item.dosage.trim() || !item.frequency.trim() || !item.duration.trim()) {
+        setRxError("Vui lòng điền đầy đủ liều lượng, tần suất và thời gian dùng cho tất cả các thuốc.");
+        return;
+      }
+    }
+    setPrescribing(true);
+    setRxError("");
+    try {
+      await onAddPrescription(consultation.id, {
+        diagnosis_icd: rxIcd.trim() || undefined,
+        instructions: rxInstructions.trim() || undefined,
+        items: rxItems.map((item) => ({
+          medication_id: item.medication_id,
+          dosage: item.dosage.trim(),
+          frequency: item.frequency.trim(),
+          duration: item.duration.trim(),
+          special_instructions: item.special_instructions?.trim() || undefined,
+        })),
+      });
+      toast("Đã kê đơn thuốc thành công cho bệnh nhân.");
+    } catch (err: any) {
+      setRxError(err.message || "Không thể lưu đơn thuốc.");
+    } finally {
+      setPrescribing(false);
+    }
+  };
   const [meetingUrl, setMeetingUrl] = useState(consultation?.meetingUrl || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -1928,6 +2054,246 @@ function ConsultationDetail({
                   maxLength={1500}
                 />
               </label>
+
+              {/* KHỐI KÊ ĐƠN THUỐC ĐIỀU TRỊ */}
+              <div style={{ marginTop: "1.25rem", padding: "1rem", borderRadius: "8px", background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>💊</span> Kê đơn thuốc điều trị
+                    </h3>
+                    <small style={{ color: "#64748b" }}>
+                      Chỉ định thuốc từ danh mục dược phẩm TiTiMi cho bệnh nhân.
+                    </small>
+                  </div>
+                  {existingPrescription && (
+                    <span style={{ background: "#ecfdf5", color: "#059669", padding: "3px 8px", borderRadius: "9999px", fontSize: "11.5px", fontWeight: 600 }}>
+                      ✓ Đã có đơn ({existingPrescription.id})
+                    </span>
+                  )}
+                </div>
+
+                {existingPrescription ? (
+                  <div>
+                    <div style={{ display: "flex", gap: "1rem", fontSize: "12px", marginBottom: "0.5rem" }}>
+                      <div><strong>Mã đơn:</strong> {existingPrescription.id}</div>
+                      <div><strong>Ngày cấp:</strong> {existingPrescription.date}</div>
+                      {existingPrescription.diagnosis && <div><strong>ICD-10:</strong> {existingPrescription.diagnosis}</div>}
+                    </div>
+                    {existingPrescription.instructions && (
+                      <div style={{ fontSize: "12px", color: "#334155", marginBottom: "0.5rem" }}>
+                        <strong>Lời dặn chung:</strong> {existingPrescription.instructions}
+                      </div>
+                    )}
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", background: "#fff", borderRadius: "6px", overflow: "hidden", border: "1px solid #e2e8f0" }}>
+                      <thead>
+                        <tr style={{ background: "#f1f5f9", textAlign: "left", color: "#475569" }}>
+                          <th style={{ padding: "6px 8px" }}>STT</th>
+                          <th style={{ padding: "6px 8px" }}>Tên thuốc</th>
+                          <th style={{ padding: "6px 8px" }}>Liều dùng</th>
+                          <th style={{ padding: "6px 8px" }}>Tần suất</th>
+                          <th style={{ padding: "6px 8px" }}>Thời gian</th>
+                          <th style={{ padding: "6px 8px" }}>Hướng dẫn</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {existingPrescription.items.map((item, idx) => (
+                          <tr key={idx} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                            <td style={{ padding: "6px 8px" }}>{idx + 1}</td>
+                            <td style={{ padding: "6px 8px", fontWeight: 600 }}>{item.name}</td>
+                            <td style={{ padding: "6px 8px" }}>{item.dosage}</td>
+                            <td style={{ padding: "6px 8px" }}>{item.frequency}</td>
+                            <td style={{ padding: "6px 8px" }}>{item.duration}</td>
+                            <td style={{ padding: "6px 8px", color: "#64748b" }}>{item.instructions || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                      <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600 }}>
+                        Mã chẩn đoán ICD-10 (Tùy chọn)
+                        <input
+                          type="text"
+                          value={rxIcd}
+                          onChange={(e) => setRxIcd(e.target.value.toUpperCase())}
+                          placeholder="VD: J02.9, E11, I10, K29"
+                          disabled={isComplete}
+                          style={{ width: "100%", padding: "5px 8px", fontSize: "12px", borderRadius: "4px", border: "1px solid #cbd5e1", marginTop: "2px" }}
+                        />
+                      </label>
+                      <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600 }}>
+                        Lời dặn bác sĩ chung cho đơn thuốc
+                        <input
+                          type="text"
+                          value={rxInstructions}
+                          onChange={(e) => setRxInstructions(e.target.value)}
+                          placeholder="VD: Uống sau ăn no, kiêng chất kích thích, uống nhiều nước..."
+                          disabled={isComplete}
+                          style={{ width: "100%", padding: "5px 8px", fontSize: "12px", borderRadius: "4px", border: "1px solid #cbd5e1", marginTop: "2px" }}
+                        />
+                      </label>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                      <span style={{ fontSize: "12px", fontWeight: 700, color: "#334155" }}>
+                        Danh sách mục thuốc ({rxItems.length}/10):
+                      </span>
+                      {!isComplete && rxItems.length < 10 && (
+                        <button
+                          type="button"
+                          onClick={handleAddRxItem}
+                          style={{
+                            background: "#e0f2fe",
+                            color: "#0369a1",
+                            border: "1px solid #bae6fd",
+                            padding: "3px 8px",
+                            borderRadius: "4px",
+                            fontSize: "11.5px",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          + Thêm thuốc
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "0.75rem" }}>
+                      {rxItems.map((item, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1.8fr 1.2fr 1.5fr 1fr 1.5fr auto",
+                            gap: "6px",
+                            alignItems: "center",
+                            background: "#fff",
+                            padding: "6px 8px",
+                            borderRadius: "6px",
+                            border: "1px solid #e2e8f0",
+                          }}
+                        >
+                          <div>
+                            <small style={{ fontSize: "10.5px", color: "#64748b", display: "block" }}>Tên thuốc *</small>
+                            <select
+                              value={item.medication_id}
+                              onChange={(e) => handleUpdateRxItem(idx, "medication_id", e.target.value)}
+                              disabled={isComplete}
+                              style={{ width: "100%", padding: "4px 6px", fontSize: "11.5px", borderRadius: "4px", border: "1px solid #cbd5e1" }}
+                            >
+                              {medications.map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <small style={{ fontSize: "10.5px", color: "#64748b", display: "block" }}>Liều lượng *</small>
+                            <input
+                              type="text"
+                              value={item.dosage}
+                              onChange={(e) => handleUpdateRxItem(idx, "dosage", e.target.value)}
+                              placeholder="1 viên 500mg"
+                              disabled={isComplete}
+                              style={{ width: "100%", padding: "4px 6px", fontSize: "11.5px", borderRadius: "4px", border: "1px solid #cbd5e1" }}
+                            />
+                          </div>
+                          <div>
+                            <small style={{ fontSize: "10.5px", color: "#64748b", display: "block" }}>Tần suất *</small>
+                            <input
+                              type="text"
+                              value={item.frequency}
+                              onChange={(e) => handleUpdateRxItem(idx, "frequency", e.target.value)}
+                              placeholder="2 lần / ngày"
+                              disabled={isComplete}
+                              style={{ width: "100%", padding: "4px 6px", fontSize: "11.5px", borderRadius: "4px", border: "1px solid #cbd5e1" }}
+                            />
+                          </div>
+                          <div>
+                            <small style={{ fontSize: "10.5px", color: "#64748b", display: "block" }}>Thời gian *</small>
+                            <input
+                              type="text"
+                              value={item.duration}
+                              onChange={(e) => handleUpdateRxItem(idx, "duration", e.target.value)}
+                              placeholder="5 ngày"
+                              disabled={isComplete}
+                              style={{ width: "100%", padding: "4px 6px", fontSize: "11.5px", borderRadius: "4px", border: "1px solid #cbd5e1" }}
+                            />
+                          </div>
+                          <div>
+                            <small style={{ fontSize: "10.5px", color: "#64748b", display: "block" }}>Hướng dẫn thêm</small>
+                            <input
+                              type="text"
+                              value={item.special_instructions || ""}
+                              onChange={(e) => handleUpdateRxItem(idx, "special_instructions", e.target.value)}
+                              placeholder="Uống sau ăn no"
+                              disabled={isComplete}
+                              style={{ width: "100%", padding: "4px 6px", fontSize: "11.5px", borderRadius: "4px", border: "1px solid #cbd5e1" }}
+                            />
+                          </div>
+                          <div style={{ paddingTop: "12px" }}>
+                            {rxItems.length > 1 && !isComplete && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRxItem(idx)}
+                                title="Xóa thuốc"
+                                style={{
+                                  background: "#fee2e2",
+                                  color: "#b91c1c",
+                                  border: "1px solid #fecaca",
+                                  borderRadius: "4px",
+                                  width: "22px",
+                                  height: "22px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  cursor: "pointer",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {rxError && <p style={{ color: "#b91c1c", fontSize: "11.5px", margin: "4px 0" }}>⚠️ {rxError}</p>}
+
+                    {!isComplete && (
+                      <button
+                        type="button"
+                        disabled={prescribing || !consultation}
+                        onClick={handleSavePrescription}
+                        style={{
+                          background: consultation ? "#0284c7" : "#94a3b8",
+                          color: "#fff",
+                          padding: "6px 14px",
+                          borderRadius: "6px",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          border: "none",
+                          cursor: consultation ? "pointer" : "not-allowed",
+                        }}
+                      >
+                        {prescribing ? "Đang cấp đơn..." : "💾 Cấp đơn thuốc này"}
+                      </button>
+                    )}
+                    {!consultation && (
+                      <small style={{ display: "block", color: "#64748b", marginTop: "4px", fontSize: "11px" }}>
+                        * Hãy bấm "Lưu phiếu khám" để khởi tạo phiên khám trước khi cấp đơn thuốc.
+                      </small>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="follow-up-action">
                 <div>
                   <strong>Lịch tái khám</strong>
@@ -2453,9 +2819,23 @@ function PrescriptionDetail({
   );
 }
 
+const COMMON_ICD10 = [
+  { code: "J02.9", name: "Viêm họng cấp" },
+  { code: "J00", name: "Viêm mũi họng cấp (cảm thường)" },
+  { code: "J06.9", name: "Nhiễm khuẩn đường hô hấp trên cấp" },
+  { code: "K29.7", name: "Viêm dạ dày không xác định" },
+  { code: "K21.9", name: "Trào ngược dạ dày - thực quản" },
+  { code: "I10", name: "Tăng huyết áp vô căn" },
+  { code: "E11.9", name: "Đái tháo đường type 2" },
+  { code: "M54.5", name: "Đau thắt lưng" },
+  { code: "R50.9", name: "Sốt không xác định" },
+  { code: "A09", name: "Viêm dạ dày - ruột truyền nhiễm" },
+];
+
 function PrescriptionForm({ back, toast }: { back: () => void; toast: (m: string) => void }) {
   const empty: Medication = { name: "", dosage: "", frequency: "", duration: "", instructions: "" };
   const [patient, setPatient] = useState("");
+  const [diagnosisIcd, setDiagnosisIcd] = useState("J02.9");
   const [meds, setMeds] = useState<Medication[]>([
     {
       name: "Omeprazole 20mg",
@@ -2473,6 +2853,15 @@ function PrescriptionForm({ back, toast }: { back: () => void; toast: (m: string
       setError("Vui lòng chọn bệnh nhân và điền đủ các trường bắt buộc.");
       return;
     }
+    if (diagnosisIcd && !/^[A-Z][0-9]{2}(\.[0-9]{1,2})?$/.test(diagnosisIcd.trim())) {
+      setError("Mã ICD-10 không đúng định dạng chuẩn quốc tế (Ví dụ: J02.9, E11, I10, K29, M54.5).");
+      return;
+    }
+    const medNames = meds.map((m) => m.name.trim().toLowerCase());
+    if (new Set(medNames).size !== medNames.length) {
+      setError("Mỗi loại thuốc chỉ được kê một lần trong đơn (chống kê trùng thuốc).");
+      return;
+    }
     setError("");
     toast("Đã lưu đơn thuốc mới trong phiên làm việc.");
     back();
@@ -2486,6 +2875,7 @@ function PrescriptionForm({ back, toast }: { back: () => void; toast: (m: string
         title="Tạo đơn thuốc mới"
         description="Điền thông tin bệnh nhân và chỉ định thuốc."
       />
+      {error && <div style={{ color: "#dc2626", background: "#fef2f2", padding: "0.75rem 1rem", borderRadius: "8px", marginBottom: "1rem", border: "1px solid #fecaca" }}>{error}</div>}
       <section className="card form-card prescription-form">
         <h2>Thông tin chung</h2>
         <div className="form-grid">
@@ -2501,6 +2891,22 @@ function PrescriptionForm({ back, toast }: { back: () => void; toast: (m: string
                 </option>
               ))}
             </select>
+          </label>
+          <label className="field">
+            <span>Mã chẩn đoán ICD-10 <b>*</b></span>
+            <input
+              list="icd-list"
+              value={diagnosisIcd}
+              onChange={(e) => setDiagnosisIcd(e.target.value.toUpperCase())}
+              placeholder="VD: J02.9, E11.9, I10"
+            />
+            <datalist id="icd-list">
+              {COMMON_ICD10.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.code} - {item.name}
+                </option>
+              ))}
+            </datalist>
           </label>
           <Field label="Ngày kê đơn" value="18/06/2025" onChange={() => {}} />
         </div>
@@ -2737,7 +3143,11 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState("");
   const title = useMemo(() => navItems.find((n) => n.id === page)?.label || "Dashboard", [page]);
   const refreshPortal = async () => {
-    const data = await loadDoctorPortal();
+    const [data, medsRes] = await Promise.all([
+      loadDoctorPortal(),
+      loadMedications().catch(() => ({ medications: [] })),
+    ]);
+    data.medications = medsRes.medications || [];
     setPortal(data);
     return data;
   };
@@ -2874,10 +3284,17 @@ export default function App() {
           <ConsultationsPage
             consultations={consultations}
             appointments={appointments}
+            prescriptions={prescriptions}
+            medications={portal.medications || []}
             selected={consultationDetail}
             setSelected={setConsultationDetail}
             onSave={saveConsultation}
             onFinish={completeConsultation}
+            onAddPrescription={async (sessionId, payload) => {
+              const res = await createPrescription(sessionId, payload);
+              await refreshPortal();
+              toast(res.message || "Đã cấp đơn thuốc thành công.");
+            }}
             toast={toast}
             createFollowUp={(appointment) => {
               const previous = appointments.find((item) => item.patientId === appointment.patientId);

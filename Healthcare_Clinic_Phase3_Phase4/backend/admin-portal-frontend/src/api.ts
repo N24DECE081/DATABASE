@@ -4,10 +4,18 @@ export type Page =
   | "doctors"
   | "patients"
   | "specialties"
+  | "medications"
   | "appointments"
   | "schedule"
   | "reports"
   | "settings";
+
+export type Medication = {
+  id: string;
+  name: string;
+  description: string;
+  status: "Hoạt động" | "Ngừng dùng";
+};
 
 export type User = {
   id: string;
@@ -133,6 +141,7 @@ export type AdminPortalData = {
   doctors: Doctor[];
   patients: Patient[];
   specialties: Specialty[];
+  medications?: Medication[];
   appointments: Appointment[];
   schedules: Schedule[];
   charts: ChartData;
@@ -268,6 +277,8 @@ export const createPatient = (payload: {
   name: string;
   username?: string;
   password?: string;
+  confirmPassword?: string;
+  confirm_password?: string;
   phone: string;
   email?: string;
   gender?: string;
@@ -313,6 +324,7 @@ export const createAppointment = (payload: {
   duration?: number;
   visitType?: string;
   reason?: string;
+  followUpFromApptId?: string;
 }) => request<{ message: string; appointment: Appointment }>("/api/admin/appointments", {
   method: "POST",
   body: JSON.stringify(payload),
@@ -361,6 +373,15 @@ export const updateScheduleStatus = (scheduleId: string, status: string) =>
       body: JSON.stringify({ status }),
     }
   );
+
+export const fetchMedications = () =>
+  request<{ medications: Medication[] }>("/api/admin/medications");
+
+export const createMedication = (payload: { name: string; description?: string }) =>
+  request<{ message: string; medication: Medication }>("/api/admin/medications", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 
 export const fetchReports = (range: string | number) =>
   request<ReportResponse>(`/api/admin/reports?range=${range}`);

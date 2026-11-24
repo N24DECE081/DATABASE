@@ -1029,6 +1029,14 @@ function Booking({
   onAppointmentBooked: (appt: Appointment) => void;
 }) {
   const [step, setStep] = useState(1);
+  const [bookingMode, setBookingMode] = useState<"doctor" | "time">("doctor");
+  const [timeFilterPeriod, setTimeFilterPeriod] = useState<"all" | "morning" | "afternoon">("all");
+  const [timeFilterSpecialty, setTimeFilterSpecialty] = useState<string>("Tất cả");
+  const [allDaySlots, setAllDaySlots] = useState<{
+    slot: AppointmentSlot;
+    doc: { doctor_id: string; full_name: string; specialty_name: string; subtype: string };
+  }[]>([]);
+  const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
   const [type, setType] = useState<"Khám trực tiếp" | "Tư vấn trực tuyến">("Khám trực tiếp");
   const [specialty, setSpecialty] = useState(initialDoctor ? initialDoctor.specialty : "");
   const [doctor, setDoctor] = useState(initialDoctor ? initialDoctor.name : "");
@@ -1189,12 +1197,93 @@ function Booking({
     });
   }, [availableSlots]);
 
+  const loadSlotsForDate = (dayIso: string) => {
+    setSelectedDateIso(dayIso);
+    const parts = dayIso.split("-");
+    if (parts.length === 3) {
+      setDateDisplay(`${parts[2]}/${parts[1]}/${parts[0]}`);
+    }
+    setLoadingTimeSlots(true);
+    fetchBookingOptions({ day: dayIso })
+      .then((data) => {
+        const docMap = new Map<string, { doctor_id: string; full_name: string; specialty_name: string; subtype: string }>();
+        (data.doctors || []).forEach((d) => {
+          const isGP = d.subtype === "GENERAL_PRACTITIONER" || d.specialty_name === "General Practitioner" || d.specialty_name === "General Practice" || d.specialty_name === "Bác sĩ đa khoa";
+          const sp = isGP ? "Đa khoa" : d.specialty_name;
+          docMap.set(d.doctor_id, { ...d, specialty_name: sp });
+        });
+        doctors.forEach((d) => {
+          if (!docMap.has(d.id)) {
+            const isGP = d.subtype === "GENERAL_PRACTITIONER" || d.specialty === "General Practitioner" || d.specialty === "General Practice" || d.specialty === "Bác sĩ đa khoa" || d.specialty === "Đa khoa";
+            const sp = isGP ? "Đa khoa" : (d.specialty || "Đa khoa");
+            docMap.set(d.id, { doctor_id: d.id, full_name: d.name, specialty_name: sp, subtype: isGP ? "GENERAL_PRACTITIONER" : (d.subtype || "SPECIALIST") });
+          }
+        });
+        const combined = (data.slots || []).map((s) => ({
+          slot: s,
+          doc: docMap.get(s.doctor_id) || {
+            doctor_id: s.doctor_id,
+            full_name: "Bác sĩ TiTiMi",
+            specialty_name: "Đa khoa",
+            subtype: "GENERAL_PRACTITIONER",
+          },
+        }));
+        setAllDaySlots(combined);
+      })
+      .catch((err) => {
+        console.warn("Lỗi tải khung giờ theo ngày:", err);
+        setAllDaySlots([]);
+      })
+      .finally(() => {
+        setLoadingTimeSlots(false);
+      });
+  };
+
+  const filteredTimeSlots = useMemo(() => {
+    return allDaySlots.filter(({ slot, doc }) => {
+      const timeStr = slot.starts_at.slice(11, 16);
+      if (timeFilterPeriod === "morning" && timeStr >= "12:00") return false;
+      if (timeFilterPeriod === "afternoon" && timeStr < "12:00") return false;
+      if (timeFilterSpecialty !== "Tất cả") {
+        const isFilterGP = timeFilterSpecialty === "Đa khoa" || timeFilterSpecialty === "Bác sĩ đa khoa";
+        const isDocGP = doc.specialty_name === "Đa khoa" || doc.specialty_name === "Bác sĩ đa khoa" || doc.specialty_name === "General Practitioner" || doc.specialty_name === "General Practice" || doc.subtype === "GENERAL_PRACTITIONER";
+        if (isFilterGP) {
+          if (!isDocGP) return false;
+        } else {
+          if (doc.specialty_name !== timeFilterSpecialty) return false;
+        }
+      }
+      return true;
+    });
+  }, [allDaySlots, timeFilterPeriod, timeFilterSpecialty]);
+
+  const handlePickSlotAndDoctor = (item: {
+    slot: AppointmentSlot;
+    doc: { doctor_id: string; full_name: string; specialty_name: string; subtype: string };
+  }) => {
+    const matchedDoctor = doctors.find((d) => d.id === item.doc.doctor_id) || {
+      id: item.doc.doctor_id,
+      name: item.doc.full_name,
+      specialty: item.doc.specialty_name,
+      rating: 4.9,
+      experience: "Chuyên khoa",
+      nextAvailable: "Hôm nay",
+    };
+    setDoctor(matchedDoctor.name);
+    setSpecialty(matchedDoctor.specialty);
+    setSelectedSlot(item.slot);
+    setTime(item.slot.starts_at.slice(11, 16));
+    setStep(5);
+  };
+
   const canContinue =
-    (step === 1 && Boolean(type)) ||
-    (step === 2 && Boolean(specialty)) ||
-    (step === 3 && Boolean(doctor)) ||
-    (step === 4 && Boolean(selectedDateIso && selectedSlot)) ||
-    step === 5;
+    bookingMode === "time"
+      ? Boolean(selectedDoctorObj && selectedSlot && time)
+      : (step === 1 && Boolean(type)) ||
+        (step === 2 && Boolean(specialty)) ||
+        (step === 3 && Boolean(doctor)) ||
+        (step === 4 && Boolean(selectedDateIso && selectedSlot)) ||
+        step === 5;
 
   const chooseType = (value: "Khám trực tiếp" | "Tư vấn trực tuyến") => {
     setType(value);
@@ -1225,7 +1314,21 @@ function Booking({
   };
 
   const next = () => canContinue && setStep((current) => Math.min(5, current + 1));
-  const back = () => (step === 1 ? go("doctors") : setStep((current) => current - 1));
+  const back = () => {
+    if (bookingMode === "time") {
+      if (step === 5) {
+        setStep(1);
+      } else {
+        go("doctors");
+      }
+    } else {
+      if (step === 1) {
+        go("doctors");
+      } else {
+        setStep((current) => current - 1);
+      }
+    }
+  };
 
   const confirm = async () => {
     if (!selectedDoctorObj || !selectedSlot) {
@@ -1287,9 +1390,61 @@ function Booking({
         description={
           step === 6
             ? "Lịch hẹn của bạn đã được ghi nhận vào hệ thống TiTiMi."
-            : "Hoàn thành 5 bước dưới đây để đặt lịch khám thuận tiện."
+            : "Hoàn thành các bước dưới đây hoặc tìm kiếm theo khung giờ để đặt lịch khám thuận tiện."
         }
       />
+      {step < 6 && (
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem", background: "#e2e8f0", padding: "4px", borderRadius: "10px", width: "fit-content" }}>
+          <button
+            type="button"
+            onClick={() => {
+              setBookingMode("doctor");
+            }}
+            style={{
+              padding: "8px 18px",
+              borderRadius: "8px",
+              border: "none",
+              fontWeight: 600,
+              fontSize: "13.5px",
+              cursor: "pointer",
+              background: bookingMode === "doctor" ? "#fff" : "transparent",
+              color: bookingMode === "doctor" ? "var(--primary)" : "#475569",
+              boxShadow: bookingMode === "doctor" ? "0 2px 4px rgba(0,0,0,0.08)" : "none",
+              transition: "all 0.15s ease",
+            }}
+          >
+            🩺 Đặt theo Bác sĩ & Chuyên khoa
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setBookingMode("time");
+              if (!selectedDateIso) {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tIso = tomorrow.toISOString().split("T")[0];
+                loadSlotsForDate(tIso);
+              } else {
+                loadSlotsForDate(selectedDateIso);
+              }
+            }}
+            style={{
+              padding: "8px 18px",
+              borderRadius: "8px",
+              border: "none",
+              fontWeight: 600,
+              fontSize: "13.5px",
+              cursor: "pointer",
+              background: bookingMode === "time" ? "#fff" : "transparent",
+              color: bookingMode === "time" ? "var(--primary)" : "#475569",
+              boxShadow: bookingMode === "time" ? "0 2px 4px rgba(0,0,0,0.08)" : "none",
+              transition: "all 0.15s ease",
+            }}
+          >
+            ⏰ Đặt theo Khung giờ mong muốn (Q05)
+          </button>
+        </div>
+      )}
       <div className="booking-steps">
         {["Hình thức khám", "Chuyên khoa", "Bác sĩ", "Ngày & giờ", "Xác nhận"].map(
           (label, index) => (
@@ -1343,7 +1498,159 @@ function Booking({
       ) : (
         <div className="booking-layout">
           <section className="card booking-panel">
-            {step === 1 && (
+            {bookingMode === "time" && step < 5 ? (
+              <div className="time-search-panel">
+                <h2>Tìm kiếm theo khung giờ mong muốn</h2>
+                <p>Hệ thống tự động tra cứu tất cả ca trực khả dụng của đội ngũ bác sĩ theo khung thời gian bạn chọn (Q05).</p>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1rem", background: "#f8fafc", padding: "1rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "4px" }}>
+                      1. Chọn ngày khám mong muốn:
+                    </label>
+                    <input
+                      type="date"
+                      min={todayIso}
+                      value={selectedDateIso || todayIso}
+                      onChange={(e) => loadSlotsForDate(e.target.value)}
+                      style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "4px" }}>
+                      2. Lọc theo chuyên khoa:
+                    </label>
+                    <select
+                      value={timeFilterSpecialty}
+                      onChange={(e) => setTimeFilterSpecialty(e.target.value)}
+                      style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#fff" }}
+                    >
+                      <option value="Tất cả">Tất cả chuyên khoa</option>
+                      {specialties.map((s) => (
+                        <option key={s.name} value={s.name}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "4px" }}>
+                      3. Buổi khám trong ngày:
+                    </label>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      {(["all", "morning", "afternoon"] as const).map((period) => (
+                        <button
+                          key={period}
+                          type="button"
+                          onClick={() => setTimeFilterPeriod(period)}
+                          style={{
+                            flex: 1,
+                            padding: "6px 8px",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            borderRadius: "6px",
+                            border: "1px solid",
+                            borderColor: timeFilterPeriod === period ? "var(--primary)" : "#cbd5e1",
+                            background: timeFilterPeriod === period ? "var(--primary)" : "#fff",
+                            color: timeFilterPeriod === period ? "#fff" : "#334155",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {period === "all" ? "Cả ngày" : period === "morning" ? "Sáng (8-12h)" : "Chiều (13-17h)"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "4px" }}>
+                      4. Hình thức khám:
+                    </label>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      {(["Khám trực tiếp", "Tư vấn trực tuyến"] as const).map((vt) => (
+                        <button
+                          key={vt}
+                          type="button"
+                          onClick={() => setType(vt)}
+                          style={{
+                            flex: 1,
+                            padding: "6px 8px",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            borderRadius: "6px",
+                            border: "1px solid",
+                            borderColor: type === vt ? "var(--primary)" : "#cbd5e1",
+                            background: type === vt ? "var(--primary)" : "#fff",
+                            color: type === vt ? "#fff" : "#334155",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {vt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: "1.25rem" }}>
+                  <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "0.5rem" }}>
+                    Các khung giờ và bác sĩ trực khả dụng ({filteredTimeSlots.length} lựa chọn):
+                  </h3>
+
+                  {loadingTimeSlots ? (
+                    <div style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>
+                      Đang tìm kiếm ca trực khả dụng...
+                    </div>
+                  ) : filteredTimeSlots.length > 0 ? (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", maxHeight: "360px", overflowY: "auto" }}>
+                      {filteredTimeSlots.map(({ slot, doc }) => {
+                        const slotTime = slot.starts_at.slice(11, 16);
+                        return (
+                          <div
+                            key={`${slot.schedule_id}-${slot.starts_at}`}
+                            style={{
+                              padding: "0.75rem 1rem",
+                              borderRadius: "8px",
+                              border: "1px solid #e2e8f0",
+                              background: "#fff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span style={{ fontWeight: 700, fontSize: "15px", color: "var(--primary)" }}>⏰ {slotTime}</span>
+                                <span style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "4px", background: "#f1f5f9", color: "#475569" }}>
+                                  30 phút
+                                </span>
+                              </div>
+                              <div style={{ fontSize: "13px", fontWeight: 600, color: "#1e293b", marginTop: "2px" }}>
+                                {doc.full_name}
+                              </div>
+                              <div style={{ fontSize: "11.5px", color: "#64748b" }}>
+                                Chuyên khoa {doc.specialty_name}
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => handlePickSlotAndDoctor({ slot, doc })}
+                              style={{ padding: "6px 12px", fontSize: "12px" }}
+                            >
+                              Chọn lịch này
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ padding: "2rem", textAlign: "center", background: "#f8fafc", borderRadius: "8px", border: "1px dashed #cbd5e1", color: "#64748b", fontSize: "13.5px" }}>
+                      Không có khung giờ hoặc bác sĩ trực phù hợp trong ngày này ({dateDisplay || selectedDateIso}).<br />
+                      Vui lòng thử chọn một ngày khác hoặc đổi điều kiện lọc.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                {step === 1 && (
               <>
                 <h2>Chọn hình thức khám</h2>
                 <p>Chọn hình thức phù hợp với nhu cầu thăm khám của bạn.</p>
@@ -1565,6 +1872,8 @@ function Booking({
                 </div>
               </>
             )}
+          </>
+        )}
 
             {step === 5 && (
               <>
@@ -1687,17 +1996,19 @@ function Booking({
               </>
             )}
 
-            <div className="booking-buttons">
-              <Button variant="secondary" onClick={back} disabled={submitting}>
-                Quay lại
-              </Button>
-              <Button
-                disabled={!canContinue || submitting}
-                onClick={step === 5 ? confirm : next}
-              >
-                {submitting ? "Đang xác nhận với máy chủ..." : step === 5 ? "Xác nhận đặt lịch" : "Tiếp tục"}
-              </Button>
-            </div>
+            {(bookingMode === "doctor" || step === 5) && (
+              <div className="booking-buttons">
+                <Button variant="secondary" onClick={back} disabled={submitting}>
+                  Quay lại
+                </Button>
+                <Button
+                  disabled={!canContinue || submitting}
+                  onClick={step === 5 ? confirm : next}
+                >
+                  {submitting ? "Đang xác nhận với máy chủ..." : step === 5 ? "Xác nhận đặt lịch" : "Tiếp tục"}
+                </Button>
+              </div>
+            )}
           </section>
 
           <aside className="card booking-summary">

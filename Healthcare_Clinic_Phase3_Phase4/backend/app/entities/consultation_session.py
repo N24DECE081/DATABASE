@@ -14,7 +14,7 @@ class ConsultationSession:
     appointment_id: str
     start_time: datetime
     end_time: datetime | None = None
-    actual_duration_minutes: int
+    actual_duration_minutes: int | None = None
     session_type: Literal['In-person', 'Virtual']
     meeting_url: str | None = None
     diagnosis_notes: str | None = None

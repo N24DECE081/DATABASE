@@ -36,8 +36,8 @@ def book(user, data):
     parent = data.get("follow_up_from_appt_id") or None
     if user.role == "DOCTOR":
         ensure(parent is not None, "Bác sĩ đặt hẹn tái khám cần chọn lịch hẹn trước đó.")
-    elif parent:
-        ensure(False, "Follow-up phải do bác sĩ tạo.")
+    elif user.role == "PATIENT":
+        ensure(not parent, "Bệnh nhân không thể tự đặt lịch tái khám.")
     begins, minutes = data["appointment_date_time"], data["estimated_duration_minutes"]
     ensure(begins >= now(), "Không thể đặt lịch hẹn trong quá khứ.")
     ensure(minutes in (15, 30, 45, 60), "Thời lượng khám không hợp lệ.")
@@ -52,6 +52,7 @@ def book(user, data):
                and begins >= datetime.combine(shift.schedule_date, shift.start_time)
                and end <= datetime.combine(shift.schedule_date, shift.end_time), "Lịch hẹn phải nằm trong ca làm đã chọn.")
         ensure(not appointments.overlap(shift.doctor_id, begins, end), "Bác sĩ đã có lịch hẹn trong thời gian này.")
+        ensure(not appointments.patient_overlap(patient_id, begins, end), "Bệnh nhân đã có lịch hẹn khác trong khoảng thời gian này.")
         if parent:
             preceding = accessible(user, parent, lock=True)
             ensure(preceding.patient_id == patient_id and preceding.doctor_id == shift.doctor_id
@@ -99,6 +100,23 @@ def reschedule(user, appointment_id, data):
         ensure(begins >= datetime.combine(shift.schedule_date,shift.start_time)
                and ends <= datetime.combine(shift.schedule_date,shift.end_time), "Lịch hẹn phải nằm trong ca làm.")
         ensure(not appointments.overlap(appointment.doctor_id,begins,ends,appointment_id), "Lịch hẹn chồng với lịch đã có.")
+        ensure(not appointments.patient_overlap(appointment.patient_id,begins,ends,appointment_id), "Bệnh nhân đã có lịch hẹn khác trong khoảng thời gian này.")
         for name in ("schedule_id","appointment_date_time","estimated_duration_minutes","appointment_type","reason"):
             setattr(appointment,name,data[name] or None)
         return appointments.update(appointment)
+
+
+def auto_noshow_appointments():
+    """BR33: Transition overdue Scheduled appointments to No-show."""
+    from ...db import get_db
+    conn = get_db()
+    with conn.cursor() as cur:
+        cur.execute("""
+            UPDATE appointment
+            SET status = 'No-show'
+            WHERE status = 'Scheduled'
+              AND DATE_ADD(appointment_date_time, INTERVAL estimated_duration_minutes MINUTE) < %s
+        """, (now(),))
+        affected = cur.rowcount
+    conn.commit()
+    return affected

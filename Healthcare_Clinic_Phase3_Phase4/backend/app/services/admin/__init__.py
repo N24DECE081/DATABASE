@@ -13,7 +13,7 @@ def create_account(user, data):
         abort(403)
     role = data["role"]
     ensure(role in ("ADMIN", "DOCTOR", "PATIENT"), "Role không hợp lệ.")
-    ensure(10 <= len(data["password"]) <= 128, "Mật khẩu cần từ 10 đến 128 ký tự.")
+    ensure(8 <= len(data["password"]) <= 128, "Mật khẩu cần từ 8 đến 128 ký tự.")
     with transaction():
         account = insert(UserAccount(user_id=identity("U", role=role), username=data["username"].strip(),
             password_hash=generate_password_hash(data["password"], method="pbkdf2:sha256:600000"),

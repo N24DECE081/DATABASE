@@ -64,13 +64,13 @@ CREATE TABLE `doctor` (
 CREATE TABLE `general_practitioner` (
   `doctor_id` VARCHAR(20) NOT NULL,
   PRIMARY KEY (`doctor_id`),
-  CONSTRAINT `fk_general_practitioner_doctor_id` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`doctor_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+  CONSTRAINT `fk_general_practitioner_doctor_id` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`doctor_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `specialist` (
   `doctor_id` VARCHAR(20) NOT NULL,
   PRIMARY KEY (`doctor_id`),
-  CONSTRAINT `fk_specialist_doctor_id` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`doctor_id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `fk_specialist_doctor_id` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`doctor_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   `specialty_id` VARCHAR(20) NOT NULL,
   CONSTRAINT `fk_specialist_specialty_id` FOREIGN KEY (`specialty_id`) REFERENCES `specialty` (`specialty_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -119,13 +119,14 @@ CREATE TABLE `consultation_session` (
   CONSTRAINT `fk_consultation_session_appointment_id` FOREIGN KEY (`appointment_id`) REFERENCES `appointment` (`appointment_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   `start_time` DATETIME NOT NULL,
   `end_time` DATETIME NULL DEFAULT NULL,
-  `actual_duration_minutes` INT NOT NULL,
-  CONSTRAINT `ck_consultation_session_actual_duration_minutes` CHECK (`actual_duration_minutes` BETWEEN 5 AND 120),
+  `actual_duration_minutes` INT NULL DEFAULT NULL,
+  CONSTRAINT `ck_consultation_session_actual_duration_minutes` CHECK (`actual_duration_minutes` IS NULL OR (`actual_duration_minutes` BETWEEN 5 AND 120)),
   `session_type` VARCHAR(15) NOT NULL,
   CONSTRAINT `ck_consultation_session_session_type` CHECK (`session_type` IN ('In-person', 'Virtual')),
   `meeting_url` VARCHAR(255) NULL DEFAULT NULL,
   `diagnosis_notes` TEXT NULL DEFAULT NULL,
-  CONSTRAINT `ck_session_time` CHECK (`end_time` IS NULL OR `end_time` > `start_time`)
+  CONSTRAINT `ck_session_time` CHECK (`end_time` IS NULL OR `end_time` > `start_time`),
+  CONSTRAINT `ck_session_duration_not_null_on_end` CHECK (`end_time` IS NULL OR `actual_duration_minutes` IS NOT NULL)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `medical_history` (
@@ -167,5 +168,6 @@ CREATE TABLE `prescription_item` (
   `dosage` VARCHAR(50) NOT NULL,
   `frequency` VARCHAR(50) NOT NULL,
   `duration` VARCHAR(50) NOT NULL,
-  `special_instructions` VARCHAR(255) NULL DEFAULT NULL
+  `special_instructions` VARCHAR(255) NULL DEFAULT NULL,
+  UNIQUE KEY `uq_prescription_item_medication` (`prescription_id`, `medication_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

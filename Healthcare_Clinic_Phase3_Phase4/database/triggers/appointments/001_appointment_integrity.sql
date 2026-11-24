@@ -34,6 +34,12 @@ BEGIN
                    AND DATE_ADD(appointment_date_time, INTERVAL estimated_duration_minutes MINUTE) > begins) THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Doctor already has an overlapping appointment.';
         END IF;
+        IF EXISTS (SELECT 1 FROM appointment WHERE patient_id = pid AND appointment_id <> aid
+                   AND status NOT IN ('Cancelled', 'No-show')
+                   AND appointment_date_time < DATE_ADD(begins, INTERVAL minutes_value MINUTE)
+                   AND DATE_ADD(appointment_date_time, INTERVAL estimated_duration_minutes MINUTE) > begins) THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Patient already has an overlapping appointment.';
+        END IF;
     END IF;
     IF parent_id IS NOT NULL AND NOT EXISTS (
         SELECT 1 FROM appointment WHERE appointment_id = parent_id AND appointment_id <> aid
@@ -58,11 +64,19 @@ BEGIN
                WHERE cs.appointment_id = OLD.appointment_id)
        OR EXISTS (SELECT 1 FROM consultation_session cs JOIN prescription rx ON rx.session_id = cs.session_id
                   WHERE cs.appointment_id = OLD.appointment_id) THEN
-        IF NEW.status <> 'Completed' THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Clinical records require a completed appointment.';
+        IF NEW.status NOT IN ('Checked-In', 'Completed') THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Clinical records require an in-progress or completed appointment.';
         END IF;
     END IF;
     CALL validate_appointment(NEW.appointment_id, NEW.patient_id, NEW.doctor_id, NEW.schedule_id,
         NEW.appointment_date_time, NEW.estimated_duration_minutes, NEW.status, NEW.follow_up_from_appt_id);
+END$$
+CREATE PROCEDURE sp_auto_noshow_appointments()
+SQL SECURITY DEFINER
+BEGIN
+    UPDATE appointment
+    SET status = 'No-show'
+    WHERE status = 'Scheduled'
+      AND DATE_ADD(appointment_date_time, INTERVAL estimated_duration_minutes MINUTE) < NOW();
 END$$
 DELIMITER ;

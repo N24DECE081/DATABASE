@@ -31,7 +31,7 @@ def app():
         seed(root)
         with root.cursor() as cursor:
             cursor.execute(f"CREATE USER '{db_user}'@'127.0.0.1' IDENTIFIED BY %s", (password,))
-            cursor.execute(f"GRANT SELECT, INSERT, UPDATE ON `{schema}`.* TO '{db_user}'@'127.0.0.1'")
+            cursor.execute(f"GRANT SELECT, INSERT, UPDATE, EXECUTE ON `{schema}`.* TO '{db_user}'@'127.0.0.1'")
         instance = create_app({"TESTING": True, "SECRET_KEY": secrets.token_urlsafe(32),
             "MYSQL_DATABASE": schema, "MYSQL_USER": db_user, "MYSQL_PASSWORD": password,
             "MYSQL_HOST": "127.0.0.1", "MYSQL_PORT": 3307, "WTF_CSRF_ENABLED": True})
