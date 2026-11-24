@@ -1,3 +1,4 @@
-# Ignore office lock files
+# Ignore office lock files and docx binaries
 ~$*
+*.docx
 .pytest_cache/
