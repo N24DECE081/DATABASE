@@ -2,7 +2,7 @@
   "schema_version": 1,
   "baseline": {
     "path": "01_Reference_and_Baseline/Phase2_DB_Project_RP2_BASELINE_READ_ONLY.docx",
-    "sha256": "c61e01650630cba70f956e42efdf7fbf128e88bc8d7eb38a2c1a0cbf2e50168f",
+    "sha256": "7a507d65b2e7003bc3087af91d491a1dc48f245573c908cc821f11846c019364",
     "eer_path": "../Healthcare_EER.png",
     "eer_sha256": "1dc9dff60a49b0a853d82673647f42b419218d01237008580fabeea444c78811"
   },
@@ -467,6 +467,14 @@
           "nullable": false,
           "default": "None",
           "constraints": "Unique . Government medical practice license code."
+        },
+        {
+          "logical_name": "DateOfBirth",
+          "field": "date_of_birth",
+          "sql_type": "DATE",
+          "nullable": true,
+          "default": "NULL",
+          "constraints": "Physician date of birth (age between 22 and 80 years when provided)."
         }
       ]
     },
@@ -483,7 +491,7 @@
           "sql_type": "VARCHAR(20)",
           "nullable": false,
           "default": "None",
-          "constraints": "PK ,  FK . References  DOCTOR(DoctorID)  on delete cascade."
+          "constraints": "PK, FK. References DOCTOR(DoctorID) on delete restrict."
         }
       ]
     },
@@ -533,7 +541,7 @@
           "sql_type": "VARCHAR(20)",
           "nullable": false,
           "default": "None",
-          "constraints": "PK ,  FK . References  DOCTOR(DoctorID)  on delete cascade."
+          "constraints": "PK, FK. References DOCTOR(DoctorID) on delete restrict."
         },
         {
           "logical_name": "SpecialtyID",
@@ -671,7 +679,7 @@
           "sql_type": "INT",
           "nullable": false,
           "default": "30",
-          "constraints": "CHECK (EstimatedDurationMinutes IN (15, 30, 45, 60)) ."
+          "constraints": "CHECK (EstimatedDurationMinutes IN (30))."
         },
         {
           "logical_name": "AppointmentType",
@@ -743,8 +751,8 @@
           "field": "actual_duration_minutes",
           "sql_type": "INT",
           "nullable": false,
-          "default": "None",
-          "constraints": "CHECK (ActualDurationMinutes BETWEEN 5 AND 120) ."
+          "default": "5",
+          "constraints": "CHECK (ActualDurationMinutes BETWEEN 5 AND 30). Defaults to 5 while ongoing; computed from (EndTime - StartTime) when completed, clamped to 5 if under 5 minutes."
         },
         {
           "logical_name": "SessionType",
@@ -760,7 +768,7 @@
           "sql_type": "VARCHAR(255)",
           "nullable": true,
           "default": "NULL",
-          "constraints": "Secure teleconference link (Telemedicine sessions)."
+          "constraints": "Secure HTTPS teleconference link (required when SessionType is Virtual / Telemedicine)."
         },
         {
           "logical_name": "DiagnosisNotes",
@@ -985,14 +993,6 @@
       "nullable": true,
       "default": "NULL",
       "source": "User instruction 2026-10-05: cho phép NULL"
-    },
-    {
-      "id": "BASELINE-02",
-      "entity": "CONSULTATION_SESSION",
-      "field": "ActualDurationMinutes",
-      "nullable": true,
-      "default": "NULL",
-      "source": "Issue 7: cho phép NULL khi phiên khám dở dang"
     }
   ]
 }

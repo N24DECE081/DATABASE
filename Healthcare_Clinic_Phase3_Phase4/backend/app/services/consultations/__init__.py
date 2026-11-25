@@ -1,5 +1,6 @@
 """Create ongoing sessions (EndTime NULL) and close them with computed duration."""
 from datetime import timedelta
+from urllib.parse import urlsplit
 from flask import abort
 from ...db import get_db, transaction
 from ...entities import ConsultationSession
@@ -7,6 +8,20 @@ from ...repositories import consultations, appointments
 from ..appointments import accessible
 from ..doctors import classified_doctor
 from ..common import BusinessError, ensure, found, identity, now
+
+
+def _validate_telemedicine_meeting_url(appointment_type, meeting_url):
+    cleaned = (meeting_url or "").strip() or None
+    if cleaned is not None:
+        ensure(len(cleaned) <= 255, "Liên kết cuộc gọi không được vượt quá 255 ký tự.")
+        parsed = urlsplit(cleaned)
+        ensure(
+            parsed.scheme == "https" and bool(parsed.netloc) and not parsed.username and not parsed.password,
+            "Liên kết cuộc gọi phải sử dụng HTTPS hợp lệ.",
+        )
+    if appointment_type == "Telemedicine":
+        ensure(cleaned is not None, "Phiên khám Telemedicine bắt buộc phải có liên kết cuộc gọi HTTPS.")
+    return cleaned
 
 
 def accessible_session(user, session_id, *, lock=False):
@@ -26,7 +41,7 @@ def duration(starts, ends, reported=None):
     if reported is not None:
         ensure(reported in range(5, 31), "Thời lượng thực tế phải từ 5 đến 30 phút.")
         return reported
-    return None
+    return 5
 
 
 def _mark_overdue_noshow(appointment, reason_msg):
@@ -58,10 +73,11 @@ def create(user, appointment_id, data):
                "Chỉ được bắt đầu phiên khám trong cửa sổ thời gian của lịch hẹn.")
         ensure(data.get("end_time") is None or data["end_time"] <= window_end,
                "Giờ kết thúc vượt quá cửa sổ thời gian của lịch hẹn.")
+        meeting_url = _validate_telemedicine_meeting_url(appointment.appointment_type, data.get("meeting_url"))
         session = consultations.insert(ConsultationSession(session_id=identity("SES-"), appointment_id=appointment_id,
             start_time=data["start_time"], end_time=data.get("end_time"), actual_duration_minutes=minutes,
             session_type="Virtual" if appointment.appointment_type == "Telemedicine" else "In-person",
-            meeting_url=data.get("meeting_url") or None, diagnosis_notes=data.get("diagnosis_notes") or None))
+            meeting_url=meeting_url, diagnosis_notes=data.get("diagnosis_notes") or None))
         if session.end_time is not None:
             appointment.status = "Completed"
             appointments.update(appointment)
@@ -110,7 +126,10 @@ def update_notes(user, session_id, notes, meeting_url=None):
     with transaction():
         session = accessible_session(user, session_id, lock=True)
         ensure(session.end_time is None, "Phiên khám đã kết thúc, không thể sửa ghi chú.")
+        appointment = accessible(user, session.appointment_id)
         session.diagnosis_notes = notes or None
         if meeting_url is not None:
-            session.meeting_url = meeting_url or None
+            session.meeting_url = _validate_telemedicine_meeting_url(appointment.appointment_type, meeting_url)
+        elif appointment.appointment_type == "Telemedicine":
+            _validate_telemedicine_meeting_url(appointment.appointment_type, session.meeting_url)
         return consultations.update(session)

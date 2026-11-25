@@ -22,11 +22,11 @@ DOCTOR là supertype; GENERAL_PRACTITIONER và SPECIALIST là hai subtype Disjoi
 
 Mã DOT: [doctor_specialization.dot](diagrams/doctor_specialization.dot). Biểu diễn SVG được cung cấp để đọc trực tiếp mà không cần cài Graphviz. Mã DOT và SVG chỉ diễn giải D/T và đường nối kép từ DOCTOR tới specialization đã tồn tại trên EER gốc.
 
-## EndTime cho phép NULL
+## EndTime cho phép NULL & ActualDurationMinutes mặc định 5 phút
 
-Theo quyết định của người dùng ngày 2026-10-05, CONSULTATION_SESSION.EndTime cho phép NULL khi phiên khám đang diễn ra. Khi kết thúc, EndTime phải sau StartTime; ActualDurationMinutes được tính theo số phút giữa hai mốc và phải nằm trong 5–120 phút. ActualDurationMinutes vẫn NOT NULL theo baseline; với phiên mở, bác sĩ nhập thời lượng đã ghi nhận trong domain này.
+Theo quyết định của người dùng ngày 2026-10-05 và đợt rà soát 2026-11-25, `CONSULTATION_SESSION.EndTime` cho phép `NULL` khi phiên khám đang diễn ra. Khi kết thúc, `EndTime` phải sau `StartTime`; `ActualDurationMinutes` được tính theo số phút giữa hai mốc trong domain `5–30` phút (nếu dưới 5 phút thì lưu `5`). `ActualDurationMinutes` là `NOT NULL DEFAULT 5` (khớp `SessionForm` và Data Dictionary đã cập nhật).
 
-Metadata gốc Phase 2 vẫn được giữ trong `module_manifest.json`; `approved_overrides` chỉ có đúng một mục cho EndTime nullable và default NULL. DDL và entity áp dụng ngoại lệ này. Bản báo cáo và EER nguồn không bị ghi đè.
+Metadata Phase 2 được đồng bộ trong `module_manifest.json` (`DOCTOR.DateOfBirth`, `ON DELETE RESTRICT` cho subtype, `EstimatedDurationMinutes IN (30)`, `ActualDurationMinutes BETWEEN 5 AND 30 DEFAULT 5`, và `MeetingURL` bắt buộc HTTPS cho `Telemedicine` theo `BR57` siết chặt); `approved_overrides` chỉ có đúng một mục cho `EndTime` nullable và default `NULL`.
 
 ## Mục bổ sung về follow-up đã bỏ
 

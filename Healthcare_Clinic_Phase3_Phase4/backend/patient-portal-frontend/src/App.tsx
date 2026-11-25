@@ -2542,7 +2542,7 @@ function Consultations({
                 <span className="consult-date">{c.date}</span>
                 <h3>{c.doctor}</h3>
                 <p>
-                  {c.specialty} · {c.modality} · Thời lượng: {c.duration} phút
+                  {c.specialty} · {c.modality} · {c.isActive ? `Đang khám (tối thiểu ${c.duration} phút)` : `Thời lượng: ${c.duration} phút`}
                 </p>
               </div>
               <Badge tone="blue">{c.status}</Badge>
@@ -2778,7 +2778,7 @@ function ConsultationDetail({
           </div>
           <div>
             <span>Thời lượng</span>
-            <strong>{consultation.duration} phút</strong>
+            <strong>{consultation.isActive ? `Đang khám (tối thiểu ${consultation.duration} phút)` : `${consultation.duration} phút`}</strong>
           </div>
           <div>
             <span>Hình thức</span>

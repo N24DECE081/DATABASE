@@ -13,7 +13,7 @@ def test_disjoint_subtypes_are_enforced_in_database(app):
 
 def test_missing_subtype_is_detected_before_doctor_can_be_used(app):
     sql(app,"""INSERT INTO user_account VALUES('USER-900','orphan','test-hash','DOCTOR','Active',CURRENT_TIMESTAMP)""")
-    sql(app,"INSERT INTO doctor VALUES('DOC-900','USER-900','Orphan Demo','0000','orphan@example.invalid','DEMO-ORPHAN')")
+    sql(app,"INSERT INTO doctor(doctor_id,user_id,full_name,phone,email,license_number) VALUES('DOC-900','USER-900','Orphan Demo','0000','orphan@example.invalid','DEMO-ORPHAN')")
     with pytest.raises(mysql.connector.Error) as error:
         sql(app,"""INSERT INTO doctor_schedule VALUES('SCH-900','DOC-900',CURRENT_DATE(),'08:00','09:00','Available')""")
     assert error.value.errno == 1644

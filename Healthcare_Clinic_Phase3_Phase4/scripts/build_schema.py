@@ -24,6 +24,9 @@ def generate():
         definitions = []
         for col in entity["columns"]:
             name = col["field"]
+            if table == "doctor" and name == "date_of_birth":
+                # Added incrementally by 002_doctor_birth_date.sql so migrations run idempotently in order.
+                continue
             override = overrides.get((entity["logical_name"], col["logical_name"]), {})
             nullable = override.get("nullable", col["nullable"])
             default = override.get("default", col["default"])
@@ -44,17 +47,14 @@ def generate():
                 definitions.append(f"  CONSTRAINT `fk_{table}_{name}` FOREIGN KEY (`{name}`) "
                                    f"REFERENCES `{parent.lower()}` (`{names[parent, logical_key]}`) "
                                    f"ON DELETE {cascade} ON UPDATE RESTRICT")
-            domain = re.search(r"CHECK\s*\((.*)\)\s*\.", col["constraints"])
+            domain = re.search(r"CHECK\s*\((.*?)\)\s*\.", col["constraints"])
             if domain:
                 expression = domain.group(1).replace(col["logical_name"], f"`{name}`")
-                if table == "consultation_session" and name == "actual_duration_minutes":
-                    expression = f"`{name}` IS NULL OR ({expression})"
                 definitions.append(f"  CONSTRAINT `ck_{table}_{name}` CHECK ({expression})")
         if table == "doctor_schedule":
             definitions.append("  CONSTRAINT `ck_schedule_time` CHECK (`end_time` > `start_time`)")
         elif table == "consultation_session":
             definitions.append("  CONSTRAINT `ck_session_time` CHECK (`end_time` IS NULL OR `end_time` > `start_time`)")
-            definitions.append("  CONSTRAINT `ck_session_duration_not_null_on_end` CHECK (`end_time` IS NULL OR `actual_duration_minutes` IS NOT NULL)")
         elif table == "prescription_item":
             definitions.append("  UNIQUE KEY `uq_prescription_item_medication` (`prescription_id`, `medication_id`)")
         blocks.append(f"CREATE TABLE `{table}` (\n" + ",\n".join(definitions) +

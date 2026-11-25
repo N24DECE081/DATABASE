@@ -1,238 +1,28 @@
 {
   "database": "healthcare_clinic_portal",
-  "fields_checked": 77,
+  "fields_checked": 78,
   "queries": [
     {
       "id": "q01",
       "file": "database/queries/appointments/q01_daily_appointments.sql",
-      "rows": 23,
+      "rows": 2,
       "output": [
         {
-          "appointment_id": "APT-423",
+          "appointment_id": "APT-662",
+          "patient_name": "Nguyễn Văn An",
+          "doctor_name": "Nguyễn Minh Quân",
+          "specialty_name": "General Practitioner",
+          "appointment_date_time": "2026-11-26 08:00:00",
+          "start_time": "8:00:00",
+          "end_time": "17:00:00",
+          "status": "Cancelled"
+        },
+        {
+          "appointment_id": "APT-667",
           "patient_name": "Lê Văn Châu",
-          "doctor_name": "Nguyễn Minh Quân",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 08:00:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-456",
-          "patient_name": "Đinh Minh Phúc",
-          "doctor_name": "Lê Bảo Ngọc",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 08:00:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-424",
-          "patient_name": "Đặng Văn Hùng",
-          "doctor_name": "Nguyễn Minh Quân",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 08:30:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-457",
-          "patient_name": "Đặng Ngọc Hùng",
-          "doctor_name": "Lê Bảo Ngọc",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 08:30:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-425",
-          "patient_name": "Đoàn Văn Nam",
-          "doctor_name": "Nguyễn Minh Quân",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 09:00:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-458",
-          "patient_name": "Nguyễn Văn An",
-          "doctor_name": "Lê Bảo Ngọc",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 09:00:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-426",
-          "patient_name": "Phạm Thị Dũng",
-          "doctor_name": "Nguyễn Minh Quân",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 09:30:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-459",
-          "patient_name": "Đỗ Văn Lan",
-          "doctor_name": "Lê Bảo Ngọc",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 09:30:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-427",
-          "patient_name": "Bùi Thị Khang",
-          "doctor_name": "Nguyễn Minh Quân",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 10:00:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-460",
-          "patient_name": "Lê Thị Châu",
-          "doctor_name": "Lê Bảo Ngọc",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 10:00:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-428",
-          "patient_name": "Trương Thị Nga",
-          "doctor_name": "Nguyễn Minh Quân",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 10:30:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-461",
-          "patient_name": "Ngô Thị Long",
-          "doctor_name": "Lê Bảo Ngọc",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 10:30:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-429",
-          "patient_name": "Hoàng Minh Giang",
-          "doctor_name": "Nguyễn Minh Quân",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 11:00:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-462",
-          "patient_name": "Hoàng Minh Giang",
-          "doctor_name": "Lê Bảo Ngọc",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 11:00:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-430",
-          "patient_name": "Đỗ Minh Lan",
-          "doctor_name": "Nguyễn Minh Quân",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 11:30:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-463",
-          "patient_name": "Lý Minh Minh",
-          "doctor_name": "Lê Bảo Ngọc",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 11:30:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-431",
-          "patient_name": "Đinh Minh Phúc",
-          "doctor_name": "Nguyễn Minh Quân",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 12:00:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-464",
-          "patient_name": "Phan Ngọc Hạnh",
-          "doctor_name": "Lê Bảo Ngọc",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 12:00:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-432",
-          "patient_name": "Huỳnh Ngọc Hà",
-          "doctor_name": "Nguyễn Minh Quân",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 12:30:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-465",
-          "patient_name": "Trương Ngọc Nga",
-          "doctor_name": "Lê Bảo Ngọc",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 12:30:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-433",
-          "patient_name": "Hồ Ngọc Linh",
-          "doctor_name": "Nguyễn Minh Quân",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 13:00:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Checked-In"
-        },
-        {
-          "appointment_id": "APT-466",
-          "patient_name": "Võ Văn Hòa",
-          "doctor_name": "Lê Bảo Ngọc",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 13:00:00",
-          "start_time": "8:00:00",
-          "end_time": "17:00:00",
-          "status": "Scheduled"
-        },
-        {
-          "appointment_id": "APT-656",
-          "patient_name": "Nguyễn Văn An",
-          "doctor_name": "Lê Bảo Ngọc",
-          "specialty_name": "General Practitioner",
-          "appointment_date_time": "2026-11-24 13:45:00",
+          "doctor_name": "Đặng Minh Tâm",
+          "specialty_name": "Nội tổng quát",
+          "appointment_date_time": "2026-11-26 08:00:00",
           "start_time": "8:00:00",
           "end_time": "17:00:00",
           "status": "Scheduled"
@@ -243,31 +33,37 @@
     {
       "id": "q02",
       "file": "database/queries/appointments/q02_doctor_status_counts.sql",
-      "rows": 28,
+      "rows": 30,
       "output": [
         {
           "doctor_id": "DOC-001",
           "full_name": "Nguyễn Minh Quân",
+          "status": "Cancelled",
+          "appointment_count": 4
+        },
+        {
+          "doctor_id": "DOC-001",
+          "full_name": "Nguyễn Minh Quân",
           "status": "Checked-In",
-          "appointment_count": 3
+          "appointment_count": 1
         },
         {
           "doctor_id": "DOC-001",
           "full_name": "Nguyễn Minh Quân",
           "status": "Completed",
-          "appointment_count": 40
+          "appointment_count": 42
         },
         {
           "doctor_id": "DOC-001",
           "full_name": "Nguyễn Minh Quân",
           "status": "No-show",
-          "appointment_count": 24
+          "appointment_count": 36
         },
         {
-          "doctor_id": "DOC-001",
-          "full_name": "Nguyễn Minh Quân",
-          "status": "Scheduled",
-          "appointment_count": 10
+          "doctor_id": "DOC-002",
+          "full_name": "Lê Bảo Ngọc",
+          "status": "Cancelled",
+          "appointment_count": 1
         },
         {
           "doctor_id": "DOC-002",
@@ -279,13 +75,7 @@
           "doctor_id": "DOC-002",
           "full_name": "Lê Bảo Ngọc",
           "status": "No-show",
-          "appointment_count": 23
-        },
-        {
-          "doctor_id": "DOC-002",
-          "full_name": "Lê Bảo Ngọc",
-          "status": "Scheduled",
-          "appointment_count": 13
+          "appointment_count": 35
         },
         {
           "doctor_id": "DOC-003",
@@ -302,12 +92,6 @@
         {
           "doctor_id": "DOC-004",
           "full_name": "Phạm Thu Hà",
-          "status": "Checked-In",
-          "appointment_count": 20
-        },
-        {
-          "doctor_id": "DOC-004",
-          "full_name": "Phạm Thu Hà",
           "status": "Completed",
           "appointment_count": 40
         },
@@ -315,13 +99,7 @@
           "doctor_id": "DOC-004",
           "full_name": "Phạm Thu Hà",
           "status": "No-show",
-          "appointment_count": 2
-        },
-        {
-          "doctor_id": "DOC-005",
-          "full_name": "Vũ Thanh Bình",
-          "status": "Checked-In",
-          "appointment_count": 20
+          "appointment_count": 22
         },
         {
           "doctor_id": "DOC-005",
@@ -330,9 +108,9 @@
           "appointment_count": 40
         },
         {
-          "doctor_id": "DOC-006",
-          "full_name": "Hoàng Gia Hân",
-          "status": "Checked-In",
+          "doctor_id": "DOC-005",
+          "full_name": "Vũ Thanh Bình",
+          "status": "No-show",
           "appointment_count": 20
         },
         {
@@ -340,6 +118,12 @@
           "full_name": "Hoàng Gia Hân",
           "status": "Completed",
           "appointment_count": 40
+        },
+        {
+          "doctor_id": "DOC-006",
+          "full_name": "Hoàng Gia Hân",
+          "status": "No-show",
+          "appointment_count": 20
         },
         {
           "doctor_id": "DOC-007",
@@ -350,14 +134,20 @@
         {
           "doctor_id": "DOC-007",
           "full_name": "Đặng Minh Tâm",
-          "status": "Checked-In",
+          "status": "Completed",
+          "appointment_count": 32
+        },
+        {
+          "doctor_id": "DOC-007",
+          "full_name": "Đặng Minh Tâm",
+          "status": "No-show",
           "appointment_count": 10
         },
         {
           "doctor_id": "DOC-007",
           "full_name": "Đặng Minh Tâm",
-          "status": "Completed",
-          "appointment_count": 32
+          "status": "Scheduled",
+          "appointment_count": 1
         },
         {
           "doctor_id": "DOC-008",
@@ -369,7 +159,13 @@
           "doctor_id": "DOC-008",
           "full_name": "Bùi Ngọc Anh",
           "status": "Completed",
-          "appointment_count": 32
+          "appointment_count": 33
+        },
+        {
+          "doctor_id": "DOC-008",
+          "full_name": "Bùi Ngọc Anh",
+          "status": "No-show",
+          "appointment_count": 1
         },
         {
           "doctor_id": "DOC-009",
@@ -382,6 +178,12 @@
           "full_name": "Đỗ Văn Phúc",
           "status": "Completed",
           "appointment_count": 32
+        },
+        {
+          "doctor_id": "DOC-009",
+          "full_name": "Đỗ Văn Phúc",
+          "status": "No-show",
+          "appointment_count": 1
         },
         {
           "doctor_id": "DOC-010",
@@ -534,7 +336,7 @@
         {
           "patient_id": "PAT-003",
           "full_name": "Lê Văn Châu",
-          "completed_visits": 5
+          "completed_visits": 6
         },
         {
           "patient_id": "PAT-010",
@@ -759,7 +561,7 @@
         {
           "patient_id": "PAT-001",
           "full_name": "Nguyễn Văn An",
-          "completed_visits": 4
+          "completed_visits": 6
         },
         {
           "patient_id": "PAT-008",
@@ -827,11 +629,15 @@
     {
       "id": "q04",
       "file": "database/queries/appointments/q04_doctors_not_exists.sql",
-      "rows": 10,
+      "rows": 11,
       "output": [
         {
           "doctor_id": "DOC-001",
           "full_name": "Nguyễn Minh Quân"
+        },
+        {
+          "doctor_id": "DOC-002",
+          "full_name": "Lê Bảo Ngọc"
         },
         {
           "doctor_id": "DOC-003",
@@ -875,1697 +681,1922 @@
     {
       "id": "q05",
       "file": "database/queries/appointments/q05_available_shift_starts.sql",
-      "rows": 338,
+      "rows": 383,
       "output": [
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 13:30:00"
+          "starts": "2026-11-26 08:00:00"
         },
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 13:45:00"
+          "starts": "2026-11-26 08:15:00"
         },
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 14:00:00"
+          "starts": "2026-11-26 08:30:00"
         },
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 14:15:00"
+          "starts": "2026-11-26 08:45:00"
         },
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 14:30:00"
+          "starts": "2026-11-26 09:00:00"
         },
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 14:45:00"
+          "starts": "2026-11-26 09:15:00"
         },
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 15:00:00"
+          "starts": "2026-11-26 09:30:00"
         },
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 15:15:00"
+          "starts": "2026-11-26 09:45:00"
         },
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 15:30:00"
+          "starts": "2026-11-26 10:00:00"
         },
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 15:45:00"
+          "starts": "2026-11-26 10:15:00"
         },
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 16:00:00"
+          "starts": "2026-11-26 10:30:00"
         },
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 16:15:00"
+          "starts": "2026-11-26 10:45:00"
         },
         {
-          "schedule_id": "SCH-011",
+          "schedule_id": "SCH-161",
           "doctor_id": "DOC-001",
-          "starts": "2026-11-24 16:30:00"
+          "starts": "2026-11-26 11:00:00"
         },
         {
-          "schedule_id": "SCH-022",
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 11:15:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 11:30:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 11:45:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 12:00:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 12:15:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 12:30:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 12:45:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 13:00:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 13:15:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 13:30:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 13:45:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 14:00:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 14:15:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 14:30:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 14:45:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 15:00:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 15:15:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 15:30:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 15:45:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 16:00:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 16:15:00"
+        },
+        {
+          "schedule_id": "SCH-161",
+          "doctor_id": "DOC-001",
+          "starts": "2026-11-26 16:30:00"
+        },
+        {
+          "schedule_id": "SCH-160",
           "doctor_id": "DOC-002",
-          "starts": "2026-11-24 14:15:00"
+          "starts": "2026-11-26 08:00:00"
         },
         {
-          "schedule_id": "SCH-022",
+          "schedule_id": "SCH-160",
           "doctor_id": "DOC-002",
-          "starts": "2026-11-24 14:30:00"
+          "starts": "2026-11-26 08:15:00"
         },
         {
-          "schedule_id": "SCH-022",
+          "schedule_id": "SCH-160",
           "doctor_id": "DOC-002",
-          "starts": "2026-11-24 14:45:00"
+          "starts": "2026-11-26 08:30:00"
         },
         {
-          "schedule_id": "SCH-022",
+          "schedule_id": "SCH-160",
           "doctor_id": "DOC-002",
-          "starts": "2026-11-24 15:00:00"
+          "starts": "2026-11-26 08:45:00"
         },
         {
-          "schedule_id": "SCH-022",
+          "schedule_id": "SCH-160",
           "doctor_id": "DOC-002",
-          "starts": "2026-11-24 15:15:00"
+          "starts": "2026-11-26 09:00:00"
         },
         {
-          "schedule_id": "SCH-022",
+          "schedule_id": "SCH-160",
           "doctor_id": "DOC-002",
-          "starts": "2026-11-24 15:30:00"
+          "starts": "2026-11-26 09:15:00"
         },
         {
-          "schedule_id": "SCH-022",
+          "schedule_id": "SCH-160",
           "doctor_id": "DOC-002",
-          "starts": "2026-11-24 15:45:00"
+          "starts": "2026-11-26 09:30:00"
         },
         {
-          "schedule_id": "SCH-022",
+          "schedule_id": "SCH-160",
           "doctor_id": "DOC-002",
-          "starts": "2026-11-24 16:00:00"
+          "starts": "2026-11-26 09:45:00"
         },
         {
-          "schedule_id": "SCH-022",
+          "schedule_id": "SCH-160",
           "doctor_id": "DOC-002",
-          "starts": "2026-11-24 16:15:00"
+          "starts": "2026-11-26 10:00:00"
         },
         {
-          "schedule_id": "SCH-022",
+          "schedule_id": "SCH-160",
           "doctor_id": "DOC-002",
-          "starts": "2026-11-24 16:30:00"
+          "starts": "2026-11-26 10:15:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 10:30:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 10:45:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 11:00:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 11:15:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 11:30:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 11:45:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 12:00:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 12:15:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 12:30:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 12:45:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 13:00:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 13:15:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 13:30:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 13:45:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 14:00:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 14:15:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 14:30:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 14:45:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 15:00:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 15:15:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 15:30:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 15:45:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 16:00:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 16:15:00"
+        },
+        {
+          "schedule_id": "SCH-160",
+          "doctor_id": "DOC-002",
+          "starts": "2026-11-26 16:30:00"
+        },
+        {
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 08:00:00"
+          "starts": "2026-11-26 08:00:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 08:15:00"
+          "starts": "2026-11-26 08:15:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 08:30:00"
+          "starts": "2026-11-26 08:30:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 08:45:00"
+          "starts": "2026-11-26 08:45:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 09:00:00"
+          "starts": "2026-11-26 09:00:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 09:15:00"
+          "starts": "2026-11-26 09:15:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 09:30:00"
+          "starts": "2026-11-26 09:30:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 09:45:00"
+          "starts": "2026-11-26 09:45:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 10:00:00"
+          "starts": "2026-11-26 10:00:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 10:15:00"
+          "starts": "2026-11-26 10:15:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 10:30:00"
+          "starts": "2026-11-26 10:30:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 10:45:00"
+          "starts": "2026-11-26 10:45:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 11:00:00"
+          "starts": "2026-11-26 11:00:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 11:15:00"
+          "starts": "2026-11-26 11:15:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 11:30:00"
+          "starts": "2026-11-26 11:30:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 11:45:00"
+          "starts": "2026-11-26 11:45:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 12:00:00"
+          "starts": "2026-11-26 12:00:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 12:15:00"
+          "starts": "2026-11-26 12:15:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 12:30:00"
+          "starts": "2026-11-26 12:30:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 12:45:00"
+          "starts": "2026-11-26 12:45:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 13:00:00"
+          "starts": "2026-11-26 13:00:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 13:15:00"
+          "starts": "2026-11-26 13:15:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 13:30:00"
+          "starts": "2026-11-26 13:30:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 13:45:00"
+          "starts": "2026-11-26 13:45:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 14:00:00"
+          "starts": "2026-11-26 14:00:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 14:15:00"
+          "starts": "2026-11-26 14:15:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 14:30:00"
+          "starts": "2026-11-26 14:30:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 14:45:00"
+          "starts": "2026-11-26 14:45:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 15:00:00"
+          "starts": "2026-11-26 15:00:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 15:15:00"
+          "starts": "2026-11-26 15:15:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 15:30:00"
+          "starts": "2026-11-26 15:30:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 15:45:00"
+          "starts": "2026-11-26 15:45:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 16:00:00"
+          "starts": "2026-11-26 16:00:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 16:15:00"
+          "starts": "2026-11-26 16:15:00"
         },
         {
-          "schedule_id": "SCH-137",
+          "schedule_id": "SCH-165",
           "doctor_id": "DOC-003",
-          "starts": "2026-11-24 16:30:00"
+          "starts": "2026-11-26 16:30:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 08:00:00"
+          "starts": "2026-11-26 08:00:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 08:15:00"
+          "starts": "2026-11-26 08:15:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 08:30:00"
+          "starts": "2026-11-26 08:30:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 08:45:00"
+          "starts": "2026-11-26 08:45:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 09:00:00"
+          "starts": "2026-11-26 09:00:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 09:15:00"
+          "starts": "2026-11-26 09:15:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 09:30:00"
+          "starts": "2026-11-26 09:30:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 09:45:00"
+          "starts": "2026-11-26 09:45:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 10:00:00"
+          "starts": "2026-11-26 10:00:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 10:15:00"
+          "starts": "2026-11-26 10:15:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 10:30:00"
+          "starts": "2026-11-26 10:30:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 10:45:00"
+          "starts": "2026-11-26 10:45:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 11:00:00"
+          "starts": "2026-11-26 11:00:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 11:15:00"
+          "starts": "2026-11-26 11:15:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 11:30:00"
+          "starts": "2026-11-26 11:30:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 11:45:00"
+          "starts": "2026-11-26 11:45:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 12:00:00"
+          "starts": "2026-11-26 12:00:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 12:15:00"
+          "starts": "2026-11-26 12:15:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 12:30:00"
+          "starts": "2026-11-26 12:30:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 12:45:00"
+          "starts": "2026-11-26 12:45:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 13:00:00"
+          "starts": "2026-11-26 13:00:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 13:15:00"
+          "starts": "2026-11-26 13:15:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 13:30:00"
+          "starts": "2026-11-26 13:30:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 13:45:00"
+          "starts": "2026-11-26 13:45:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 14:00:00"
+          "starts": "2026-11-26 14:00:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 14:15:00"
+          "starts": "2026-11-26 14:15:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 14:30:00"
+          "starts": "2026-11-26 14:30:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 14:45:00"
+          "starts": "2026-11-26 14:45:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 15:00:00"
+          "starts": "2026-11-26 15:00:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 15:15:00"
+          "starts": "2026-11-26 15:15:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 15:30:00"
+          "starts": "2026-11-26 15:30:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 15:45:00"
+          "starts": "2026-11-26 15:45:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 16:00:00"
+          "starts": "2026-11-26 16:00:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 16:15:00"
+          "starts": "2026-11-26 16:15:00"
         },
         {
-          "schedule_id": "SCH-144",
+          "schedule_id": "SCH-157",
           "doctor_id": "DOC-004",
-          "starts": "2026-11-24 16:30:00"
+          "starts": "2026-11-26 16:30:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 08:00:00"
+          "starts": "2026-11-26 08:00:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 08:15:00"
+          "starts": "2026-11-26 08:15:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 08:30:00"
+          "starts": "2026-11-26 08:30:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 08:45:00"
+          "starts": "2026-11-26 08:45:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 09:00:00"
+          "starts": "2026-11-26 09:00:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 09:15:00"
+          "starts": "2026-11-26 09:15:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 09:30:00"
+          "starts": "2026-11-26 09:30:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 09:45:00"
+          "starts": "2026-11-26 09:45:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 10:00:00"
+          "starts": "2026-11-26 10:00:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 10:15:00"
+          "starts": "2026-11-26 10:15:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 10:30:00"
+          "starts": "2026-11-26 10:30:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 10:45:00"
+          "starts": "2026-11-26 10:45:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 11:00:00"
+          "starts": "2026-11-26 11:00:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 11:15:00"
+          "starts": "2026-11-26 11:15:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 11:30:00"
+          "starts": "2026-11-26 11:30:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 11:45:00"
+          "starts": "2026-11-26 11:45:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 12:00:00"
+          "starts": "2026-11-26 12:00:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 12:15:00"
+          "starts": "2026-11-26 12:15:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 12:30:00"
+          "starts": "2026-11-26 12:30:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 12:45:00"
+          "starts": "2026-11-26 12:45:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 13:00:00"
+          "starts": "2026-11-26 13:00:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 13:15:00"
+          "starts": "2026-11-26 13:15:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 13:30:00"
+          "starts": "2026-11-26 13:30:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 13:45:00"
+          "starts": "2026-11-26 13:45:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 14:00:00"
+          "starts": "2026-11-26 14:00:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 14:15:00"
+          "starts": "2026-11-26 14:15:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 14:30:00"
+          "starts": "2026-11-26 14:30:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 14:45:00"
+          "starts": "2026-11-26 14:45:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 15:00:00"
+          "starts": "2026-11-26 15:00:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 15:15:00"
+          "starts": "2026-11-26 15:15:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 15:30:00"
+          "starts": "2026-11-26 15:30:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 15:45:00"
+          "starts": "2026-11-26 15:45:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 16:00:00"
+          "starts": "2026-11-26 16:00:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 16:15:00"
+          "starts": "2026-11-26 16:15:00"
         },
         {
-          "schedule_id": "SCH-142",
+          "schedule_id": "SCH-158",
           "doctor_id": "DOC-005",
-          "starts": "2026-11-24 16:30:00"
+          "starts": "2026-11-26 16:30:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 08:00:00"
+          "starts": "2026-11-26 08:00:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 08:15:00"
+          "starts": "2026-11-26 08:15:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 08:30:00"
+          "starts": "2026-11-26 08:30:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 08:45:00"
+          "starts": "2026-11-26 08:45:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 09:00:00"
+          "starts": "2026-11-26 09:00:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 09:15:00"
+          "starts": "2026-11-26 09:15:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 09:30:00"
+          "starts": "2026-11-26 09:30:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 09:45:00"
+          "starts": "2026-11-26 09:45:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 10:00:00"
+          "starts": "2026-11-26 10:00:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 10:15:00"
+          "starts": "2026-11-26 10:15:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 10:30:00"
+          "starts": "2026-11-26 10:30:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 10:45:00"
+          "starts": "2026-11-26 10:45:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 11:00:00"
+          "starts": "2026-11-26 11:00:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 11:15:00"
+          "starts": "2026-11-26 11:15:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 11:30:00"
+          "starts": "2026-11-26 11:30:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 11:45:00"
+          "starts": "2026-11-26 11:45:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 12:00:00"
+          "starts": "2026-11-26 12:00:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 12:15:00"
+          "starts": "2026-11-26 12:15:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 12:30:00"
+          "starts": "2026-11-26 12:30:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 12:45:00"
+          "starts": "2026-11-26 12:45:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 13:00:00"
+          "starts": "2026-11-26 13:00:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 13:15:00"
+          "starts": "2026-11-26 13:15:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 13:30:00"
+          "starts": "2026-11-26 13:30:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 13:45:00"
+          "starts": "2026-11-26 13:45:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 14:00:00"
+          "starts": "2026-11-26 14:00:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 14:15:00"
+          "starts": "2026-11-26 14:15:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 14:30:00"
+          "starts": "2026-11-26 14:30:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 14:45:00"
+          "starts": "2026-11-26 14:45:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 15:00:00"
+          "starts": "2026-11-26 15:00:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 15:15:00"
+          "starts": "2026-11-26 15:15:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 15:30:00"
+          "starts": "2026-11-26 15:30:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 15:45:00"
+          "starts": "2026-11-26 15:45:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 16:00:00"
+          "starts": "2026-11-26 16:00:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 16:15:00"
+          "starts": "2026-11-26 16:15:00"
         },
         {
-          "schedule_id": "SCH-141",
+          "schedule_id": "SCH-156",
           "doctor_id": "DOC-006",
-          "starts": "2026-11-24 16:30:00"
+          "starts": "2026-11-26 16:30:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 08:00:00"
+          "starts": "2026-11-26 08:30:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 08:15:00"
+          "starts": "2026-11-26 08:45:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 08:30:00"
+          "starts": "2026-11-26 09:00:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 08:45:00"
+          "starts": "2026-11-26 09:15:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 09:00:00"
+          "starts": "2026-11-26 09:30:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 09:15:00"
+          "starts": "2026-11-26 09:45:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 09:30:00"
+          "starts": "2026-11-26 10:00:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 09:45:00"
+          "starts": "2026-11-26 10:15:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 10:00:00"
+          "starts": "2026-11-26 10:30:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 10:15:00"
+          "starts": "2026-11-26 10:45:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 10:30:00"
+          "starts": "2026-11-26 11:00:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 10:45:00"
+          "starts": "2026-11-26 11:15:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 11:00:00"
+          "starts": "2026-11-26 11:30:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 11:15:00"
+          "starts": "2026-11-26 11:45:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 11:30:00"
+          "starts": "2026-11-26 12:00:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 11:45:00"
+          "starts": "2026-11-26 12:15:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 12:00:00"
+          "starts": "2026-11-26 12:30:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 12:15:00"
+          "starts": "2026-11-26 12:45:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 12:30:00"
+          "starts": "2026-11-26 13:00:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 12:45:00"
+          "starts": "2026-11-26 13:15:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 13:00:00"
+          "starts": "2026-11-26 13:30:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 13:15:00"
+          "starts": "2026-11-26 13:45:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 13:30:00"
+          "starts": "2026-11-26 14:00:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 13:45:00"
+          "starts": "2026-11-26 14:15:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 14:00:00"
+          "starts": "2026-11-26 14:30:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 14:15:00"
+          "starts": "2026-11-26 14:45:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 14:30:00"
+          "starts": "2026-11-26 15:00:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 14:45:00"
+          "starts": "2026-11-26 15:15:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 15:00:00"
+          "starts": "2026-11-26 15:30:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 15:15:00"
+          "starts": "2026-11-26 15:45:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 15:30:00"
+          "starts": "2026-11-26 16:00:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 15:45:00"
+          "starts": "2026-11-26 16:15:00"
         },
         {
-          "schedule_id": "SCH-136",
+          "schedule_id": "SCH-162",
           "doctor_id": "DOC-007",
-          "starts": "2026-11-24 16:00:00"
+          "starts": "2026-11-26 16:30:00"
         },
         {
-          "schedule_id": "SCH-136",
-          "doctor_id": "DOC-007",
-          "starts": "2026-11-24 16:15:00"
-        },
-        {
-          "schedule_id": "SCH-136",
-          "doctor_id": "DOC-007",
-          "starts": "2026-11-24 16:30:00"
-        },
-        {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 08:00:00"
+          "starts": "2026-11-26 08:00:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 08:15:00"
+          "starts": "2026-11-26 08:15:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 08:30:00"
+          "starts": "2026-11-26 08:30:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 08:45:00"
+          "starts": "2026-11-26 08:45:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 09:00:00"
+          "starts": "2026-11-26 09:00:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 09:15:00"
+          "starts": "2026-11-26 09:15:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 09:30:00"
+          "starts": "2026-11-26 09:30:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 09:45:00"
+          "starts": "2026-11-26 09:45:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 10:00:00"
+          "starts": "2026-11-26 10:00:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 10:15:00"
+          "starts": "2026-11-26 10:15:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 10:30:00"
+          "starts": "2026-11-26 10:30:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 10:45:00"
+          "starts": "2026-11-26 10:45:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 11:00:00"
+          "starts": "2026-11-26 11:00:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 11:15:00"
+          "starts": "2026-11-26 11:15:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 11:30:00"
+          "starts": "2026-11-26 11:30:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 11:45:00"
+          "starts": "2026-11-26 11:45:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 12:00:00"
+          "starts": "2026-11-26 12:00:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 12:15:00"
+          "starts": "2026-11-26 12:15:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 12:30:00"
+          "starts": "2026-11-26 12:30:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 12:45:00"
+          "starts": "2026-11-26 12:45:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 13:00:00"
+          "starts": "2026-11-26 13:00:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 13:15:00"
+          "starts": "2026-11-26 13:15:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 13:30:00"
+          "starts": "2026-11-26 13:30:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 13:45:00"
+          "starts": "2026-11-26 13:45:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 14:00:00"
+          "starts": "2026-11-26 14:00:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 14:15:00"
+          "starts": "2026-11-26 14:15:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 14:30:00"
+          "starts": "2026-11-26 14:30:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 14:45:00"
+          "starts": "2026-11-26 14:45:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 15:00:00"
+          "starts": "2026-11-26 15:00:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 15:15:00"
+          "starts": "2026-11-26 15:15:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 15:30:00"
+          "starts": "2026-11-26 15:30:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 15:45:00"
+          "starts": "2026-11-26 15:45:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 16:00:00"
+          "starts": "2026-11-26 16:00:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 16:15:00"
+          "starts": "2026-11-26 16:15:00"
         },
         {
-          "schedule_id": "SCH-139",
+          "schedule_id": "SCH-159",
           "doctor_id": "DOC-008",
-          "starts": "2026-11-24 16:30:00"
+          "starts": "2026-11-26 16:30:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 08:00:00"
+          "starts": "2026-11-26 08:00:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 08:15:00"
+          "starts": "2026-11-26 08:15:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 08:30:00"
+          "starts": "2026-11-26 08:30:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 08:45:00"
+          "starts": "2026-11-26 08:45:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 09:00:00"
+          "starts": "2026-11-26 09:00:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 09:15:00"
+          "starts": "2026-11-26 09:15:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 09:30:00"
+          "starts": "2026-11-26 09:30:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 09:45:00"
+          "starts": "2026-11-26 09:45:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 10:00:00"
+          "starts": "2026-11-26 10:00:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 10:15:00"
+          "starts": "2026-11-26 10:15:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 10:30:00"
+          "starts": "2026-11-26 10:30:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 10:45:00"
+          "starts": "2026-11-26 10:45:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 11:00:00"
+          "starts": "2026-11-26 11:00:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 11:15:00"
+          "starts": "2026-11-26 11:15:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 11:30:00"
+          "starts": "2026-11-26 11:30:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 11:45:00"
+          "starts": "2026-11-26 11:45:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 12:00:00"
+          "starts": "2026-11-26 12:00:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 12:15:00"
+          "starts": "2026-11-26 12:15:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 12:30:00"
+          "starts": "2026-11-26 12:30:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 12:45:00"
+          "starts": "2026-11-26 12:45:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 13:00:00"
+          "starts": "2026-11-26 13:00:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 13:15:00"
+          "starts": "2026-11-26 13:15:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 13:30:00"
+          "starts": "2026-11-26 13:30:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 13:45:00"
+          "starts": "2026-11-26 13:45:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 14:00:00"
+          "starts": "2026-11-26 14:00:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 14:15:00"
+          "starts": "2026-11-26 14:15:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 14:30:00"
+          "starts": "2026-11-26 14:30:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 14:45:00"
+          "starts": "2026-11-26 14:45:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 15:00:00"
+          "starts": "2026-11-26 15:00:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 15:15:00"
+          "starts": "2026-11-26 15:15:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 15:30:00"
+          "starts": "2026-11-26 15:30:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 15:45:00"
+          "starts": "2026-11-26 15:45:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 16:00:00"
+          "starts": "2026-11-26 16:00:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 16:15:00"
+          "starts": "2026-11-26 16:15:00"
         },
         {
-          "schedule_id": "SCH-143",
+          "schedule_id": "SCH-166",
           "doctor_id": "DOC-009",
-          "starts": "2026-11-24 16:30:00"
+          "starts": "2026-11-26 16:30:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 08:00:00"
+          "starts": "2026-11-26 08:00:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 08:15:00"
+          "starts": "2026-11-26 08:15:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 08:30:00"
+          "starts": "2026-11-26 08:30:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 08:45:00"
+          "starts": "2026-11-26 08:45:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 09:00:00"
+          "starts": "2026-11-26 09:00:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 09:15:00"
+          "starts": "2026-11-26 09:15:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 09:30:00"
+          "starts": "2026-11-26 09:30:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 09:45:00"
+          "starts": "2026-11-26 09:45:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 10:00:00"
+          "starts": "2026-11-26 10:00:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 10:15:00"
+          "starts": "2026-11-26 10:15:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 10:30:00"
+          "starts": "2026-11-26 10:30:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 10:45:00"
+          "starts": "2026-11-26 10:45:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 11:00:00"
+          "starts": "2026-11-26 11:00:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 11:15:00"
+          "starts": "2026-11-26 11:15:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 11:30:00"
+          "starts": "2026-11-26 11:30:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 11:45:00"
+          "starts": "2026-11-26 11:45:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 12:00:00"
+          "starts": "2026-11-26 12:00:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 12:15:00"
+          "starts": "2026-11-26 12:15:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 12:30:00"
+          "starts": "2026-11-26 12:30:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 12:45:00"
+          "starts": "2026-11-26 12:45:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 13:00:00"
+          "starts": "2026-11-26 13:00:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 13:15:00"
+          "starts": "2026-11-26 13:15:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 13:30:00"
+          "starts": "2026-11-26 13:30:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 13:45:00"
+          "starts": "2026-11-26 13:45:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 14:00:00"
+          "starts": "2026-11-26 14:00:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 14:15:00"
+          "starts": "2026-11-26 14:15:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 14:30:00"
+          "starts": "2026-11-26 14:30:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 14:45:00"
+          "starts": "2026-11-26 14:45:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 15:00:00"
+          "starts": "2026-11-26 15:00:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 15:15:00"
+          "starts": "2026-11-26 15:15:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 15:30:00"
+          "starts": "2026-11-26 15:30:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 15:45:00"
+          "starts": "2026-11-26 15:45:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 16:00:00"
+          "starts": "2026-11-26 16:00:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 16:15:00"
+          "starts": "2026-11-26 16:15:00"
         },
         {
-          "schedule_id": "SCH-138",
+          "schedule_id": "SCH-164",
           "doctor_id": "DOC-010",
-          "starts": "2026-11-24 16:30:00"
+          "starts": "2026-11-26 16:30:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 08:00:00"
+          "starts": "2026-11-26 08:00:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 08:15:00"
+          "starts": "2026-11-26 08:15:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 08:30:00"
+          "starts": "2026-11-26 08:30:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 08:45:00"
+          "starts": "2026-11-26 08:45:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 09:00:00"
+          "starts": "2026-11-26 09:00:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 09:15:00"
+          "starts": "2026-11-26 09:15:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 09:30:00"
+          "starts": "2026-11-26 09:30:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 09:45:00"
+          "starts": "2026-11-26 09:45:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 10:00:00"
+          "starts": "2026-11-26 10:00:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 10:15:00"
+          "starts": "2026-11-26 10:15:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 10:30:00"
+          "starts": "2026-11-26 10:30:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 10:45:00"
+          "starts": "2026-11-26 10:45:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 11:00:00"
+          "starts": "2026-11-26 11:00:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 11:15:00"
+          "starts": "2026-11-26 11:15:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 11:30:00"
+          "starts": "2026-11-26 11:30:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 11:45:00"
+          "starts": "2026-11-26 11:45:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 12:00:00"
+          "starts": "2026-11-26 12:00:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 12:15:00"
+          "starts": "2026-11-26 12:15:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 12:30:00"
+          "starts": "2026-11-26 12:30:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 12:45:00"
+          "starts": "2026-11-26 12:45:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 13:00:00"
+          "starts": "2026-11-26 13:00:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 13:15:00"
+          "starts": "2026-11-26 13:15:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 13:30:00"
+          "starts": "2026-11-26 13:30:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 13:45:00"
+          "starts": "2026-11-26 13:45:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 14:00:00"
+          "starts": "2026-11-26 14:00:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 14:15:00"
+          "starts": "2026-11-26 14:15:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 14:30:00"
+          "starts": "2026-11-26 14:30:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 14:45:00"
+          "starts": "2026-11-26 14:45:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 15:00:00"
+          "starts": "2026-11-26 15:00:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 15:15:00"
+          "starts": "2026-11-26 15:15:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 15:30:00"
+          "starts": "2026-11-26 15:30:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 15:45:00"
+          "starts": "2026-11-26 15:45:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 16:00:00"
+          "starts": "2026-11-26 16:00:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 16:15:00"
+          "starts": "2026-11-26 16:15:00"
         },
         {
-          "schedule_id": "SCH-140",
+          "schedule_id": "SCH-163",
           "doctor_id": "DOC-011",
-          "starts": "2026-11-24 16:30:00"
+          "starts": "2026-11-26 16:30:00"
         }
       ],
       "status": "PASS"
@@ -2573,7 +2604,7 @@
     {
       "id": "q06",
       "file": "database/queries/appointments/q06_recursive_followups.sql",
-      "rows": 657,
+      "rows": 667,
       "output": [
         {
           "appointment_id": "APT-091",
@@ -2660,6 +2691,42 @@
           "depth": 0
         },
         {
+          "appointment_id": "APT-660",
+          "follow_up_from_appt_id": null,
+          "patient_id": "PAT-001",
+          "depth": 0
+        },
+        {
+          "appointment_id": "APT-666",
+          "follow_up_from_appt_id": null,
+          "patient_id": "PAT-001",
+          "depth": 0
+        },
+        {
+          "appointment_id": "APT-658",
+          "follow_up_from_appt_id": "APT-652",
+          "patient_id": "PAT-001",
+          "depth": 1
+        },
+        {
+          "appointment_id": "APT-659",
+          "follow_up_from_appt_id": "APT-296",
+          "patient_id": "PAT-001",
+          "depth": 1
+        },
+        {
+          "appointment_id": "APT-661",
+          "follow_up_from_appt_id": "APT-652",
+          "patient_id": "PAT-001",
+          "depth": 1
+        },
+        {
+          "appointment_id": "APT-662",
+          "follow_up_from_appt_id": "APT-652",
+          "patient_id": "PAT-001",
+          "depth": 1
+        },
+        {
           "appointment_id": "APT-057",
           "follow_up_from_appt_id": null,
           "patient_id": "PAT-002",
@@ -2739,6 +2806,18 @@
         },
         {
           "appointment_id": "APT-603",
+          "follow_up_from_appt_id": null,
+          "patient_id": "PAT-003",
+          "depth": 0
+        },
+        {
+          "appointment_id": "APT-665",
+          "follow_up_from_appt_id": null,
+          "patient_id": "PAT-003",
+          "depth": 0
+        },
+        {
+          "appointment_id": "APT-667",
           "follow_up_from_appt_id": null,
           "patient_id": "PAT-003",
           "depth": 0
@@ -4310,6 +4389,12 @@
           "depth": 0
         },
         {
+          "appointment_id": "APT-664",
+          "follow_up_from_appt_id": "APT-039",
+          "patient_id": "PAT-035",
+          "depth": 1
+        },
+        {
           "appointment_id": "APT-096",
           "follow_up_from_appt_id": null,
           "patient_id": "PAT-036",
@@ -4650,6 +4735,12 @@
           "follow_up_from_appt_id": null,
           "patient_id": "PAT-042",
           "depth": 0
+        },
+        {
+          "appointment_id": "APT-663",
+          "follow_up_from_appt_id": "APT-040",
+          "patient_id": "PAT-042",
+          "depth": 1
         },
         {
           "appointment_id": "APT-097",
@@ -6523,7 +6614,7 @@
     {
       "id": "q07",
       "file": "database/queries/medical_history/q07_patient_history.sql",
-      "rows": 300,
+      "rows": 302,
       "output": [
         {
           "patient_id": "PAT-001",
@@ -6548,6 +6639,14 @@
           "diagnosis": "Rối loạn giấc ngủ thoáng qua",
           "symptoms": "Khó ngủ trong một vài ngày gần đây",
           "doctor_name": "Bùi Ngọc Anh"
+        },
+        {
+          "patient_id": "PAT-001",
+          "full_name": "Nguyễn Văn An",
+          "record_date": "2026-11-25 16:23:43",
+          "diagnosis": "đau mắt đỏ",
+          "symptoms": "jkkk",
+          "doctor_name": "Nguyễn Minh Quân"
         },
         {
           "patient_id": "PAT-002",
@@ -6612,6 +6711,14 @@
           "diagnosis": "Rối loạn giấc ngủ thoáng qua",
           "symptoms": "Khó ngủ trong một vài ngày gần đây",
           "doctor_name": "Lê Bảo Ngọc"
+        },
+        {
+          "patient_id": "PAT-003",
+          "full_name": "Lê Văn Châu",
+          "record_date": "2026-11-25 16:09:37",
+          "diagnosis": "nhồi máu cơ tim",
+          "symptoms": "huyết áp cao",
+          "doctor_name": "Bùi Ngọc Anh"
         },
         {
           "patient_id": "PAT-004",
@@ -7689,17 +7796,17 @@
           "patient_id": "PAT-039",
           "full_name": "Đinh Thị Phúc",
           "record_date": "2026-10-28 09:05:00",
-          "diagnosis": "Rối loạn tiêu hóa nhẹ",
-          "symptoms": "Đau bụng thoáng qua, ăn uống kém",
-          "doctor_name": "Bùi Ngọc Anh"
+          "diagnosis": "Viêm da tiếp xúc",
+          "symptoms": "Vùng da kích ứng khu trú",
+          "doctor_name": "Phạm Thu Hà"
         },
         {
           "patient_id": "PAT-039",
           "full_name": "Đinh Thị Phúc",
           "record_date": "2026-10-28 09:05:00",
-          "diagnosis": "Viêm da tiếp xúc",
-          "symptoms": "Vùng da kích ứng khu trú",
-          "doctor_name": "Phạm Thu Hà"
+          "diagnosis": "Rối loạn tiêu hóa nhẹ",
+          "symptoms": "Đau bụng thoáng qua, ăn uống kém",
+          "doctor_name": "Bùi Ngọc Anh"
         },
         {
           "patient_id": "PAT-039",
@@ -8931,7 +9038,7 @@
     {
       "id": "q08",
       "file": "database/queries/prescriptions/q08_prescription_medications.sql",
-      "rows": 164,
+      "rows": 168,
       "output": [
         {
           "prescription_id": "RX-001",
@@ -10572,6 +10679,46 @@
           "frequency": "Theo hướng dẫn của bác sĩ",
           "duration": "Theo đơn thuốc",
           "special_instructions": "Tái khám theo lịch hẹn."
+        },
+        {
+          "prescription_id": "RX-151",
+          "patient_id": "PAT-003",
+          "prescription_date": "2026-11-25 16:09:37",
+          "medication_name": "Amoxicillin 500 mg",
+          "dosage": "1 viên",
+          "frequency": "2 lần / ngày",
+          "duration": "5 ngày",
+          "special_instructions": null
+        },
+        {
+          "prescription_id": "RX-151",
+          "patient_id": "PAT-003",
+          "prescription_date": "2026-11-25 16:09:37",
+          "medication_name": "Natri clorid 0,9%",
+          "dosage": "1 viên",
+          "frequency": "2 lần / ngày",
+          "duration": "5 ngày",
+          "special_instructions": null
+        },
+        {
+          "prescription_id": "RX-152",
+          "patient_id": "PAT-001",
+          "prescription_date": "2026-11-25 16:23:43",
+          "medication_name": "Calcium carbonate 500 mg",
+          "dosage": "1 viên",
+          "frequency": "2 lần / ngày",
+          "duration": "5 ngày",
+          "special_instructions": null
+        },
+        {
+          "prescription_id": "RX-152",
+          "patient_id": "PAT-001",
+          "prescription_date": "2026-11-25 16:23:43",
+          "medication_name": "Cetirizine 10 mg",
+          "dosage": "1 viên",
+          "frequency": "2 lần / ngày",
+          "duration": "5 ngày",
+          "special_instructions": null
         }
       ],
       "status": "PASS"
@@ -10579,7 +10726,7 @@
     {
       "id": "q09",
       "file": "database/queries/prescriptions/q09_monthly_medication_usage.sql",
-      "rows": 24,
+      "rows": 26,
       "output": [
         {
           "prescription_month": "2026-10",
@@ -10679,6 +10826,12 @@
         },
         {
           "prescription_month": "2026-11",
+          "medication_id": "MED-016",
+          "medication_name": "Calcium carbonate 500 mg",
+          "usage_count": 8
+        },
+        {
+          "prescription_month": "2026-11",
           "medication_id": "MED-007",
           "medication_name": "Ibuprofen 200 mg",
           "usage_count": 7
@@ -10693,12 +10846,6 @@
           "prescription_month": "2026-11",
           "medication_id": "MED-013",
           "medication_name": "Azithromycin 250 mg",
-          "usage_count": 7
-        },
-        {
-          "prescription_month": "2026-11",
-          "medication_id": "MED-016",
-          "medication_name": "Calcium carbonate 500 mg",
           "usage_count": 7
         },
         {
@@ -10723,7 +10870,19 @@
           "prescription_month": "2026-11",
           "medication_id": "MED-004",
           "medication_name": "Amoxicillin 500 mg",
-          "usage_count": 3
+          "usage_count": 4
+        },
+        {
+          "prescription_month": "2026-11",
+          "medication_id": "MED-003",
+          "medication_name": "Natri clorid 0,9%",
+          "usage_count": 1
+        },
+        {
+          "prescription_month": "2026-11",
+          "medication_id": "MED-002",
+          "medication_name": "Cetirizine 10 mg",
+          "usage_count": 1
         }
       ],
       "status": "PASS"
@@ -10731,32 +10890,37 @@
     {
       "id": "q10",
       "file": "database/queries/appointments/q10_above_average_workload.sql",
-      "rows": 5,
+      "rows": 6,
       "output": [
         {
           "doctor_id": "DOC-001",
           "full_name": "Nguyễn Minh Quân",
-          "active_visits": 53
+          "active_visits": 43
         },
         {
           "doctor_id": "DOC-002",
           "full_name": "Lê Bảo Ngọc",
-          "active_visits": 53
+          "active_visits": 40
+        },
+        {
+          "doctor_id": "DOC-003",
+          "full_name": "Trần Quốc Khánh",
+          "active_visits": 40
         },
         {
           "doctor_id": "DOC-004",
           "full_name": "Phạm Thu Hà",
-          "active_visits": 60
+          "active_visits": 40
         },
         {
           "doctor_id": "DOC-005",
           "full_name": "Vũ Thanh Bình",
-          "active_visits": 60
+          "active_visits": 40
         },
         {
           "doctor_id": "DOC-006",
           "full_name": "Hoàng Gia Hân",
-          "active_visits": 60
+          "active_visits": 40
         }
       ],
       "status": "PASS"
@@ -10769,19 +10933,19 @@
         {
           "doctor_id": "DOC-001",
           "full_name": "Nguyễn Minh Quân",
-          "total_visits": 77,
-          "completed_visits": "40",
-          "cancelled_visits": "0",
-          "missed_visits": "24",
-          "completion_ratio": "0.520"
+          "total_visits": 83,
+          "completed_visits": "42",
+          "cancelled_visits": "4",
+          "missed_visits": "36",
+          "completion_ratio": "0.506"
         },
         {
           "doctor_id": "DOC-002",
           "full_name": "Lê Bảo Ngọc",
           "total_visits": 76,
           "completed_visits": "40",
-          "cancelled_visits": "0",
-          "missed_visits": "23",
+          "cancelled_visits": "1",
+          "missed_visits": "35",
           "completion_ratio": "0.526"
         },
         {
@@ -10799,7 +10963,7 @@
           "total_visits": 62,
           "completed_visits": "40",
           "cancelled_visits": "0",
-          "missed_visits": "2",
+          "missed_visits": "22",
           "completion_ratio": "0.645"
         },
         {
@@ -10808,7 +10972,7 @@
           "total_visits": 60,
           "completed_visits": "40",
           "cancelled_visits": "0",
-          "missed_visits": "0",
+          "missed_visits": "20",
           "completion_ratio": "0.667"
         },
         {
@@ -10817,35 +10981,35 @@
           "total_visits": 60,
           "completed_visits": "40",
           "cancelled_visits": "0",
-          "missed_visits": "0",
+          "missed_visits": "20",
           "completion_ratio": "0.667"
         },
         {
           "doctor_id": "DOC-007",
           "full_name": "Đặng Minh Tâm",
-          "total_visits": 52,
+          "total_visits": 53,
           "completed_visits": "32",
           "cancelled_visits": "10",
-          "missed_visits": "0",
-          "completion_ratio": "0.615"
+          "missed_visits": "10",
+          "completion_ratio": "0.604"
         },
         {
           "doctor_id": "DOC-008",
           "full_name": "Bùi Ngọc Anh",
-          "total_visits": 52,
-          "completed_visits": "32",
+          "total_visits": 54,
+          "completed_visits": "33",
           "cancelled_visits": "20",
-          "missed_visits": "0",
-          "completion_ratio": "0.615"
+          "missed_visits": "1",
+          "completion_ratio": "0.611"
         },
         {
           "doctor_id": "DOC-009",
           "full_name": "Đỗ Văn Phúc",
-          "total_visits": 52,
+          "total_visits": 53,
           "completed_visits": "32",
           "cancelled_visits": "20",
-          "missed_visits": "0",
-          "completion_ratio": "0.615"
+          "missed_visits": "1",
+          "completion_ratio": "0.604"
         },
         {
           "doctor_id": "DOC-010",
@@ -10989,31 +11153,31 @@
                                   "appointment_date_time",
                                   "status"
                                 ],
-                                "estimated_rows": 59.727272033691406,
+                                "estimated_rows": 60.6363639831543,
                                 "lookup_condition": "doctor_id = d.doctor_id",
                                 "index_access_type": "index_lookup",
                                 "lookup_references": [
                                   "healthcare_clinic_portal.d.doctor_id"
                                 ],
-                                "estimated_total_cost": 5.7929752003062855
+                                "estimated_total_cost": 5.8012396725741295
                               }
                             ],
                             "condition": "(cast(a.appointment_date_time as date) = <cache>((@report_date)))",
                             "operation": "Filter: (cast(a.appointment_date_time as date) = <cache>((@report_date)))",
                             "access_type": "filter",
-                            "estimated_rows": 59.727272033691406,
+                            "estimated_rows": 60.6363639831543,
                             "filter_columns": [
                               "a.appointment_date_time"
                             ],
-                            "estimated_total_cost": 5.7929752003062855
+                            "estimated_total_cost": 5.8012396725741295
                           }
                         ],
                         "join_type": "inner join",
                         "operation": "Nested loop inner join",
                         "access_type": "join",
-                        "estimated_rows": 656.9999923706055,
+                        "estimated_rows": 667.0000038146973,
                         "join_algorithm": "nested_loop",
-                        "estimated_total_cost": 132.49999923706054
+                        "estimated_total_cost": 133.50000038146973
                       },
                       {
                         "alias": "p",
@@ -11036,15 +11200,15 @@
                         "lookup_references": [
                           "healthcare_clinic_portal.a.patient_id"
                         ],
-                        "estimated_total_cost": 0.25015220700328955
+                        "estimated_total_cost": 0.2501499250366238
                       }
                     ],
                     "join_type": "inner join",
                     "operation": "Nested loop inner join",
                     "access_type": "join",
-                    "estimated_rows": 656.9999923706055,
+                    "estimated_rows": 667.0000038146973,
                     "join_algorithm": "nested_loop",
-                    "estimated_total_cost": 362.4499965667725
+                    "estimated_total_cost": 366.95000171661377
                   },
                   {
                     "alias": "ds",
@@ -11068,21 +11232,21 @@
                     "lookup_references": [
                       "healthcare_clinic_portal.a.schedule_id"
                     ],
-                    "estimated_total_cost": 0.25015220700328955
+                    "estimated_total_cost": 0.2501499250366238
                   }
                 ],
                 "join_type": "inner join",
                 "operation": "Nested loop inner join",
                 "access_type": "join",
-                "estimated_rows": 656.9999923706055,
+                "estimated_rows": 667.0000038146973,
                 "join_algorithm": "nested_loop",
-                "estimated_total_cost": 592.3999938964844
+                "estimated_total_cost": 600.4000030517578
               }
             ],
             "operation": "Stream results",
             "access_type": "stream",
-            "estimated_rows": 656.9999923706055,
-            "estimated_total_cost": 592.3999938964844
+            "estimated_rows": 667.0000038146973,
+            "estimated_total_cost": 600.4000030517578
           }
         ],
         "operation": "Sort: a.appointment_date_time",

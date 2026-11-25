@@ -2098,8 +2098,8 @@ function ConsultationDetail({
         onSubmit={async (e) => {
           e.preventDefault();
           if (isComplete) return;
-          if (isOnline && meetingUrl.trim() && !safeMeetingUrl) {
-            setError("Liên kết cuộc gọi phải là URL HTTPS hợp lệ.");
+          if (isOnline && !safeMeetingUrl) {
+            setError("Phiên khám Telemedicine bắt buộc phải có liên kết cuộc gọi HTTPS hợp lệ.");
             return;
           }
           setSaving(true);
@@ -2468,8 +2468,8 @@ function ConsultationDetail({
                   setSaving(true);
                   setError("");
                   try {
-                    if (isOnline && meetingUrl.trim() && !safeMeetingUrl) {
-                      throw new Error("Liên kết cuộc gọi phải là URL HTTPS hợp lệ.");
+                    if (isOnline && !safeMeetingUrl) {
+                      throw new Error("Phiên khám Telemedicine bắt buộc phải có liên kết cuộc gọi HTTPS hợp lệ.");
                     }
                     if (!form.diagnosis.trim() || !form.symptoms.trim()) {
                       throw new Error("Cần nhập chẩn đoán và triệu chứng trước khi kết thúc phiên khám.");

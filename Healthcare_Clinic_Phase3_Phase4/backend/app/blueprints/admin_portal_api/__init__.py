@@ -14,6 +14,7 @@ from ...security import require_roles
 from ...services import admin as admin_service
 from ...services import appointments as appointment_service
 from ...services import doctors as doctor_service
+from ...services import medications as medication_service
 from ...services import patients as patient_service
 from ...services import schedules as schedule_service
 from ...services.schedules import validate_clinic_slot
@@ -122,6 +123,14 @@ def _parse_time(value, field="giờ"):
         return time(int(parts[0]), int(parts[1]), int(parts[2]) if len(parts) > 2 else 0)
     except Exception:
         raise BusinessError(f"{field.capitalize()} không đúng định dạng HH:MM.")
+
+
+def _parse_duration(value) -> int:
+    try:
+        duration = int(30 if value in (None, "") else value)
+    except (TypeError, ValueError):
+        raise BusinessError("Thời lượng khám không hợp lệ.")
+    return duration
 
 
 def normalize_vietnamese_name(name: str) -> str:
@@ -807,27 +816,21 @@ def create_patient():
         "email": email,
         "date_of_birth": dob,
         "gender": gender,
+        "address": data.get("address"),
+        "blood_type": data.get("blood_type") or data.get("bloodType"),
+        "allergies": data.get("allergies"),
+        "chronic_diseases": data.get("chronic_diseases") or data.get("chronicDiseases"),
         "emergency_contact_name": em_name,
         "emergency_contact_phone": em_phone,
     }
 
     account = admin_service.create_account(g.user, user_payload)
-    pat_row = query("SELECT patient_id FROM patient WHERE user_id = %s", (account.user_id,), one=True)
+    pat_row = query(
+        "SELECT patient_id, address, blood_type, allergies, chronic_diseases FROM patient WHERE user_id = %s",
+        (account.user_id,),
+        one=True,
+    )
     pat_id = pat_row["patient_id"] if pat_row else "PAT-NEW"
-
-    # Optional clinical & address fields
-    if any(k in data for k in ("address", "blood_type", "bloodType", "allergies", "chronic_diseases", "chronicDiseases")):
-        execute("""
-            UPDATE patient
-            SET address = %s, blood_type = %s, allergies = %s, chronic_diseases = %s
-            WHERE patient_id = %s
-        """, (
-            data.get("address") or None,
-            data.get("blood_type") or data.get("bloodType") or None,
-            data.get("allergies") or None,
-            data.get("chronic_diseases") or data.get("chronicDiseases") or None,
-            pat_id,
-        ))
 
     return jsonify({
         "message": "Đã tạo hồ sơ bệnh nhân thành công.",
@@ -841,10 +844,10 @@ def create_patient():
             "rawDob": dob.strftime("%Y-%m-%d"),
             "phone": phone,
             "email": email,
-            "address": data.get("address") or "",
-            "bloodType": data.get("blood_type") or data.get("bloodType") or "",
-            "allergies": data.get("allergies") or "Không",
-            "chronicDiseases": data.get("chronic_diseases") or data.get("chronicDiseases") or "Không",
+            "address": (pat_row or {}).get("address") or "",
+            "bloodType": (pat_row or {}).get("blood_type") or "",
+            "allergies": (pat_row or {}).get("allergies") or "Không",
+            "chronicDiseases": (pat_row or {}).get("chronic_diseases") or "Không",
             "emergencyContactName": em_name,
             "emergencyContactPhone": em_phone,
             "created": now().strftime("%d/%m/%Y"),
@@ -981,7 +984,7 @@ def create_appointment():
     dt = _parse_datetime(data.get("appointment_date_time") or data.get("dateTime"), "ngày giờ hẹn")
     visit_type_raw = data.get("appointment_type") or data.get("visitType") or "In-person"
     visit_type = "Telemedicine" if visit_type_raw in ("Telemedicine", "Tư vấn trực tuyến") else "In-person"
-    duration = int(data.get("estimated_duration_minutes") or data.get("duration") or 30)
+    duration = _parse_duration(data.get("estimated_duration_minutes") or data.get("duration"))
     reason = (data.get("reason") or "Khám sức khỏe").strip()
 
     ensure(patient_id, "Vui lòng chọn bệnh nhân.")
@@ -1100,7 +1103,7 @@ def reschedule_appointment(appointment_id):
     data = request.get_json(silent=True) or {}
     dt = _parse_datetime(data.get("appointment_date_time") or data.get("dateTime"), "ngày giờ hẹn")
     schedule_id = data.get("schedule_id") or data.get("scheduleId")
-    duration = int(data.get("estimated_duration_minutes") or data.get("duration") or 30)
+    duration = _parse_duration(data.get("estimated_duration_minutes") or data.get("duration"))
     reason = (data.get("reason") or "").strip()
 
     ensure(dt, "Vui lòng chọn ngày và giờ mới.")
@@ -1263,28 +1266,22 @@ def list_medications():
 @bp.post("/medications")
 def create_medication():
     data = request.get_json(silent=True) or {}
-    name = (data.get("name") or data.get("medication_name") or "").strip()
-    description = (data.get("description") or "").strip()
+    name = " ".join(str(data.get("name") or data.get("medication_name") or "").strip().split())
+    description = str(data.get("description") or "").strip()
 
     ensure(name, "Vui lòng nhập tên thuốc.")
-    name = normalize_vietnamese_name(name)
-
-    existing = query("SELECT medication_id FROM medication WHERE medication_name = %s", (name,), one=True)
-    if existing:
-        raise BusinessError(f"Thuốc '{name}' đã tồn tại trong danh mục thuốc.")
-
-    med_id = identity("MED-")
-    execute("""
-        INSERT INTO medication (medication_id, medication_name, description)
-        VALUES (%s, %s, %s)
-    """, (med_id, name, description or "Danh mục minh họa; không phải chỉ định điều trị."))
+    med = medication_service.create(
+        g.user,
+        name,
+        description or "Danh mục minh họa; không phải chỉ định điều trị.",
+    )
 
     return jsonify({
         "message": "Đã thêm thuốc mới vào danh mục thành công.",
         "medication": {
-            "id": med_id,
-            "name": name,
-            "description": description or "Danh mục minh họa; không phải chỉ định điều trị.",
+            "id": med.medication_id,
+            "name": med.medication_name,
+            "description": med.description or "Danh mục minh họa; không phải chỉ định điều trị.",
             "status": "Hoạt động",
         },
     }), 201

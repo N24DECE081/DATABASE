@@ -103,7 +103,7 @@ CREATE TABLE `appointment` (
   CONSTRAINT `fk_appointment_follow_up_from_appt_id` FOREIGN KEY (`follow_up_from_appt_id`) REFERENCES `appointment` (`appointment_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   `appointment_date_time` DATETIME NOT NULL,
   `estimated_duration_minutes` INT NOT NULL DEFAULT 30,
-  CONSTRAINT `ck_appointment_estimated_duration_minutes` CHECK (`estimated_duration_minutes` IN (15, 30, 45, 60)),
+  CONSTRAINT `ck_appointment_estimated_duration_minutes` CHECK (`estimated_duration_minutes` IN (30)),
   `appointment_type` VARCHAR(15) NOT NULL DEFAULT 'In-person',
   CONSTRAINT `ck_appointment_appointment_type` CHECK (`appointment_type` IN ('In-person', 'Telemedicine')),
   `status` VARCHAR(15) NOT NULL DEFAULT 'Scheduled',
@@ -119,14 +119,13 @@ CREATE TABLE `consultation_session` (
   CONSTRAINT `fk_consultation_session_appointment_id` FOREIGN KEY (`appointment_id`) REFERENCES `appointment` (`appointment_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   `start_time` DATETIME NOT NULL,
   `end_time` DATETIME NULL DEFAULT NULL,
-  `actual_duration_minutes` INT NULL DEFAULT NULL,
-  CONSTRAINT `ck_consultation_session_actual_duration_minutes` CHECK (`actual_duration_minutes` IS NULL OR (`actual_duration_minutes` BETWEEN 5 AND 120)),
+  `actual_duration_minutes` INT NOT NULL DEFAULT 5,
+  CONSTRAINT `ck_consultation_session_actual_duration_minutes` CHECK (`actual_duration_minutes` BETWEEN 5 AND 30),
   `session_type` VARCHAR(15) NOT NULL,
   CONSTRAINT `ck_consultation_session_session_type` CHECK (`session_type` IN ('In-person', 'Virtual')),
   `meeting_url` VARCHAR(255) NULL DEFAULT NULL,
   `diagnosis_notes` TEXT NULL DEFAULT NULL,
-  CONSTRAINT `ck_session_time` CHECK (`end_time` IS NULL OR `end_time` > `start_time`),
-  CONSTRAINT `ck_session_duration_not_null_on_end` CHECK (`end_time` IS NULL OR `actual_duration_minutes` IS NOT NULL)
+  CONSTRAINT `ck_session_time` CHECK (`end_time` IS NULL OR `end_time` > `start_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `medical_history` (

@@ -255,7 +255,7 @@ def create_consultation(appointment_id):
     session = consultation_service.create(g.user, appointment_id, {
         "start_time": now(),
         "end_time": None,
-        "actual_duration_minutes": None,
+        "actual_duration_minutes": 5,
         "meeting_url": meeting_url.strip() or None,
         "diagnosis_notes": notes.strip() or None,
     })

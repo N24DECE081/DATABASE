@@ -210,7 +210,7 @@ def portal_data():
             "time": _format_time_vi(s["start_time"]),
             "startedAt": _iso(s["start_time"]),
             "endedAt": _iso(s["end_time"]),
-            "duration": s["actual_duration_minutes"] or 20,
+            "duration": s["actual_duration_minutes"] if s["actual_duration_minutes"] is not None else 5,
             "status": "Đang khám" if is_active else "Đã hoàn thành",
             "isActive": is_active,
             "modality": "Tư vấn trực tuyến" if s["session_type"] == "Virtual" else "Khám trực tiếp",
