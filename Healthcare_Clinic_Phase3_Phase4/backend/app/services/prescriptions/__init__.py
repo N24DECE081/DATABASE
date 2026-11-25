@@ -39,8 +39,12 @@ def create(user, session_id, data):
         prescription = prescriptions.insert(Prescription(prescription_id=identity("RX-"), session_id=session_id,
             diagnosis_icd=icd, prescription_date=now(),
             instructions=data.get("instructions") or None))
+        seen_names = set()
         for item in items:
-            found(medications.get(Medication, item["medication_id"]))
+            med = found(medications.get(Medication, item["medication_id"]))
+            norm_name = " ".join(med.medication_name.split()).lower()
+            ensure(norm_name not in seen_names, f"Thuốc '{med.medication_name}' không được trùng lặp trong cùng đơn thuốc.")
+            seen_names.add(norm_name)
             ensure(all(item.get(k) for k in ("dosage", "frequency", "duration")), "Thiếu thông tin mục thuốc.")
             prescriptions.insert(PrescriptionItem(prescription_item_id=identity("RXI-"),
                 prescription_id=prescription.prescription_id, medication_id=item["medication_id"],

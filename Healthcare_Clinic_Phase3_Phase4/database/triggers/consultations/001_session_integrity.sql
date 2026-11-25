@@ -34,7 +34,13 @@ BEGIN
         OR UTC_TIMESTAMP() + INTERVAL 7 HOUR > appointment_end) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Session operation is outside the appointment window.';
     END IF;
-    IF ends IS NOT NULL AND (ends <= starts OR TIMESTAMPDIFF(MINUTE, starts, ends) <> minutes_value) THEN
+    IF ends IS NOT NULL AND (
+        ends <= starts
+        OR minutes_value < 5
+        OR minutes_value > 30
+        OR (TIMESTAMPDIFF(MINUTE, starts, ends) < 5 AND minutes_value <> 5)
+        OR (TIMESTAMPDIFF(MINUTE, starts, ends) >= 5 AND TIMESTAMPDIFF(MINUTE, starts, ends) <> minutes_value)
+    ) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Session duration must match its timestamps.';
     END IF;
 END$$

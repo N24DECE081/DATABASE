@@ -5,6 +5,14 @@ from ...db import transaction
 from ...entities import UserAccount, Patient, Doctor, GeneralPractitioner, Specialist, Specialty
 from ...repositories import admin, doctors, patients
 from ...repositories.base import insert
+from ...utils.validators import (
+    ensure_unique_email,
+    ensure_unique_phone,
+    validate_dob,
+    validate_email,
+    validate_person_name,
+    validate_phone,
+)
 from ..common import ensure, identity, now
 
 
@@ -19,19 +27,28 @@ def create_account(user, data):
             password_hash=generate_password_hash(data["password"], method="pbkdf2:sha256:600000"),
             role=role, account_status="Active", created_at=now()))
         if role != "ADMIN":
-            ensure(data.get("full_name") and data.get("phone"), "Cần họ tên và số điện thoại cho hồ sơ.")
+            full_name = validate_person_name(data.get("full_name"), "Họ và tên")
+            phone = validate_phone(data.get("phone"), "Số điện thoại")
+            ensure_unique_phone(phone)
         if role == "PATIENT":
-            ensure(data.get("date_of_birth") and data["date_of_birth"] <= now().date(), "Ngày sinh không hợp lệ.")
-            ensure(data.get("emergency_contact_name") and data.get("emergency_contact_phone"), "Cần thông tin liên hệ khẩn cấp.")
-            insert(Patient(patient_id=identity("PAT-"), user_id=account.user_id, full_name=data["full_name"],
-                date_of_birth=data["date_of_birth"], gender=data["gender"], phone=data["phone"],
-                email=data.get("email") or None, emergency_contact_name=data["emergency_contact_name"],
-                emergency_contact_phone=data["emergency_contact_phone"]))
+            dob = validate_dob(data.get("date_of_birth"), "Ngày sinh")
+            em_name = validate_person_name(data.get("emergency_contact_name"), "Tên người liên hệ khẩn cấp")
+            em_phone = validate_phone(data.get("emergency_contact_phone"), "Số điện thoại khẩn cấp")
+            email = validate_email(data.get("email"), "Email", required=False) or None
+            if email:
+                ensure_unique_email(email, scope="patient")
+            insert(Patient(patient_id=identity("PAT-"), user_id=account.user_id, full_name=full_name,
+                date_of_birth=dob, gender=data["gender"], phone=phone,
+                email=email, emergency_contact_name=em_name,
+                emergency_contact_phone=em_phone))
         elif role == "DOCTOR":
-            ensure(data.get("email") and data.get("license_number"), "Cần email và số giấy phép bác sĩ.")
+            email = validate_email(data.get("email"), "Email bác sĩ", required=True)
+            ensure_unique_email(email, scope="doctor")
+            ensure(data.get("license_number"), "Cần email và số giấy phép bác sĩ.")
+            dob = validate_dob(data.get("date_of_birth"), "Ngày sinh bác sĩ", required=False, min_age=22, max_age=80)
             doctor = insert(Doctor(doctor_id=identity("DOC-"), user_id=account.user_id,
-                full_name=data["full_name"], phone=data["phone"], email=data["email"], license_number=data["license_number"],
-                date_of_birth=data.get("date_of_birth")))
+                full_name=full_name, phone=phone, email=email, license_number=data["license_number"].strip(),
+                date_of_birth=dob))
             if data["subtype"] == "GENERAL_PRACTITIONER":
                 insert(GeneralPractitioner(doctor_id=doctor.doctor_id))
             else:

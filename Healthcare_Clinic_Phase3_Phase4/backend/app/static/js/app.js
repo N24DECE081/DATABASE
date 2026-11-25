@@ -15,31 +15,51 @@ document.querySelectorAll(".password-toggle").forEach(passwordToggle => {
 // Auto-format personal names to Title Case (e.g. 'nGuyen vaN cu' -> 'Nguyen Van Cu')
 const formatPersonName = str => {
   if (!str) return "";
-  return str.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+  const honorifics = { BS: "BS", "BS.": "BS.", TS: "TS", "TS.": "TS.", THS: "ThS", "THS.": "ThS.", PGS: "PGS", "PGS.": "PGS.", GS: "GS", "GS.": "GS." };
+  return str.trim().split(/\s+/).map(w => honorifics[w.toUpperCase()] || (w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())).join(" ");
 };
 
 document.querySelectorAll('input[name="full_name"], input[name="emergency_contact_name"]').forEach(input => {
-  input.addEventListener("blur", () => {
-    if (input.value.trim()) {
-      input.value = formatPersonName(input.value);
-    }
-  });
-  input.addEventListener("change", () => {
-    if (input.value.trim()) {
-      input.value = formatPersonName(input.value);
-    }
-  });
+  const syncName = () => {
+    if (input.value.trim()) input.value = formatPersonName(input.value);
+  };
+  input.addEventListener("blur", syncName);
+  input.addEventListener("change", syncName);
 });
 
-// Restrict date of birth to past dates only (cannot be today or future)
+// Auto-assist @gmail.com when typing local part without '@' and trim/lowercase
+document.querySelectorAll('input[name="email"]').forEach(input => {
+  const assistEmail = () => {
+    const val = input.value.trim().toLowerCase();
+    if (!val) {
+      input.value = "";
+      return;
+    }
+    input.value = (!val.includes("@") && /^[a-z0-9._%+-]+$/i.test(val)) ? `${val}@gmail.com` : val;
+  };
+  input.addEventListener("blur", assistEmail);
+  input.addEventListener("change", assistEmail);
+});
+
+// Strip stray spaces on phone inputs
+document.querySelectorAll('input[name="phone"], input[name="emergency_contact_phone"]').forEach(input => {
+  const cleanPhone = () => {
+    const val = input.value.replace(/\s+/g, "");
+    input.value = val.startsWith("+84") ? `0${val.slice(3)}` : val;
+  };
+  input.addEventListener("blur", cleanPhone);
+  input.addEventListener("change", cleanPhone);
+});
+
+// Restrict date of birth to past dates only (cannot be today or future, max 130 yrs)
 const dobInput = document.querySelector('input[name="date_of_birth"]');
 if (dobInput) {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yyyy = yesterday.getFullYear();
-  const mm = String(yesterday.getMonth() + 1).padStart(2, "0");
-  const dd = String(yesterday.getDate()).padStart(2, "0");
-  dobInput.max = `${yyyy}-${mm}-${dd}`;
+  const now = new Date();
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const minDate = new Date(now.getFullYear() - 130, now.getMonth(), now.getDate());
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  dobInput.max = fmt(yesterday);
+  dobInput.min = fmt(minDate);
 }
 
 

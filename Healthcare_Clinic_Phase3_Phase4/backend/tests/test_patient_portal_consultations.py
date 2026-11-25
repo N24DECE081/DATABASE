@@ -64,6 +64,8 @@ def test_patient_portal_profile_update_allows_partial_fields(monkeypatch):
     monkeypatch.setattr("app.security.find_by_id", lambda _user_id: patient_user)
     monkeypatch.setattr("app.services.patients.own_profile", lambda _user: mock_patient)
     monkeypatch.setattr("app.services.patients.patients.update", lambda p: p)
+    monkeypatch.setattr("app.repositories.patients.find_by_phone", lambda *_a, **_kw: None)
+    monkeypatch.setattr("app.repositories.doctors.find_by_phone", lambda *_a, **_kw: None)
 
     client = app.test_client()
     with client.session_transaction() as session:

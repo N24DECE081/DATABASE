@@ -22,7 +22,6 @@ def https_url(form, field):
 
 def format_person_name(name):
     """Capitalize each word and remove excess whitespace (e.g. 'nGuyen vaN cu' -> 'Nguyen Van Cu')."""
-    if not name:
-        return ""
-    return " ".join(word.capitalize() for word in str(name).strip().split())
+    from ..utils.validators import normalize_person_name
+    return normalize_person_name(name)
 

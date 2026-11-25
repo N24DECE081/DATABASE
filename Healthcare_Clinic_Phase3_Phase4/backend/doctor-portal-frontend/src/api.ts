@@ -16,6 +16,8 @@ export type Appointment = {
   modality?: "Khám trực tiếp" | "Tư vấn trực tuyến";
   status: AppointmentStatus;
   sessionId?: string | null;
+  hasFollowUp?: boolean;
+  followUpAppointmentId?: string | null;
 };
 
 export type Patient = {
@@ -48,6 +50,8 @@ export type Consultation = {
   modality: "Khám trực tiếp" | "Tư vấn trực tuyến";
   startedAt: string;
   endedAt: string | null;
+  hasFollowUp?: boolean;
+  followUpAppointmentId?: string | null;
 };
 
 export type Prescription = {
@@ -226,6 +230,54 @@ export function createPrescription(sessionId: string, payload: CreatePrescriptio
       body: JSON.stringify(payload),
     },
   );
+}
+
+export type DoctorBookingSlot = {
+  schedule_id: string;
+  doctor_id: string;
+  starts_at: string;
+  duration_minutes: number;
+};
+
+export type FollowUpPayload = {
+  scheduleId: string;
+  patientId: string;
+  appointmentDateTime: string;
+  appointmentType: "In-person" | "Telemedicine";
+  followUpFromApptId: string;
+  reason?: string;
+};
+
+export function fetchDoctorBookingSlots(params: {
+  day?: string;
+  month?: string;
+  followUpFromApptId?: string;
+  signal?: AbortSignal;
+}) {
+  const query = new URLSearchParams({ duration: "30" });
+  if (params.day) query.set("day", params.day);
+  if (params.month) query.set("month", params.month);
+  if (params.followUpFromApptId) query.set("follow_up_from_appt_id", params.followUpFromApptId);
+  return request<{
+    slots: DoctorBookingSlot[];
+    available_dates: string[];
+    server_now?: string;
+  }>(`/api/appointments/options?${query.toString()}`, { signal: params.signal });
+}
+
+export function createFollowUpAppointment(payload: FollowUpPayload) {
+  return request<{ appointment: { appointment_id: string } }>("/api/appointments", {
+    method: "POST",
+    body: JSON.stringify({
+      schedule_id: payload.scheduleId,
+      patient_id: payload.patientId,
+      appointment_date_time: payload.appointmentDateTime,
+      estimated_duration_minutes: 30,
+      appointment_type: payload.appointmentType,
+      follow_up_from_appt_id: payload.followUpFromApptId,
+      reason: payload.reason || "Tái khám theo kế hoạch điều trị",
+    }),
+  });
 }
 
 export function updateDoctorProfile(profile: DoctorProfile) {

@@ -5,8 +5,8 @@ from ...db import transaction
 from ...entities import Appointment, DoctorSchedule, Patient
 from ...repositories import appointments, patients, consultations, schedules
 from ..doctors import own_doctor, classified_doctor
-from ..common import ensure, found, identity, now
-from ..schedules import outside_lunch
+from ..common import BusinessError, ensure, found, identity, now
+from ..schedules import validate_clinic_slot
 
 
 def accessible(user, appointment_id, *, lock=False):
@@ -41,16 +41,15 @@ def book(user, data):
         ensure(not parent, "Bệnh nhân không thể tự đặt lịch tái khám.")
     begins, minutes = data["appointment_date_time"], data["estimated_duration_minutes"]
     ensure(begins >= now(), "Không thể đặt lịch hẹn trong quá khứ.")
-    ensure(minutes in (15, 30, 45, 60), "Thời lượng khám không hợp lệ.")
+    validate_clinic_slot(begins, minutes)
     ensure(data["appointment_type"] in ("In-person", "Telemedicine"), "Hình thức khám không hợp lệ.")
     with transaction():
         classified_doctor(shift.doctor_id, lock=True)
         shift = found(schedules.get(DoctorSchedule, shift.schedule_id, lock=True))
         found(patients.get(Patient, patient_id, lock=True))
         ensure(begins >= now(), "Khung giờ đã qua.")
+        validate_clinic_slot(begins, minutes)
         end = begins + timedelta(minutes=minutes)
-        ensure(outside_lunch(begins, end),
-               "Lịch hẹn không được chồng lấn giờ nghỉ trưa 12:00-13:00.")
         ensure(shift.availability_status == "Available", "Ca làm không còn khả dụng.")
         ensure(begins.date() == shift.schedule_date
                and begins >= datetime.combine(shift.schedule_date, shift.start_time)
@@ -62,6 +61,14 @@ def book(user, data):
             ensure(preceding.patient_id == patient_id and preceding.doctor_id == shift.doctor_id
                    and preceding.appointment_date_time < begins and preceding.status == "Completed",
                    "Lịch tái khám phải tham chiếu lần hẹn trước hợp lệ của cùng bệnh nhân/bác sĩ.")
+            parent_session = consultations.for_appointment(parent)
+            ensure(parent_session is not None and parent_session.end_time is not None,
+                   "Chỉ được đặt lịch tái khám trên phiên khám đã hoàn thành.")
+            existing_fu = appointments.existing_follow_up(parent)
+            if existing_fu is not None:
+                raise BusinessError(
+                    f"Phiên khám đã hoàn thành này đã có lịch tái khám ({existing_fu['appointment_id']}). Mỗi phiên khám chỉ được đặt tối đa 1 lịch tái khám."
+                )
         return appointments.insert(Appointment(appointment_id=identity("APT-"), patient_id=patient_id,
             doctor_id=shift.doctor_id, schedule_id=shift.schedule_id, booked_by_user_id=user.user_id,
             follow_up_from_appt_id=parent, appointment_date_time=begins, estimated_duration_minutes=minutes,
@@ -94,7 +101,7 @@ def reschedule(user, appointment_id, data):
         abort(403)
     appointment = accessible(user, appointment_id)
     ensure(data["appointment_date_time"] >= now(), "Không thể chuyển lịch vào quá khứ.")
-    ensure(data["estimated_duration_minutes"] in (15,30,45,60), "Thời lượng không hợp lệ.")
+    validate_clinic_slot(data["appointment_date_time"], data["estimated_duration_minutes"])
     with transaction():
         classified_doctor(appointment.doctor_id, lock=True)
         shift = found(schedules.get(DoctorSchedule, data["schedule_id"], lock=True))
@@ -105,9 +112,8 @@ def reschedule(user, appointment_id, data):
         ensure(shift.doctor_id == appointment.doctor_id and shift.availability_status == "Available", "Ca làm không hợp lệ cho bác sĩ đã chọn.")
         begins=data["appointment_date_time"]
         ensure(begins >= now(), "Khung giờ đã qua.")
+        validate_clinic_slot(begins, data["estimated_duration_minutes"])
         ends=begins+timedelta(minutes=data["estimated_duration_minutes"])
-        ensure(outside_lunch(begins, ends),
-               "Lịch hẹn không được chồng lấn giờ nghỉ trưa 12:00-13:00.")
         ensure(begins >= datetime.combine(shift.schedule_date,shift.start_time)
                and ends <= datetime.combine(shift.schedule_date,shift.end_time), "Lịch hẹn phải nằm trong ca làm.")
         ensure(not appointments.overlap(appointment.doctor_id,begins,ends,appointment_id), "Lịch hẹn chồng với lịch đã có.")

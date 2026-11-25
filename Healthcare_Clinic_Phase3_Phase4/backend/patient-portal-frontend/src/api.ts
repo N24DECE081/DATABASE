@@ -188,18 +188,26 @@ export type BookingOptionsResponse = {
   slots: AppointmentSlot[];
   duration_minutes: number;
   appointment_types: string[];
+  server_now?: string;
 };
 
 export async function fetchBookingOptions(params: {
   doctor_id?: string;
+  specialty_id?: string;
   day?: string;
   month?: string;
+  duration?: number;
+  signal?: AbortSignal;
 }): Promise<BookingOptionsResponse> {
   const query = new URLSearchParams();
   if (params.doctor_id) query.set("doctor_id", params.doctor_id);
+  if (params.specialty_id) query.set("specialty_id", params.specialty_id);
   if (params.day) query.set("day", params.day);
   if (params.month) query.set("month", params.month);
-  return await request<BookingOptionsResponse>(`/api/appointments/options?${query.toString()}`);
+  if (params.duration) query.set("duration", String(params.duration));
+  return await request<BookingOptionsResponse>(`/api/appointments/options?${query.toString()}`, {
+    signal: params.signal,
+  });
 }
 
 export type BookAppointmentPayload = {

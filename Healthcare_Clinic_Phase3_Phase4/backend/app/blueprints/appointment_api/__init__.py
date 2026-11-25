@@ -8,7 +8,7 @@ from flask_wtf.csrf import generate_csrf
 
 from ...db import query
 from ...entities import DoctorSchedule
-from ...repositories import appointments, doctors, patients, schedules
+from ...repositories import appointments, consultations, doctors, patients, schedules
 from ...security import require_roles
 from ...services import appointments as appointment_service
 from ...services.schedules import available_starts
@@ -24,7 +24,7 @@ APPOINTMENT_TYPES = {
     "Tư vấn trực tuyến": "Telemedicine",
     "Khám từ xa": "Telemedicine",
 }
-VALID_DURATIONS = {15, 30, 45, 60}
+VALID_DURATIONS = {30}
 
 
 @bp.before_request
@@ -136,7 +136,7 @@ def search_patients():
 
 
 @bp.get("/appointments/options")
-@require_roles("PATIENT", "ADMIN")
+@require_roles("PATIENT", "ADMIN", "DOCTOR")
 def booking_options():
     duration = _parse_duration(request.args.get("duration", "30"))
     requested_day = _parse_day(request.args.get("day"), "khám")
@@ -151,6 +151,26 @@ def booking_options():
             abort(400, description="Tháng khám không hợp lệ.")
     specialty_id = request.args.get("specialty_id", "")[:20]
     doctor_id = request.args.get("doctor_id", "")[:20]
+    if g.user.role == "DOCTOR":
+        own_doc = doctors.for_user(g.user.user_id)
+        if not own_doc:
+            abort(404, description="Không tìm thấy hồ sơ bác sĩ.")
+        if doctor_id and doctor_id != own_doc.doctor_id:
+            abort(403, description="Bác sĩ chỉ được xem khung giờ của chính mình.")
+        doctor_id = own_doc.doctor_id
+    follow_up_id = request.args.get("follow_up_from_appt_id", "")[:20]
+    min_starts_at = None
+    if follow_up_id:
+        parent = appointment_service.accessible(g.user, follow_up_id)
+        if parent.status != "Completed":
+            abort(400, description="Chỉ được đặt lịch tái khám trên phiên khám đã hoàn thành.")
+        parent_session = consultations.for_appointment(follow_up_id)
+        if parent_session is None or parent_session.end_time is None:
+            abort(400, description="Chỉ được đặt lịch tái khám trên phiên khám đã hoàn thành.")
+        existing_fu = appointments.existing_follow_up(follow_up_id)
+        if existing_fu is not None:
+            abort(400, description=f"Phiên khám này đã có lịch tái khám ({existing_fu['appointment_id']}). Mỗi phiên khám chỉ được đặt tối đa 1 lịch tái khám.")
+        min_starts_at = parent.appointment_date_time
     schedule_id = request.args.get("schedule_id", "")[:20]
     selected_schedule = schedules.get(DoctorSchedule, schedule_id) if schedule_id else None
     if schedule_id and selected_schedule is None:
@@ -190,6 +210,8 @@ def booking_options():
     available_doctor_ids = set()
     for row in active_schedules:
         starts = available_starts(_schedule_entity(row), duration)
+        if min_starts_at is not None:
+            starts = [value for value in starts if value > min_starts_at]
         if starts:
             available_doctor_ids.add(row["doctor_id"])
             opens_by_schedule[row["schedule_id"]] = (row, starts)
@@ -240,6 +262,7 @@ def booking_options():
         slots=open_slots,
         duration_minutes=duration,
         appointment_types=["In-person", "Telemedicine"],
+        server_now=appointment_service.now().isoformat(timespec="minutes"),
     )
 
 

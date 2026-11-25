@@ -61,7 +61,6 @@ class PatientRegistrationForm(FlaskForm):
         "Số điện thoại",
         validators=[
             InputRequired(message="Vui lòng nhập số điện thoại."),
-            Regexp(r'^0[35789]\d{8}$', message="Số điện thoại phải là số di động Việt Nam gồm 10 chữ số (bắt đầu bằng 03, 05, 07, 08, 09).")
         ]
     )
     email = StringField(
@@ -69,7 +68,6 @@ class PatientRegistrationForm(FlaskForm):
         validators=[
             Optional(),
             Length(max=100, message="Email tối đa 100 ký tự."),
-            Regexp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', message="Địa chỉ email không đúng định dạng (ví dụ: benhnhan@gmail.com).")
         ]
     )
     address = StringField(
@@ -89,7 +87,6 @@ class PatientRegistrationForm(FlaskForm):
         "SĐT liên hệ khẩn cấp",
         validators=[
             InputRequired(message="Vui lòng nhập số điện thoại liên hệ khẩn cấp."),
-            Regexp(r'^0[35789]\d{8}$', message="Số điện thoại khẩn cấp phải gồm 10 chữ số (bắt đầu bằng 03, 05, 07, 08, 09).")
         ]
     )
 
@@ -113,11 +110,33 @@ class PatientRegistrationForm(FlaskForm):
 
     def validate_date_of_birth(self, field):
         if field.data:
-            today = date.today()
-            if field.data >= today:
-                raise ValidationError("Ngày sinh phải trước ngày hiện tại (không thể là hôm nay hoặc tương lai).")
-            if field.data < date(today.year - 130, 1, 1):
-                raise ValidationError("Ngày sinh không hợp lệ (tuổi không vượt quá 130 tuổi).")
+            from ...utils.validators import validate_dob
+            try:
+                field.data = validate_dob(field.data, field="Ngày sinh")
+            except Exception as exc:
+                raise ValidationError(str(exc))
+
+    def validate_phone(self, field):
+        from ...utils.validators import validate_phone
+        try:
+            field.data = validate_phone(field.data, field="Số điện thoại")
+        except Exception as exc:
+            raise ValidationError(str(exc))
+
+    def validate_emergency_contact_phone(self, field):
+        from ...utils.validators import validate_phone
+        try:
+            field.data = validate_phone(field.data, field="Số điện thoại khẩn cấp")
+        except Exception as exc:
+            raise ValidationError(str(exc))
+
+    def validate_email(self, field):
+        if field.data:
+            from ...utils.validators import validate_email
+            try:
+                field.data = validate_email(field.data, field="Email", required=False)
+            except Exception as exc:
+                raise ValidationError(str(exc))
 
     def validate_full_name(self, field):
         if field.data:

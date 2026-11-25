@@ -70,8 +70,18 @@ def create():
         form.patient_id.choices = [(p["patient_id"], p["full_name"]) for p in patients.list_patients()]
     if g.user.role == "DOCTOR":
         prior = appointments.list_for(g.user)
-        form.follow_up_from_appt_id.choices += [(a["appointment_id"], f"{a['patient_name']} · {a['appointment_date_time']}")
-                                               for a in prior if a["status"] == "Completed"]
+        used_parents = {
+            a["follow_up_from_appt_id"]
+            for a in prior
+            if a.get("follow_up_from_appt_id") and a.get("status") != "Cancelled"
+        }
+        form.follow_up_from_appt_id.choices += [
+            (a["appointment_id"], f"{a['patient_name']} · {a['appointment_date_time']}")
+            for a in prior
+            if a["status"] == "Completed"
+            and a.get("session_end_time") is not None
+            and a["appointment_id"] not in used_parents
+        ]
     if request.method == "GET":
         form.schedule_id.data = request.args.get("schedule", form.schedule_id.choices[0][0] if form.schedule_id.choices else "")
         value = request.args.get("time")

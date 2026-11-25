@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import titimiLogo from "./assets/titimi-logo.png";
 import {
   Appointment,
@@ -16,6 +16,16 @@ import {
   logoutPatient,
   updateProfile,
 } from "./api";
+import {
+  assistEmail,
+  clinicTodayIso,
+  filterValidSlots,
+  isCompletedAppointmentStatus,
+  isPastSlot,
+  normalizePhone,
+  validateEmail,
+  validatePhone,
+} from "../../shared/clinicRules";
 
 type Page =
   | "dashboard"
@@ -703,9 +713,11 @@ function Dashboard({
 function AppointmentTable({
   rows,
   onView,
+  onViewSession,
 }: {
   rows: Appointment[];
   onView: (a: Appointment) => void;
+  onViewSession?: (a: Appointment) => void;
 }) {
   return (
     <div className="table-wrap">
@@ -745,9 +757,20 @@ function AppointmentTable({
                 </Badge>
               </td>
               <td>
-                <button className="table-action" onClick={() => onView(a)}>
-                  Xem chi tiết
-                </button>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                  <button className="table-action" onClick={() => onView(a)}>
+                    Xem chi tiết
+                  </button>
+                  {isCompletedAppointmentStatus(a.status) && onViewSession && (
+                    a.sessionId ? (
+                      <button className="table-action" onClick={() => onViewSession(a)}>
+                        Xem phiên khám
+                      </button>
+                    ) : (
+                      <small style={{ color: "var(--muted)", fontSize: "12px" }}>Chưa có phiên khám</small>
+                    )
+                  )}
+                </div>
               </td>
             </tr>
           ))}
@@ -1029,7 +1052,9 @@ function Booking({
   onAppointmentBooked: (appt: Appointment) => void;
 }) {
   const [step, setStep] = useState(1);
-  const [bookingMode, setBookingMode] = useState<"doctor" | "time">("doctor");
+  const [bookingMode, setBookingMode] = useState<"choose" | "doctor" | "time">(
+    initialDoctor ? "doctor" : "choose",
+  );
   const [timeFilterPeriod, setTimeFilterPeriod] = useState<"all" | "morning" | "afternoon">("all");
   const [timeFilterSpecialty, setTimeFilterSpecialty] = useState<string>("Tất cả");
   const [allDaySlots, setAllDaySlots] = useState<{
@@ -1048,19 +1073,34 @@ function Booking({
 
   useEffect(() => {
     if (initialDoctor) {
+      setBookingMode("doctor");
+      setStep(1);
       setSpecialty(initialDoctor.specialty);
       setDoctor(initialDoctor.name);
     }
   }, [initialDoctor]);
 
-  // Month navigation & dynamic doctor working shifts
-  const [calendarYear, setCalendarYear] = useState(2026);
-  const [calendarMonth, setCalendarMonth] = useState(11);
+  // Month navigation & dynamic doctor working shifts (clinic timezone +07:00)
+  const todayIso = clinicTodayIso();
+  const [initYear, initMonth] = todayIso.split("-").map(Number);
+  const [calendarYear, setCalendarYear] = useState(initYear);
+  const [calendarMonth, setCalendarMonth] = useState(initMonth);
   const currentYearMonth = `${calendarYear}-${calendarMonth < 10 ? "0" + calendarMonth : calendarMonth}`;
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [loadingDates, setLoadingDates] = useState(false);
 
+  const slotsAbortRef = useRef<AbortController | null>(null);
+  const timeSlotsAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      slotsAbortRef.current?.abort();
+      timeSlotsAbortRef.current?.abort();
+    };
+  }, []);
+
   const handlePrevMonth = () => {
+    slotsAbortRef.current?.abort();
     if (calendarMonth === 1) {
       setCalendarYear((y) => y - 1);
       setCalendarMonth(12);
@@ -1070,6 +1110,7 @@ function Booking({
   };
 
   const handleNextMonth = () => {
+    slotsAbortRef.current?.abort();
     if (calendarMonth === 12) {
       setCalendarYear((y) => y + 1);
       setCalendarMonth(1);
@@ -1080,7 +1121,6 @@ function Booking({
 
   const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
   const startDayOfWeek = new Date(calendarYear, calendarMonth - 1, 1).getDay();
-  const todayIso = new Date().toISOString().split("T")[0];
 
   // Selected date & doctor slots
   const [selectedDateIso, setSelectedDateIso] = useState<string>("");
@@ -1143,43 +1183,77 @@ function Booking({
     );
   }, [doctors, specialty, doctorQuery]);
 
-  const selectedDoctorObj = doctors.find((item) => item.name === doctor) || initialDoctor;
+  const selectedDoctorObj = useMemo(() => {
+    if (!doctor) return null;
+    return (
+      doctors.find((item) => item.name === doctor) ||
+      (initialDoctor && initialDoctor.name === doctor ? initialDoctor : null)
+    );
+  }, [doctor, doctors, initialDoctor]);
 
   // Lấy các ngày có ca làm việc thực tế của bác sĩ trong tháng đã chọn
   useEffect(() => {
-    if (!selectedDoctorObj) return;
+    if (!selectedDoctorObj) {
+      setAvailableDates([]);
+      return;
+    }
+    const controller = new AbortController();
     setLoadingDates(true);
-    fetchBookingOptions({ doctor_id: selectedDoctorObj.id, month: currentYearMonth })
+    fetchBookingOptions({
+      doctor_id: selectedDoctorObj.id,
+      month: currentYearMonth,
+      signal: controller.signal,
+    })
       .then((data) => {
-        setAvailableDates(data.available_dates || []);
+        if (!controller.signal.aborted) {
+          setAvailableDates((data.available_dates || []).filter((d) => d >= todayIso));
+        }
       })
       .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
         console.warn("Lỗi tải ca làm việc của bác sĩ:", err);
+        setAvailableDates([]);
       })
       .finally(() => {
-        setLoadingDates(false);
+        if (!controller.signal.aborted) setLoadingDates(false);
       });
-  }, [selectedDoctorObj, currentYearMonth]);
+    return () => {
+      controller.abort();
+    };
+  }, [selectedDoctorObj, currentYearMonth, todayIso]);
 
   const handleSelectDate = (dayIso: string, dayFormatted: string) => {
+    slotsAbortRef.current?.abort();
     setSelectedDateIso(dayIso);
     setDateDisplay(dayFormatted);
     setTime("");
     setSelectedSlot(null);
     setBookingError("");
-    if (!selectedDoctorObj) return;
+    if (!selectedDoctorObj || dayIso < todayIso) {
+      setAvailableSlots([]);
+      setLoadingSlots(false);
+      return;
+    }
 
+    const controller = new AbortController();
+    slotsAbortRef.current = controller;
     setLoadingSlots(true);
-    fetchBookingOptions({ doctor_id: selectedDoctorObj.id, day: dayIso })
+    fetchBookingOptions({
+      doctor_id: selectedDoctorObj.id,
+      day: dayIso,
+      signal: controller.signal,
+    })
       .then((data) => {
-        setAvailableSlots(data.slots || []);
+        if (controller.signal.aborted) return;
+        setAvailableSlots(filterValidSlots(data.slots || [], data.server_now));
       })
       .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
         console.warn("Lỗi tải khung giờ trống:", err);
         setAvailableSlots([]);
       })
       .finally(() => {
-        setLoadingSlots(false);
+        if (!controller.signal.aborted) setLoadingSlots(false);
       });
   };
 
@@ -1198,14 +1272,27 @@ function Booking({
   }, [availableSlots]);
 
   const loadSlotsForDate = (dayIso: string) => {
+    timeSlotsAbortRef.current?.abort();
     setSelectedDateIso(dayIso);
+    setSelectedSlot(null);
+    setTime("");
     const parts = dayIso.split("-");
     if (parts.length === 3) {
       setDateDisplay(`${parts[2]}/${parts[1]}/${parts[0]}`);
     }
+    if (!dayIso || dayIso < todayIso) {
+      setAllDaySlots([]);
+      setLoadingTimeSlots(false);
+      if (dayIso) setBookingError("Không thể chọn ngày khám trong quá khứ.");
+      return;
+    }
+    setBookingError("");
+    const controller = new AbortController();
+    timeSlotsAbortRef.current = controller;
     setLoadingTimeSlots(true);
-    fetchBookingOptions({ day: dayIso })
+    fetchBookingOptions({ day: dayIso, signal: controller.signal })
       .then((data) => {
+        if (controller.signal.aborted) return;
         const docMap = new Map<string, { doctor_id: string; full_name: string; specialty_name: string; subtype: string }>();
         (data.doctors || []).forEach((d) => {
           const isGP = d.subtype === "GENERAL_PRACTITIONER" || d.specialty_name === "General Practitioner" || d.specialty_name === "General Practice" || d.specialty_name === "Bác sĩ đa khoa";
@@ -1219,7 +1306,8 @@ function Booking({
             docMap.set(d.id, { doctor_id: d.id, full_name: d.name, specialty_name: sp, subtype: isGP ? "GENERAL_PRACTITIONER" : (d.subtype || "SPECIALIST") });
           }
         });
-        const combined = (data.slots || []).map((s) => ({
+        const validSlots = filterValidSlots(data.slots || [], data.server_now);
+        const combined = validSlots.map((s) => ({
           slot: s,
           doc: docMap.get(s.doctor_id) || {
             doctor_id: s.doctor_id,
@@ -1231,11 +1319,12 @@ function Booking({
         setAllDaySlots(combined);
       })
       .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
         console.warn("Lỗi tải khung giờ theo ngày:", err);
         setAllDaySlots([]);
       })
       .finally(() => {
-        setLoadingTimeSlots(false);
+        if (!controller.signal.aborted) setLoadingTimeSlots(false);
       });
   };
 
@@ -1313,17 +1402,57 @@ function Booking({
     setDoctor(value);
   };
 
+  const enterBookingMode = (mode: "choose" | "doctor" | "time") => {
+    slotsAbortRef.current?.abort();
+    timeSlotsAbortRef.current?.abort();
+    setBookingMode(mode);
+    setStep(1);
+    setSelectedSlot(null);
+    setTime("");
+    setBookingError("");
+    if (mode === "choose") {
+      setDoctor("");
+      setSpecialty("");
+      setSelectedDateIso("");
+      setDateDisplay("");
+      setAvailableSlots([]);
+      setAllDaySlots([]);
+    } else if (mode === "doctor") {
+      setAllDaySlots([]);
+      if (initialDoctor && !doctor) {
+        setSpecialty(initialDoctor.specialty);
+        setDoctor(initialDoctor.name);
+      }
+    } else if (mode === "time") {
+      setDoctor("");
+      setSpecialty("");
+      setAvailableSlots([]);
+      const targetDay = selectedDateIso && selectedDateIso >= todayIso ? selectedDateIso : todayIso;
+      loadSlotsForDate(targetDay);
+    }
+  };
+
   const next = () => canContinue && setStep((current) => Math.min(5, current + 1));
   const back = () => {
+    slotsAbortRef.current?.abort();
+    timeSlotsAbortRef.current?.abort();
+    if (bookingMode === "choose") {
+      go("doctors");
+      return;
+    }
     if (bookingMode === "time") {
       if (step === 5) {
         setStep(1);
+        setSelectedSlot(null);
+        setTime("");
+        setDoctor("");
+        setSpecialty("");
       } else {
-        go("doctors");
+        enterBookingMode("choose");
       }
     } else {
       if (step === 1) {
-        go("doctors");
+        enterBookingMode("choose");
       } else {
         setStep((current) => current - 1);
       }
@@ -1331,9 +1460,10 @@ function Booking({
   };
 
   const confirm = async () => {
-    if (!selectedDoctorObj || !selectedSlot) {
-      setBookingError("Vui lòng chọn ngày và khung giờ khám hợp lệ.");
-      showToast("Vui lòng chọn ngày và khung giờ khám hợp lệ.");
+    if (!selectedDoctorObj || !selectedSlot || isPastSlot(selectedSlot.starts_at)) {
+      const msg = "Khung giờ đã chọn không hợp lệ hoặc đã qua. Vui lòng chọn khung giờ khác.";
+      setBookingError(msg);
+      showToast(msg);
       return;
     }
     setSubmitting(true);
@@ -1380,84 +1510,126 @@ function Booking({
   return (
     <>
       {step < 6 && (
-        <BackButton
-          onClick={back}
-          label={step === 1 ? "Quay lại danh sách bác sĩ" : "Bước trước"}
-        />
+        <div className="booking-top-nav">
+          <BackButton
+            onClick={back}
+            label={
+              bookingMode === "choose"
+                ? "Quay lại danh sách bác sĩ"
+                : step === 1
+                  ? "Chọn lại phương thức đặt lịch"
+                  : "Bước trước"
+            }
+          />
+          {bookingMode !== "choose" && (
+            <button
+              type="button"
+              className="booking-switch-mode"
+              onClick={() => enterBookingMode("choose")}
+            >
+              Đổi phương thức ({bookingMode === "doctor" ? "Đang đặt theo bác sĩ" : "Đang đặt theo giờ"})
+            </button>
+          )}
+        </div>
       )}
       <PageHeader
         title={step === 6 ? "Đặt lịch thành công" : "Đặt lịch khám"}
         description={
           step === 6
             ? "Lịch hẹn của bạn đã được ghi nhận vào hệ thống TiTiMi."
-            : "Hoàn thành các bước dưới đây hoặc tìm kiếm theo khung giờ để đặt lịch khám thuận tiện."
+            : bookingMode === "choose"
+              ? "Chọn một trong hai phương thức bên dưới để bắt đầu đặt lịch khám."
+              : bookingMode === "doctor"
+                ? "Đặt lịch theo Bác sĩ & Chuyên khoa — hoàn thành từng bước để chọn ngày và khung giờ phù hợp."
+                : "Đặt theo Giờ mong muốn — chọn ngày, buổi khám và lọc ngay các bác sĩ còn lịch trống."
         }
       />
-      {step < 6 && (
-        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem", background: "#e2e8f0", padding: "4px", borderRadius: "10px", width: "fit-content" }}>
+
+      {step < 6 && bookingMode === "choose" ? (
+        <div className="booking-entry-grid">
           <button
             type="button"
-            onClick={() => {
-              setBookingMode("doctor");
-            }}
-            style={{
-              padding: "8px 18px",
-              borderRadius: "8px",
-              border: "none",
-              fontWeight: 600,
-              fontSize: "13.5px",
-              cursor: "pointer",
-              background: bookingMode === "doctor" ? "#fff" : "transparent",
-              color: bookingMode === "doctor" ? "var(--primary)" : "#475569",
-              boxShadow: bookingMode === "doctor" ? "0 2px 4px rgba(0,0,0,0.08)" : "none",
-              transition: "all 0.15s ease",
-            }}
+            className="card booking-entry-card"
+            onClick={() => enterBookingMode("doctor")}
           >
-            🩺 Đặt theo Bác sĩ & Chuyên khoa
+            <span className="booking-entry-badge">Lựa chọn 1</span>
+            <div className="booking-entry-icon">
+              <Icon name="stethoscope" size={26} />
+            </div>
+            <h2>Đặt theo Bác sĩ &amp; Chuyên khoa</h2>
+            <p>
+              Phù hợp khi bạn đã có bác sĩ quen hoặc muốn chọn đúng chuyên khoa trước rồi xem các ngày bác sĩ có ca trực.
+            </p>
+            <ul className="booking-entry-points">
+              <li>Chọn hình thức khám &amp; chuyên khoa phù hợp</li>
+              <li>Xem hồ sơ bác sĩ và lịch trực theo tháng</li>
+              <li>Chọn khung giờ 30 phút còn trống của bác sĩ đó</li>
+            </ul>
+            <span className="booking-entry-cta">
+              Chọn bác sĩ &amp; đặt lịch <Icon name="chevron" size={16} />
+            </span>
           </button>
+
           <button
             type="button"
-            onClick={() => {
-              setBookingMode("time");
-              if (!selectedDateIso) {
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const tIso = tomorrow.toISOString().split("T")[0];
-                loadSlotsForDate(tIso);
-              } else {
-                loadSlotsForDate(selectedDateIso);
-              }
-            }}
-            style={{
-              padding: "8px 18px",
-              borderRadius: "8px",
-              border: "none",
-              fontWeight: 600,
-              fontSize: "13.5px",
-              cursor: "pointer",
-              background: bookingMode === "time" ? "#fff" : "transparent",
-              color: bookingMode === "time" ? "var(--primary)" : "#475569",
-              boxShadow: bookingMode === "time" ? "0 2px 4px rgba(0,0,0,0.08)" : "none",
-              transition: "all 0.15s ease",
-            }}
+            className="card booking-entry-card"
+            onClick={() => enterBookingMode("time")}
           >
-            ⏰ Đặt theo Khung giờ mong muốn (Q05)
+            <span className="booking-entry-badge booking-entry-badge--time">Lựa chọn 2</span>
+            <div className="booking-entry-icon booking-entry-icon--time">
+              <Icon name="clock" size={26} />
+            </div>
+            <h2>Đặt theo Giờ mong muốn</h2>
+            <p>
+              Phù hợp khi bạn ưu tiên khung giờ rảnh trong ngày; hệ thống tự động tìm toàn bộ bác sĩ còn trống vào giờ đó.
+            </p>
+            <ul className="booking-entry-points">
+              <li>Chọn ngày khám &amp; buổi Sáng (8–12h) / Chiều (13–17h)</li>
+              <li>Lọc nhanh theo chuyên khoa và hình thức khám</li>
+              <li>Chọn ngay slot 30 phút &amp; bác sĩ đang rảnh</li>
+            </ul>
+            <span className="booking-entry-cta">
+              Tìm khung giờ trống <Icon name="chevron" size={16} />
+            </span>
           </button>
         </div>
-      )}
-      <div className="booking-steps">
-        {["Hình thức khám", "Chuyên khoa", "Bác sĩ", "Ngày & giờ", "Xác nhận"].map(
-          (label, index) => (
-            <div
-              key={label}
-              className={step > index + 1 ? "done" : step === index + 1 ? "active" : ""}
-            >
-              <span>{step > index + 1 ? <Icon name="check" size={15} /> : index + 1}</span>
-              <small>{label}</small>
+      ) : (
+        <>
+          {step < 6 && bookingMode === "doctor" && (
+            <div className="booking-steps">
+              {["Hình thức khám", "Chuyên khoa", "Bác sĩ", "Ngày & giờ", "Xác nhận"].map(
+                (label, index) => (
+                  <div
+                    key={label}
+                    className={step > index + 1 ? "done" : step === index + 1 ? "active" : ""}
+                  >
+                    <span>{step > index + 1 ? <Icon name="check" size={15} /> : index + 1}</span>
+                    <small>{label}</small>
+                  </div>
+                )
+              )}
             </div>
-          )
-        )}
-      </div>
+          )}
+          {step < 6 && bookingMode === "time" && (
+            <div className="booking-steps booking-steps--compact">
+              {[
+                { label: "Tìm khung giờ & bác sĩ trống", activeAt: 1, doneAt: 5 },
+                { label: "Xác nhận thông tin đặt lịch", activeAt: 5, doneAt: 6 },
+              ].map((item, index) => {
+                const isDone = step >= item.doneAt;
+                const isActive = !isDone && step === item.activeAt;
+                return (
+                  <div
+                    key={item.label}
+                    className={isDone ? "done" : isActive ? "active" : ""}
+                  >
+                    <span>{isDone ? <Icon name="check" size={15} /> : index + 1}</span>
+                    <small>{item.label}</small>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
       {step === 6 ? (
         <div className="confirmation-card card">
@@ -2048,6 +2220,8 @@ function Booking({
           </aside>
         </div>
       )}
+        </>
+      )}
     </>
   );
 }
@@ -2057,11 +2231,13 @@ function Appointments({
   go,
   appointments,
   onSelectAppointment,
+  onViewSession,
   askCancel,
 }: {
   go: (p: Page) => void;
   appointments: Appointment[];
   onSelectAppointment: (a: Appointment) => void;
+  onViewSession: (a: Appointment) => void;
   askCancel: (a: Appointment) => void;
 }) {
   const [filter, setFilter] = useState("Tất cả");
@@ -2107,6 +2283,7 @@ function Appointments({
               onSelectAppointment(appt);
               go("appointment-detail");
             }}
+            onViewSession={onViewSession}
           />
           {filter === "Đã xác nhận" && rows.length > 0 && (
             <div className="cancel-row">
@@ -2247,18 +2424,19 @@ function AppointmentDetail({
             Xem hồ sơ bác sĩ
           </Button>
 
-          {appointment.sessionId && (
+          {appointment.sessionId ? (
             <Button
               className="full-btn"
               variant="secondary"
-              onClick={() => {
-                onViewConsultation(appointment.sessionId!);
-                go("consultation-detail");
-              }}
+              onClick={() => onViewConsultation(appointment.sessionId!)}
             >
               Xem phiên khám liên quan
             </Button>
-          )}
+          ) : isCompletedAppointmentStatus(appointment.status) ? (
+            <div style={{ fontSize: "12px", color: "var(--muted)", margin: "8px 0", lineHeight: "1.5" }}>
+              ℹ️ Lịch hẹn đã hoàn thành nhưng chưa có phiên khám liên kết.
+            </div>
+          ) : null}
 
           {canCancel ? (
             <Button
@@ -2933,19 +3111,31 @@ function Profile({
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    const cleanEmail = assistEmail(form.email);
+    const cleanPhone = normalizePhone(form.phone);
+    const emailErr = validateEmail(cleanEmail, "Email", false);
+    const phoneErr = cleanPhone === profile.phone ? null : validatePhone(cleanPhone, "Số điện thoại");
+    if (emailErr || phoneErr) {
+      const msg = emailErr || phoneErr || "Dữ liệu không hợp lệ.";
+      setError(msg);
+      showToast(msg);
+      return;
+    }
+    const nextForm = { ...form, email: cleanEmail, phone: cleanPhone };
+    setForm(nextForm);
     setError(null);
     setSaving(true);
     try {
       await updateProfile({
-        email: form.email,
-        phone: form.phone,
-        address: form.address,
-        allergies: form.allergies,
-        chronicDiseases: form.chronicDiseases,
-        emergencyContactName: form.emergencyContactName,
-        emergencyContactPhone: form.emergencyContactPhone,
+        email: cleanEmail,
+        phone: cleanPhone,
+        address: nextForm.address.trim(),
+        allergies: nextForm.allergies.trim(),
+        chronicDiseases: nextForm.chronicDiseases.trim(),
+        emergencyContactName: nextForm.emergencyContactName,
+        emergencyContactPhone: nextForm.emergencyContactPhone,
       });
-      onProfileUpdated(form);
+      onProfileUpdated(nextForm);
       setEditing(false);
       setSaved(true);
       showToast("Đã lưu thay đổi hồ sơ cá nhân!");
@@ -3059,16 +3249,22 @@ function Profile({
               <input
                 type="email"
                 disabled={!editing}
+                maxLength={100}
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onBlur={() => setForm((prev) => ({ ...prev, email: assistEmail(prev.email) }))}
+                placeholder="benhnhan@gmail.com"
               />
             </label>
             <label>
               <span>Số điện thoại</span>
               <input
                 disabled={!editing}
+                maxLength={15}
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                onBlur={() => setForm((prev) => ({ ...prev, phone: normalizePhone(prev.phone) }))}
+                placeholder="0901234567"
               />
             </label>
             <label>
@@ -3441,6 +3637,19 @@ export default function App() {
               go={go}
               appointments={appointments}
               onSelectAppointment={(a) => setSelectedAppointment(a)}
+              onViewSession={(a) => {
+                if (!a.sessionId) {
+                  showToast("Lịch hẹn này chưa có phiên khám liên kết.");
+                  return;
+                }
+                const found = consultations.find((c) => c.id === a.sessionId);
+                if (!found) {
+                  showToast("Không tìm thấy chi tiết phiên khám tương ứng.");
+                  return;
+                }
+                setSelectedConsultation(found);
+                go("consultation-detail");
+              }}
               askCancel={handleAskCancel}
             />
           )}
@@ -3456,7 +3665,12 @@ export default function App() {
               }}
               onViewConsultation={(sId) => {
                 const found = consultations.find((c) => c.id === sId);
-                if (found) setSelectedConsultation(found);
+                if (!found) {
+                  showToast("Không tìm thấy chi tiết phiên khám tương ứng.");
+                  return;
+                }
+                setSelectedConsultation(found);
+                go("consultation-detail");
               }}
             />
           )}

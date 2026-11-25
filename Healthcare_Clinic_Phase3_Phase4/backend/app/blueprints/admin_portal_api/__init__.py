@@ -16,7 +16,19 @@ from ...services import appointments as appointment_service
 from ...services import doctors as doctor_service
 from ...services import patients as patient_service
 from ...services import schedules as schedule_service
+from ...services.schedules import validate_clinic_slot
 from ...services.common import BusinessError, ensure, identity, now
+from ...utils.validators import (
+    ensure_unique_email,
+    ensure_unique_phone,
+    normalize_person_name,
+    normalize_phone,
+    validate_dob,
+    validate_email,
+    validate_person_name,
+    validate_phone,
+    validate_text,
+)
 
 bp = Blueprint("admin_portal_api", __name__, url_prefix="/api/admin")
 
@@ -113,45 +125,78 @@ def _parse_time(value, field="giờ"):
 
 
 def normalize_vietnamese_name(name: str) -> str:
-    """Capitalize each word and remove excess whitespace (e.g. 'vĂn hồNG' -> 'Văn Hồng', 'BS Test' -> 'BS Test')."""
-    if not name:
-        return ""
-    HONORIFICS = {
-        "BS": "BS",
-        "BS.": "BS.",
-        "TS": "TS",
-        "TS.": "TS.",
-        "THS": "ThS",
-        "THS.": "ThS.",
-        "PGS": "PGS",
-        "PGS.": "PGS.",
-        "GS": "GS",
-        "GS.": "GS.",
-    }
-    words = []
-    for word in str(name).strip().split():
-        upper = word.upper()
-        if upper in HONORIFICS:
-            words.append(HONORIFICS[upper])
-        else:
-            words.append(word.capitalize())
-    return " ".join(words)
-
-
-def normalize_phone(phone: str) -> str:
-    if not phone:
-        return ""
-    p = re.sub(r"[^\d+]", "", str(phone).strip())
-    if p.startswith("+84"):
-        p = "0" + p[3:]
-    return p
+    return normalize_person_name(name)
 
 
 def validate_vietnamese_phone(phone: str, field="Số điện thoại") -> str:
-    p = normalize_phone(phone)
-    if not re.match(r"^0[35789]\d{8}$", p):
-        raise BusinessError(f"{field} phải là số di động Việt Nam gồm 10 chữ số (bắt đầu bằng 03, 05, 07, 08, 09).")
-    return p
+    return validate_phone(phone, field=field)
+
+
+def _fetch_admin_appointments():
+    rows = query("""
+        SELECT a.appointment_id AS id,
+               p.full_name AS patient,
+               p.patient_id AS patientId,
+               d.full_name AS doctor,
+               d.doctor_id AS doctorId,
+               COALESCE(sp.specialty_name, 'Đa khoa') AS specialty,
+               DATE_FORMAT(a.appointment_date_time, '%d/%m/%Y') AS date,
+               DATE_FORMAT(a.appointment_date_time, '%H:%i') AS time,
+               DATE_FORMAT(a.appointment_date_time, '%Y-%m-%d %H:%i') AS rawDateTime,
+               COALESCE(a.reason, 'Khám sức khỏe tổng quát') AS reason,
+               CASE a.appointment_type
+                 WHEN 'Telemedicine' THEN 'Tư vấn trực tuyến'
+                 ELSE 'Khám trực tiếp'
+               END AS visitType,
+               a.appointment_type AS rawType,
+               CASE WHEN a.follow_up_from_appt_id IS NOT NULL OR a.reason LIKE '%tái khám%' THEN TRUE ELSE FALSE END AS isFollowUp,
+               250000 AS fee,
+               CASE a.status
+                 WHEN 'Scheduled' THEN 'Chờ xác nhận'
+                 WHEN 'Checked-In' THEN 'Đã xác nhận'
+                 WHEN 'Completed' THEN 'Hoàn thành'
+                 WHEN 'Cancelled' THEN 'Đã hủy'
+                 WHEN 'No-show' THEN 'Không đến khám'
+                 ELSE a.status
+               END AS status,
+               a.status AS rawStatus,
+               a.schedule_id AS scheduleId,
+               a.estimated_duration_minutes AS duration,
+               cs.session_id AS sessionId,
+               CASE WHEN cs.session_id IS NOT NULL THEN TRUE ELSE FALSE END AS hasSession,
+               CASE WHEN cs.session_id IS NOT NULL AND cs.end_time IS NOT NULL THEN TRUE ELSE FALSE END AS hasCompletedSession,
+               (
+                 SELECT fu.appointment_id
+                 FROM appointment fu
+                 WHERE fu.follow_up_from_appt_id = a.appointment_id
+                   AND fu.status <> 'Cancelled'
+                 ORDER BY fu.appointment_date_time DESC
+                 LIMIT 1
+               ) AS followUpAppointmentId
+        FROM appointment a
+        JOIN patient p ON a.patient_id = p.patient_id
+        JOIN doctor d ON a.doctor_id = d.doctor_id
+        LEFT JOIN specialist spl ON d.doctor_id = spl.doctor_id
+        LEFT JOIN specialty sp ON spl.specialty_id = sp.specialty_id
+        LEFT JOIN consultation_session cs ON a.appointment_id = cs.appointment_id
+        ORDER BY a.appointment_date_time DESC
+    """)
+    for r in rows:
+        r["isFollowUp"] = bool(r.get("isFollowUp"))
+        r["hasSession"] = bool(r.get("hasSession"))
+        r["hasCompletedSession"] = bool(r.get("hasCompletedSession"))
+        r["hasFollowUp"] = bool(r.get("followUpAppointmentId"))
+        t = str(r.get("time") or "")
+        if "nov" in t.lower() or not re.match(r"^\d{2}:\d{2}$", t):
+            raw_dt = str(r.get("rawDateTime") or "")
+            m = re.search(r"(\d{2}):(\d{2})", raw_dt)
+            if m:
+                r["time"] = f"{m.group(1)}:{m.group(2)}"
+            else:
+                m_h = re.search(r"(\d{1,2})", t)
+                if m_h:
+                    r["time"] = f"{int(m_h.group(1)):02d}:00"
+    return rows
 
 
 # --------------------------------------------------------------------------
@@ -240,7 +285,8 @@ def portal_bootstrap():
                END AS status,
                u.account_status AS rawStatus,
                'Nam' AS gender,
-               DATE_FORMAT(d.date_of_birth, '%d/%m/%Y') AS dob
+               DATE_FORMAT(d.date_of_birth, '%d/%m/%Y') AS dob,
+               DATE_FORMAT(d.date_of_birth, '%Y-%m-%d') AS rawDob
         FROM doctor d
         JOIN user_account u ON d.user_id = u.user_id
         LEFT JOIN specialist s ON d.doctor_id = s.doctor_id
@@ -295,57 +341,7 @@ def portal_bootstrap():
     """)
 
     # Appointments
-    appointments_rows = query("""
-        SELECT a.appointment_id AS id,
-               p.full_name AS patient,
-               p.patient_id AS patientId,
-               d.full_name AS doctor,
-               d.doctor_id AS doctorId,
-               COALESCE(sp.specialty_name, 'Đa khoa') AS specialty,
-               DATE_FORMAT(a.appointment_date_time, '%d/%m/%Y') AS date,
-               DATE_FORMAT(a.appointment_date_time, '%H:%i') AS time,
-               DATE_FORMAT(a.appointment_date_time, '%Y-%m-%d %H:%i') AS rawDateTime,
-               COALESCE(a.reason, 'Khám sức khỏe tổng quát') AS reason,
-               CASE a.appointment_type
-                 WHEN 'Telemedicine' THEN 'Tư vấn trực tuyến'
-                 ELSE 'Khám trực tiếp'
-               END AS visitType,
-               a.appointment_type AS rawType,
-               CASE WHEN a.follow_up_from_appt_id IS NOT NULL OR a.reason LIKE '%tái khám%' THEN TRUE ELSE FALSE END AS isFollowUp,
-               250000 AS fee,
-               CASE a.status
-                 WHEN 'Scheduled' THEN 'Chờ xác nhận'
-                 WHEN 'Checked-In' THEN 'Đã xác nhận'
-                 WHEN 'Completed' THEN 'Hoàn thành'
-                 WHEN 'Cancelled' THEN 'Đã hủy'
-                 WHEN 'No-show' THEN 'Không đến khám'
-                 ELSE a.status
-               END AS status,
-               a.status AS rawStatus,
-               a.schedule_id AS scheduleId,
-               a.estimated_duration_minutes AS duration,
-               CASE WHEN cs.session_id IS NOT NULL THEN TRUE ELSE FALSE END AS hasSession
-        FROM appointment a
-        JOIN patient p ON a.patient_id = p.patient_id
-        JOIN doctor d ON a.doctor_id = d.doctor_id
-        LEFT JOIN specialist spl ON d.doctor_id = spl.doctor_id
-        LEFT JOIN specialty sp ON spl.specialty_id = sp.specialty_id
-        LEFT JOIN consultation_session cs ON a.appointment_id = cs.appointment_id
-        ORDER BY a.appointment_date_time DESC
-    """)
-    for r in appointments_rows:
-        r["isFollowUp"] = bool(r.get("isFollowUp"))
-        r["hasSession"] = bool(r.get("hasSession"))
-        t = str(r.get("time") or "")
-        if "nov" in t.lower() or not re.match(r"^\d{2}:\d{2}$", t):
-            raw_dt = str(r.get("rawDateTime") or "")
-            m = re.search(r"(\d{2}):(\d{2})", raw_dt)
-            if m:
-                r["time"] = f"{m.group(1)}:{m.group(2)}"
-            else:
-                m_h = re.search(r"(\d{1,2})", t)
-                if m_h:
-                    r["time"] = f"{int(m_h.group(1)):02d}:00"
+    appointments_rows = _fetch_admin_appointments()
 
     # Schedules
     schedules_rows = query("""
@@ -461,25 +457,28 @@ def create_user():
 
     username = data.get("username", "").strip()
     password = data.get("password", "").strip()
-    full_name = normalize_vietnamese_name(data.get("name") or data.get("full_name") or "")
-    phone = validate_vietnamese_phone(data.get("phone", ""), "Số điện thoại")
-    email = data.get("email", "").strip()
+    full_name = validate_person_name(data.get("name") or data.get("full_name") or "", "Họ và tên")
+    phone = validate_phone(data.get("phone", ""), "Số điện thoại")
+    email = validate_email(data.get("email", ""), "Email", required=(role == "DOCTOR"))
 
     ensure(len(username) >= 3, "Tên đăng nhập phải có ít nhất 3 ký tự.")
     ensure(10 <= len(password) <= 128, "Mật khẩu phải từ 10 đến 128 ký tự.")
-    ensure(full_name, "Vui lòng nhập họ và tên.")
-    ensure(phone, "Vui lòng nhập số điện thoại.")
 
-    # Unique username check
+    # Unique username & phone check
     existing = query("SELECT user_id FROM user_account WHERE username = %s", (username,), one=True)
     if existing:
         raise BusinessError("Tên đăng nhập đã tồn tại trong hệ thống. Vui lòng chọn tên khác.")
+    ensure_unique_phone(phone)
+    if email:
+        ensure_unique_email(email, scope="doctor" if role == "DOCTOR" else "patient")
 
-    dob = _parse_date(data.get("dob") or data.get("date_of_birth"), "ngày sinh")
-    if role == "PATIENT":
-        if not dob:
-            dob = date(1995, 1, 1)
-        ensure(dob <= now().date(), "Ngày sinh không được ở tương lai.")
+    raw_dob = data.get("dob") or data.get("date_of_birth")
+    if role == "DOCTOR":
+        dob = validate_dob(raw_dob, "Ngày sinh bác sĩ", required=True, min_age=22, max_age=80)
+    elif role == "PATIENT":
+        dob = validate_dob(raw_dob or date(1995, 1, 1), "Ngày sinh", required=True)
+    else:
+        dob = None
 
     gender = data.get("gender") or "Male"
     if gender in ("Nam", "Male"):
@@ -569,7 +568,8 @@ def list_doctors():
                END AS status,
                u.account_status AS rawStatus,
                'Nam' AS gender,
-               DATE_FORMAT(d.date_of_birth, '%d/%m/%Y') AS dob
+               DATE_FORMAT(d.date_of_birth, '%d/%m/%Y') AS dob,
+               DATE_FORMAT(d.date_of_birth, '%Y-%m-%d') AS rawDob
         FROM doctor d
         JOIN user_account u ON d.user_id = u.user_id
         LEFT JOIN specialist s ON d.doctor_id = s.doctor_id
@@ -583,52 +583,41 @@ def list_doctors():
 @bp.post("/doctors")
 def create_doctor():
     data = request.get_json(silent=True) or {}
-    dob = _parse_date(data.get("dob") or data.get("date_of_birth"), "ngày sinh")
-    name = normalize_vietnamese_name(data.get("name") or data.get("full_name") or "")
+    dob = validate_dob(data.get("dob") or data.get("date_of_birth"), "Ngày sinh bác sĩ", required=True, min_age=22, max_age=80)
+    name = validate_person_name(data.get("name") or data.get("full_name") or "", "Họ và tên bác sĩ")
     username = (data.get("username") or "").strip()
     password = (data.get("password") or "").strip()
-    phone = validate_vietnamese_phone(data.get("phone", ""), "Số điện thoại bác sĩ")
-    email = (data.get("email") or "").strip()
+    phone = validate_phone(data.get("phone", ""), "Số điện thoại bác sĩ")
+    email = validate_email(data.get("email") or "", "Email bác sĩ", required=True)
     specialty_name = (data.get("specialty") or "").strip()
     license_number = (data.get("license_number") or data.get("licenseNumber") or "").strip()
 
-    ensure(name, "Vui lòng nhập họ và tên bác sĩ.")
-    ensure(phone, "Vui lòng nhập số điện thoại bác sĩ.")
-    ensure(email, "Vui lòng nhập email bác sĩ.")
-
-    ensure(dob is not None, "Vui lòng nhập ngày sinh bác sĩ.")
-    today = now().date()
-    age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-    ensure(22 <= age <= 80, "Tuổi bác sĩ phải từ 22 đến 80.")
-
     if username:
+        ensure(len(username) <= 50, "Tên đăng nhập không được vượt quá 50 ký tự.")
+        ensure(bool(re.match(r'^[a-zA-Z0-9_.]+$', username)), "Tên đăng nhập chỉ gồm chữ cái không dấu, chữ số, dấu chấm và gạch dưới (_).")
         user_dup = query("SELECT user_id FROM user_account WHERE username = %s", (username,), one=True)
         if user_dup:
             raise BusinessError("Tên đăng nhập đã tồn tại trên hệ thống. Vui lòng chọn tên khác.")
     else:
         clean_name = "".join(e for e in name.lower() if e.isalnum())[:12]
-        username = "dr." + clean_name + str(now().microsecond)[:3]
+        username = f"dr.{clean_name}.{identity('DOC-')[4:].lower()}"
 
     if not password:
         password = "DoctorPassword123@"
     else:
-        ensure(len(password) >= 8, "Mật khẩu phải có ít nhất 8 ký tự.")
+        ensure(8 <= len(password) <= 128, "Mật khẩu phải từ 8 đến 128 ký tự.")
 
     if not license_number:
-        license_number = "BS-" + str(now().year) + "-" + str(now().microsecond)[:4]
+        license_number = f"BS-{now().year}-{identity('DOC-')[4:]}"
+    ensure(len(license_number) <= 50, "Số giấy phép hành nghề tối đa 50 ký tự.")
 
-    # Unique license check
+    # Unique license, email & phone checks
     lic_dup = query("SELECT doctor_id FROM doctor WHERE license_number = %s", (license_number,), one=True)
     if lic_dup:
         raise BusinessError("Số giấy phép hành nghề đã tồn tại trên hệ thống.")
 
-    email_dup = query("SELECT doctor_id FROM doctor WHERE email = %s", (email,), one=True)
-    if email_dup:
-        raise BusinessError("Email này đã được sử dụng bởi bác sĩ khác.")
-
-    phone_dup = query("SELECT doctor_id FROM doctor WHERE phone = %s", (phone,), one=True)
-    if phone_dup:
-        raise BusinessError("Số điện thoại này đã được sử dụng bởi bác sĩ khác.")
+    ensure_unique_email(email, scope="doctor")
+    ensure_unique_phone(phone)
 
     # BR13-20: Resolve exact disjoint subtype
     specialty_id = None
@@ -671,6 +660,7 @@ def create_doctor():
             "status": "Hoạt động",
             "gender": data.get("gender") or "Nam",
             "dob": dob.strftime("%d/%m/%Y"),
+            "rawDob": dob.isoformat(),
         },
     }), 201
 
@@ -678,20 +668,28 @@ def create_doctor():
 @bp.patch("/doctors/<doctor_id>")
 def update_doctor(doctor_id):
     data = request.get_json(silent=True) or {}
+    doc = query("SELECT phone, email FROM doctor WHERE doctor_id = %s", (doctor_id,), one=True)
+    if not doc:
+        abort(404, description="Không tìm thấy hồ sơ bác sĩ.")
 
     allowed = {}
     if "name" in data:
-        allowed["full_name"] = normalize_vietnamese_name(data["name"])
+        allowed["full_name"] = validate_person_name(data["name"], "Họ và tên bác sĩ")
     if "full_name" in data:
-        allowed["full_name"] = normalize_vietnamese_name(data["full_name"])
+        allowed["full_name"] = validate_person_name(data["full_name"], "Họ và tên bác sĩ")
     if "phone" in data:
-        allowed["phone"] = validate_vietnamese_phone(data["phone"], "Số điện thoại bác sĩ")
+        submitted_phone = (data["phone"] or "").strip()
+        allowed["phone"] = (
+            submitted_phone
+            if submitted_phone == doc["phone"]
+            else validate_phone(submitted_phone, "Số điện thoại bác sĩ")
+        )
     if "email" in data:
-        allowed["email"] = data["email"].strip()
+        allowed["email"] = validate_email(data["email"], "Email bác sĩ", required=True)
     if "licenseNumber" in data:
-        allowed["license_number"] = data["licenseNumber"].strip()
+        allowed["license_number"] = validate_text(data["licenseNumber"], "Số giấy phép hành nghề", required=True, max_len=50)
     if "license_number" in data:
-        allowed["license_number"] = data["license_number"].strip()
+        allowed["license_number"] = validate_text(data["license_number"], "Số giấy phép hành nghề", required=True, max_len=50)
 
     if allowed:
         doctor_service.update_profile(g.user, doctor_id, allowed)
@@ -758,21 +756,18 @@ def list_patients():
 @bp.post("/patients")
 def create_patient():
     data = request.get_json(silent=True) or {}
-    name = normalize_vietnamese_name(data.get("name") or data.get("full_name") or "")
+    name = validate_person_name(data.get("name") or data.get("full_name") or "", "Họ và tên bệnh nhân")
     username = (data.get("username") or "").strip()
     password = (data.get("password") or "").strip()
     confirm_password = (data.get("confirm_password") or data.get("confirmPassword") or "").strip()
-    phone = validate_vietnamese_phone(data.get("phone", ""), "Số điện thoại bệnh nhân")
-    email = (data.get("email") or "").strip()
+    phone = validate_phone(data.get("phone", ""), "Số điện thoại bệnh nhân")
+    email = validate_email(data.get("email") or "", "Email", required=False)
 
-    ensure(name, "Vui lòng nhập họ và tên bệnh nhân.")
-    ensure(phone, "Vui lòng nhập số điện thoại bệnh nhân.")
+    em_name = validate_person_name(data.get("emergency_contact_name") or data.get("emergencyContactName") or "Người thân", "Tên người liên hệ khẩn cấp")
+    em_phone = validate_phone(data.get("emergency_contact_phone") or data.get("emergencyContactPhone") or phone, "Số điện thoại khẩn cấp")
 
-    em_name = normalize_vietnamese_name(data.get("emergency_contact_name") or data.get("emergencyContactName") or "Người thân")
-    em_phone = validate_vietnamese_phone(data.get("emergency_contact_phone") or data.get("emergencyContactPhone") or phone, "Số điện thoại khẩn cấp")
-
-    dob = _parse_date(data.get("dob") or data.get("date_of_birth"), "ngày sinh") or date(1995, 1, 1)
-    ensure(dob <= now().date(), "Ngày sinh không được ở tương lai.")
+    raw_dob = data.get("dob") or data.get("date_of_birth")
+    dob = validate_dob(raw_dob if raw_dob not in (None, "") else date(1995, 1, 1), "Ngày sinh")
 
     gender = data.get("gender") or "Male"
     if gender in ("Nam", "Male"):
@@ -790,19 +785,18 @@ def create_patient():
             raise BusinessError("Tên đăng nhập đã được sử dụng. Vui lòng chọn tên khác.")
     else:
         clean_name = "".join(e for e in name.lower() if e.isalnum())[:10]
-        username = "pat." + clean_name + str(now().microsecond)[:3]
+        username = f"pat.{clean_name}.{identity('PAT-')[4:].lower()}"
 
     if password:
-        ensure(len(password) >= 8, "Mật khẩu phải có ít nhất 8 ký tự.")
+        ensure(8 <= len(password) <= 128, "Mật khẩu phải từ 8 đến 128 ký tự.")
         if confirm_password:
             ensure(password == confirm_password, "Mật khẩu xác nhận không khớp.")
     else:
         password = "PatientPassword123@"
 
+    ensure_unique_phone(phone)
     if email:
-        email_dup = query("SELECT patient_id FROM patient WHERE email = %s", (email,), one=True)
-        if email_dup:
-            raise BusinessError("Email này đã được sử dụng bởi bệnh nhân khác.")
+        ensure_unique_email(email, scope="patient")
 
     user_payload = {
         "username": username,
@@ -868,34 +862,32 @@ def update_patient(patient_id):
 
     allowed = {}
     if "name" in data:
-        allowed["full_name"] = normalize_vietnamese_name(data["name"])
+        allowed["full_name"] = validate_person_name(data["name"], "Họ và tên bệnh nhân")
     if "full_name" in data:
-        allowed["full_name"] = normalize_vietnamese_name(data["full_name"])
+        allowed["full_name"] = validate_person_name(data["full_name"], "Họ và tên bệnh nhân")
     if "phone" in data:
         submitted_phone = (data["phone"] or "").strip()
         allowed["phone"] = (
             submitted_phone
             if submitted_phone == pat["phone"]
-            else validate_vietnamese_phone(submitted_phone, "Số điện thoại bệnh nhân")
+            else validate_phone(submitted_phone, "Số điện thoại bệnh nhân")
         )
     if "email" in data:
-        allowed["email"] = data["email"].strip()
+        allowed["email"] = validate_email(data["email"], "Email", required=False)
     if "address" in data:
-        allowed["address"] = data["address"].strip()
+        allowed["address"] = validate_text(data["address"], "Địa chỉ", max_len=255) or ""
     if "bloodType" in data or "blood_type" in data:
         allowed["blood_type"] = (data.get("bloodType") or data.get("blood_type") or "").strip()
     if "allergies" in data:
-        allowed["allergies"] = data["allergies"].strip()
+        allowed["allergies"] = validate_text(data["allergies"], "Tiền sử dị ứng", max_len=4000) or ""
     if "chronicDiseases" in data or "chronic_diseases" in data:
-        allowed["chronic_diseases"] = (data.get("chronicDiseases") or data.get("chronic_diseases") or "").strip()
+        allowed["chronic_diseases"] = validate_text(data.get("chronicDiseases") or data.get("chronic_diseases") or "", "Bệnh mãn tính", max_len=4000) or ""
     if "emergencyContactName" in data or "emergency_contact_name" in data:
-        allowed["emergency_contact_name"] = normalize_vietnamese_name(data.get("emergencyContactName") or data.get("emergency_contact_name") or "")
+        allowed["emergency_contact_name"] = validate_person_name(data.get("emergencyContactName") or data.get("emergency_contact_name") or "", "Tên người liên hệ khẩn cấp")
     if "emergencyContactPhone" in data or "emergency_contact_phone" in data:
-        allowed["emergency_contact_phone"] = validate_vietnamese_phone(data.get("emergencyContactPhone") or data.get("emergency_contact_phone") or "", "Số điện thoại khẩn cấp")
+        allowed["emergency_contact_phone"] = validate_phone(data.get("emergencyContactPhone") or data.get("emergency_contact_phone") or "", "Số điện thoại khẩn cấp")
     if "dob" in data or "date_of_birth" in data:
-        parsed_dob = _parse_date(data.get("dob") or data.get("date_of_birth"), "ngày sinh")
-        ensure(parsed_dob <= now().date(), "Ngày sinh không được ở tương lai.")
-        allowed["date_of_birth"] = parsed_dob
+        allowed["date_of_birth"] = validate_dob(data.get("dob") or data.get("date_of_birth"), "Ngày sinh")
     if "gender" in data:
         g_val = data["gender"]
         allowed["gender"] = "Male" if g_val in ("Nam", "Male") else "Female" if g_val in ("Nữ", "Female") else "Other"
@@ -976,58 +968,8 @@ def update_specialty(specialty_id):
 
 @bp.get("/appointments")
 def list_appointments():
-    rows = query("""
-        SELECT a.appointment_id AS id,
-               p.full_name AS patient,
-               p.patient_id AS patientId,
-               d.full_name AS doctor,
-               d.doctor_id AS doctorId,
-               COALESCE(sp.specialty_name, 'Đa khoa') AS specialty,
-               DATE_FORMAT(a.appointment_date_time, '%d/%m/%Y') AS date,
-               DATE_FORMAT(a.appointment_date_time, '%H:%i') AS time,
-               DATE_FORMAT(a.appointment_date_time, '%Y-%m-%d %H:%i') AS rawDateTime,
-               COALESCE(a.reason, 'Khám sức khỏe tổng quát') AS reason,
-               CASE a.appointment_type
-                 WHEN 'Telemedicine' THEN 'Tư vấn trực tuyến'
-                 ELSE 'Khám trực tiếp'
-               END AS visitType,
-               a.appointment_type AS rawType,
-               CASE WHEN a.follow_up_from_appt_id IS NOT NULL OR a.reason LIKE '%tái khám%' THEN TRUE ELSE FALSE END AS isFollowUp,
-               250000 AS fee,
-               CASE a.status
-                 WHEN 'Scheduled' THEN 'Chờ xác nhận'
-                 WHEN 'Checked-In' THEN 'Đã xác nhận'
-                 WHEN 'Completed' THEN 'Hoàn thành'
-                 WHEN 'Cancelled' THEN 'Đã hủy'
-                 WHEN 'No-show' THEN 'Không đến khám'
-                 ELSE a.status
-               END AS status,
-               a.status AS rawStatus,
-               a.schedule_id AS scheduleId,
-               a.estimated_duration_minutes AS duration,
-               CASE WHEN cs.session_id IS NOT NULL THEN TRUE ELSE FALSE END AS hasSession
-        FROM appointment a
-        JOIN patient p ON a.patient_id = p.patient_id
-        JOIN doctor d ON a.doctor_id = d.doctor_id
-        LEFT JOIN specialist spl ON d.doctor_id = spl.doctor_id
-        LEFT JOIN specialty sp ON spl.specialty_id = sp.specialty_id
-        LEFT JOIN consultation_session cs ON a.appointment_id = cs.appointment_id
-        ORDER BY a.appointment_date_time DESC
-    """)
-    for r in rows:
-        r["isFollowUp"] = bool(r.get("isFollowUp"))
-        r["hasSession"] = bool(r.get("hasSession"))
-        t = str(r.get("time") or "")
-        if "nov" in t.lower() or not re.match(r"^\d{2}:\d{2}$", t):
-            raw_dt = str(r.get("rawDateTime") or "")
-            m = re.search(r"(\d{2}):(\d{2})", raw_dt)
-            if m:
-                r["time"] = f"{m.group(1)}:{m.group(2)}"
-            else:
-                m_h = re.search(r"(\d{1,2})", t)
-                if m_h:
-                    r["time"] = f"{int(m_h.group(1)):02d}:00"
-    return jsonify({"appointments": rows})
+    appointment_service.auto_noshow_appointments()
+    return jsonify({"appointments": _fetch_admin_appointments()})
 
 
 @bp.post("/appointments")
@@ -1046,7 +988,7 @@ def create_appointment():
     ensure(doctor_id, "Vui lòng chọn bác sĩ.")
     ensure(dt, "Vui lòng chọn ngày và giờ hẹn.")
     ensure(dt >= now(), "Không thể đặt lịch hẹn trong quá khứ.")
-    ensure(duration in (15, 30, 45, 60), "Thời lượng khám không hợp lệ.")
+    validate_clinic_slot(dt, duration)
 
     # BR26-36: Appointment must fall within a valid available doctor shift
     if not schedule_id:
@@ -1101,6 +1043,8 @@ def create_appointment():
             "reason": appt.reason or reason,
             "visitType": "Tư vấn trực tuyến" if visit_type == "Telemedicine" else "Khám trực tiếp",
             "isFollowUp": bool(appt.follow_up_from_appt_id or (appt.reason and "tái khám" in appt.reason.lower())),
+            "sessionId": None,
+            "hasSession": False,
         },
     }), 201
 
@@ -1161,7 +1105,7 @@ def reschedule_appointment(appointment_id):
 
     ensure(dt, "Vui lòng chọn ngày và giờ mới.")
     ensure(dt >= now(), "Không thể chuyển lịch hẹn vào quá khứ.")
-    ensure(duration in (15, 30, 45, 60), "Thời lượng khám không hợp lệ.")
+    validate_clinic_slot(dt, duration)
 
     appt = query("SELECT doctor_id, appointment_type, status FROM appointment WHERE appointment_id = %s", (appointment_id,), one=True)
     if not appt:
@@ -1246,6 +1190,7 @@ def create_schedule():
     ensure(start and end, "Vui lòng nhập giờ bắt đầu và kết thúc ca.")
     ensure(s_date >= now().date(), "Không thể tạo ca làm trong quá khứ.")
     ensure(end > start, "Giờ kết thúc ca phải sau giờ bắt đầu.")
+    ensure(start >= time(8, 0) and end <= time(17, 0), "Ca làm việc phải nằm trong giờ hành chính phòng khám (08:00–17:00).")
 
     status = data.get("availability_status") or data.get("status") or "Available"
     if status in ("Hoạt động", "Khả dụng", "Available"):
@@ -1491,12 +1436,85 @@ def change_admin_password():
     return jsonify({"message": "Đã đổi mật khẩu quản trị thành công."})
 
 
+@bp.get("/consultations/<session_id>")
+def consultation_detail(session_id):
+    row = query("""
+        SELECT cs.session_id AS id,
+               cs.appointment_id AS appointmentId,
+               cs.start_time AS startTime,
+               cs.end_time AS endTime,
+               cs.actual_duration_minutes AS duration,
+               cs.session_type AS sessionType,
+               cs.meeting_url AS meetingUrl,
+               cs.diagnosis_notes AS diagnosisNotes,
+               a.patient_id AS patientId,
+               p.full_name AS patientName,
+               a.doctor_id AS doctorId,
+               d.full_name AS doctorName,
+               COALESCE(sp.specialty_name, 'Đa khoa') AS specialty,
+               DATE_FORMAT(a.appointment_date_time, '%d/%m/%Y') AS appointmentDate,
+               DATE_FORMAT(a.appointment_date_time, '%H:%i') AS appointmentTime
+        FROM consultation_session cs
+        JOIN appointment a ON a.appointment_id = cs.appointment_id
+        JOIN patient p ON p.patient_id = a.patient_id
+        JOIN doctor d ON d.doctor_id = a.doctor_id
+        LEFT JOIN specialist spl ON d.doctor_id = spl.doctor_id
+        LEFT JOIN specialty sp ON spl.specialty_id = sp.specialty_id
+        WHERE cs.session_id = %s
+    """, (session_id,), one=True)
+    if not row:
+        abort(404, description="Không tìm thấy phiên khám.")
+    histories = query("""
+        SELECT medical_history_id AS id,
+               DATE_FORMAT(record_date, '%d/%m/%Y %H:%i') AS recordDate,
+               diagnosis, symptoms, COALESCE(progress_notes, '') AS progressNotes
+        FROM medical_history WHERE session_id = %s ORDER BY record_date DESC
+    """, (session_id,))
+    prescriptions = query("""
+        SELECT prescription_id AS id,
+               DATE_FORMAT(prescription_date, '%d/%m/%Y %H:%i') AS prescriptionDate,
+               COALESCE(diagnosis_icd, '') AS diagnosisIcd,
+               COALESCE(instructions, '') AS instructions
+        FROM prescription WHERE session_id = %s ORDER BY prescription_date DESC
+    """, (session_id,))
+    for rx in prescriptions:
+        rx["items"] = query("""
+            SELECT m.medication_name AS name, pi.dosage, pi.frequency, pi.duration,
+                   COALESCE(pi.special_instructions, '') AS instructions
+            FROM prescription_item pi
+            JOIN medication m ON m.medication_id = pi.medication_id
+            WHERE pi.prescription_id = %s
+        """, (rx["id"],))
+    return jsonify({
+        "consultation": {
+            "id": row["id"],
+            "appointmentId": row["appointmentId"],
+            "patientId": row["patientId"],
+            "patientName": row["patientName"],
+            "doctorId": row["doctorId"],
+            "doctorName": row["doctorName"],
+            "specialty": row["specialty"],
+            "appointmentDate": row["appointmentDate"],
+            "appointmentTime": row["appointmentTime"],
+            "startedAt": row["startTime"].strftime("%d/%m/%Y %H:%M") if row["startTime"] else "",
+            "endedAt": row["endTime"].strftime("%d/%m/%Y %H:%M") if row["endTime"] else "",
+            "duration": row["duration"],
+            "modality": "Tư vấn trực tuyến" if row["sessionType"] == "Virtual" else "Khám trực tiếp",
+            "meetingUrl": row["meetingUrl"] or "",
+            "diagnosisNotes": row["diagnosisNotes"] or "",
+            "status": "Hoàn thành" if row["endTime"] else "Đang khám",
+            "histories": histories,
+            "prescriptions": prescriptions,
+        }
+    })
+
+
 @bp.post("/settings/profile")
 def update_admin_profile():
     data = request.get_json(silent=True) or {}
-    name = (data.get("name") or "Quản trị viên TiTiMi").strip()
-    email = (data.get("email") or "admin@titimi.vn").strip()
-    phone = (data.get("phone") or "0902345678").strip()
+    name = validate_person_name(data.get("name") or "Quản trị viên TiTiMi", "Họ và tên", normalize_case=False)
+    email = validate_email(data.get("email") or "admin@titimi.vn", "Email", required=True)
+    phone = validate_phone(data.get("phone") or "0902345678", "Số điện thoại")
 
     return jsonify({
         "message": "Đã lưu cài đặt hồ sơ quản trị.",

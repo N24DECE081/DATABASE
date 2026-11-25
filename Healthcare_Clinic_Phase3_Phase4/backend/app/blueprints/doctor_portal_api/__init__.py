@@ -72,8 +72,9 @@ def _clinical_fields(notes):
     return values
 
 
-def _consultation(row):
+def _consultation(row, follow_up_by_parent=None):
     fields = _clinical_fields(row["diagnosis_notes"])
+    follow_up_id = (follow_up_by_parent or {}).get(row["appointment_id"])
     return {
         "id": row["session_id"],
         "appointmentId": row["appointment_id"],
@@ -88,6 +89,8 @@ def _consultation(row):
         "modality": "Tư vấn trực tuyến" if row["appointment_type"] == "Telemedicine" else "Khám trực tiếp",
         "startedAt": _iso(row["start_time"]),
         "endedAt": _iso(row["end_time"]),
+        "hasFollowUp": bool(follow_up_id),
+        "followUpAppointmentId": follow_up_id,
     }
 
 
@@ -138,7 +141,19 @@ def portal_data():
            WHERE a.doctor_id = %s ORDER BY cs.start_time DESC""",
         (doctor.doctor_id,),
     )
-    session_data = [_consultation(row) for row in session_rows]
+    follow_up_rows = query(
+        """SELECT appointment_id, follow_up_from_appt_id
+           FROM appointment
+           WHERE doctor_id = %s
+             AND follow_up_from_appt_id IS NOT NULL
+             AND status <> 'Cancelled'
+           ORDER BY appointment_date_time DESC""",
+        (doctor.doctor_id,),
+    )
+    follow_up_by_parent = {}
+    for row in follow_up_rows:
+        follow_up_by_parent.setdefault(row["follow_up_from_appt_id"], row["appointment_id"])
+    session_data = [_consultation(row, follow_up_by_parent) for row in session_rows]
 
     history_data = [
         {
@@ -346,19 +361,29 @@ def add_prescription(session_id):
 @bp.patch("/profile")
 @require_roles("DOCTOR")
 def update_profile():
+    from ...utils.validators import validate_email, validate_person_name, validate_phone, validate_text
+
     data = request.get_json(silent=True)
     fields = ("full_name", "phone", "email", "license_number")
     if not isinstance(data, dict) or set(data) != set(fields):
         abort(400, description="Thông tin hồ sơ bác sĩ không hợp lệ.")
-    limits = {"full_name": 100, "phone": 15, "email": 100, "license_number": 50}
-    if any(not isinstance(data[key], str) or not data[key].strip() or len(data[key]) > limits[key]
-           for key in fields):
+    if any(not isinstance(data[key], str) or not data[key].strip() for key in fields):
         abort(400, description="Vui lòng nhập đầy đủ thông tin hồ sơ hợp lệ.")
     doctor = doctor_service.own_doctor(g.user)
+    clean_name = validate_person_name(data["full_name"], "Họ và tên bác sĩ", normalize_case=False)
+    raw_phone = data["phone"].strip()
+    clean_phone = raw_phone if raw_phone == doctor.phone else validate_phone(raw_phone, "Số điện thoại bác sĩ")
+    clean_email = validate_email(data["email"], "Email bác sĩ", required=True)
+    clean_license = validate_text(data["license_number"], "Số giấy phép hành nghề", required=True, max_len=50)
     updated = doctor_service.update_profile(
         g.user,
         doctor.doctor_id,
-        {key: data[key].strip() for key in fields},
+        {
+            "full_name": clean_name,
+            "phone": clean_phone,
+            "email": clean_email,
+            "license_number": clean_license,
+        },
     )
     return jsonify(profile={
         "id": updated.doctor_id,

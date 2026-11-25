@@ -34,7 +34,7 @@ def create(appointment_id):
 
 
 @bp.get("/<session_id>")
-@require_roles("PATIENT", "DOCTOR")
+@require_roles("PATIENT", "DOCTOR", "ADMIN")
 def detail(session_id):
     record = service.accessible_session(g.user, session_id)
     return render_template("consultations/detail.html", record=record,

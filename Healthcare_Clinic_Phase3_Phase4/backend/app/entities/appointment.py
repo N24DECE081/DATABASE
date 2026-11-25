@@ -17,7 +17,7 @@ class Appointment:
     booked_by_user_id: str
     follow_up_from_appt_id: str | None = None
     appointment_date_time: datetime
-    estimated_duration_minutes: Literal[15, 30, 45, 60]
+    estimated_duration_minutes: Literal[30]
     appointment_type: Literal['In-person', 'Telemedicine']
     status: Literal['Scheduled', 'Checked-In', 'Completed', 'Cancelled', 'No-show']
     reason: str | None = None
