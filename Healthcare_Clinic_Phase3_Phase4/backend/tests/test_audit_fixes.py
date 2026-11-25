@@ -52,7 +52,7 @@ def test_patient_cannot_have_overlapping_appointments(app):
         with pytest.raises((BusinessError, Exception)) as exc:
             appointment_service.book(patient_user, {
                 "schedule_id": sid2,
-                "appointment_date_time": appt_time + timedelta(minutes=10),
+                "appointment_date_time": appt_time,
                 "estimated_duration_minutes": 30,
                 "appointment_type": "In-person",
             })
@@ -66,37 +66,46 @@ def test_admin_can_book_follow_up(app):
         patient_user = auth.find_by_username("patient_one")
         pat = patients.for_user(patient_user.user_id)
 
-        # Find or create a completed/checked-in/scheduled appointment
+        # Follow-ups may only reference a completed consultation session without an existing follow-up.
+        from app.db import execute, query
         all_appts = appointments.list_for(admin_user)
         valid_parent = None
         for a in all_appts:
-            if a["patient_id"] == pat.patient_id and a["status"] not in ("Cancelled", "No-show"):
-                valid_parent = a
-                break
+            if a["patient_id"] == pat.patient_id and a["status"] == "Completed" and a.get("session_end_time"):
+                has_fu = query(
+                    "SELECT 1 FROM appointment WHERE follow_up_from_appt_id = %s AND status <> 'Cancelled' LIMIT 1",
+                    (a["appointment_id"],),
+                    one=True,
+                )
+                if not has_fu:
+                    valid_parent = a
+                    break
 
         if not valid_parent:
-            # Create a previous appointment for doctor 1
+            # Create a completed previous appointment + finished consultation session for doctor 1
             doc_id = "DOC-001"
             past_date = (now() - timedelta(days=2)).date()
             sid_prev = identity("SCH-")
-            from app.db import execute
             execute("INSERT INTO doctor_schedule (schedule_id, doctor_id, schedule_date, start_time, end_time, availability_status) VALUES (%s, %s, %s, %s, %s, 'Available')",
                     (sid_prev, doc_id, past_date, "08:00:00", "12:00:00"))
             prev_appt_id = identity("APT-")
+            prev_begins = datetime.combine(past_date, datetime.strptime("09:00:00", "%H:%M:%S").time())
             execute("INSERT INTO appointment (appointment_id, patient_id, doctor_id, schedule_id, booked_by_user_id, appointment_date_time, estimated_duration_minutes, appointment_type, status) VALUES (%s, %s, %s, %s, %s, %s, 30, 'In-person', 'Completed')",
-                    (prev_appt_id, pat.patient_id, doc_id, sid_prev, admin_user.user_id, datetime.combine(past_date, datetime.strptime("09:00:00", "%H:%M:%S").time())))
+                    (prev_appt_id, pat.patient_id, doc_id, sid_prev, admin_user.user_id, prev_begins))
+            sess_id = identity("SES-")
+            execute("INSERT INTO consultation_session (session_id, appointment_id, start_time, end_time, actual_duration_minutes, session_type) VALUES (%s, %s, %s, %s, 30, 'In-person')",
+                    (sess_id, prev_appt_id, prev_begins, prev_begins + timedelta(minutes=30)))
             valid_parent = {"appointment_id": prev_appt_id, "patient_id": pat.patient_id, "doctor_id": doc_id}
 
         # Create a shift in the future for this doctor
         doc_id = valid_parent["doctor_id"]
         future_date = (now() + timedelta(days=15)).date()
         sid = identity("SCH-")
-        from app.db import execute
         execute("INSERT INTO doctor_schedule (schedule_id, doctor_id, schedule_date, start_time, end_time, availability_status) VALUES (%s, %s, %s, %s, %s, 'Available')",
                 (sid, doc_id, future_date, "08:00:00", "12:00:00"))
         future_time = datetime.combine(future_date, datetime.strptime("09:00:00", "%H:%M:%S").time())
 
-        # Admin books follow-up
+        # Admin books 1st follow-up -> succeeds
         followup = appointment_service.book(admin_user, {
             "patient_id": valid_parent["patient_id"],
             "schedule_id": sid,
@@ -106,6 +115,17 @@ def test_admin_can_book_follow_up(app):
             "follow_up_from_appt_id": valid_parent["appointment_id"],
         })
         assert followup.follow_up_from_appt_id == valid_parent["appointment_id"]
+
+        # Admin cannot book a 2nd follow-up on the same completed session
+        with pytest.raises(BusinessError):
+            appointment_service.book(admin_user, {
+                "patient_id": valid_parent["patient_id"],
+                "schedule_id": sid,
+                "appointment_date_time": datetime.combine(future_date, datetime.strptime("09:30:00", "%H:%M:%S").time()),
+                "estimated_duration_minutes": 30,
+                "appointment_type": "In-person",
+                "follow_up_from_appt_id": valid_parent["appointment_id"],
+            })
 
 
 def test_admin_create_doctor_and_patient(app, client):

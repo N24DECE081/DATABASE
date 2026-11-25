@@ -107,7 +107,7 @@ def portal_data():
            WHERE s.rn = 1"""
     )
     shift_by_doc = {r["doctor_id"]: r for r in upcoming_shifts}
-    today = date.today()
+    today = now().date()
 
     doctor_list = []
     for d in all_doctors:

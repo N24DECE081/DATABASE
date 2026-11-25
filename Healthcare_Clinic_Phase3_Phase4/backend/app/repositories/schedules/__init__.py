@@ -20,6 +20,9 @@ def list_schedules(doctor_id="", day=None, *, available_only=False):
 
 
 def busy_intervals(schedule_id):
-    return query("""SELECT appointment_date_time, estimated_duration_minutes FROM appointment
-                    WHERE schedule_id = %s AND status NOT IN ('Cancelled','No-show')
-                    ORDER BY appointment_date_time""", (schedule_id,))
+    return query("""SELECT a.appointment_date_time, a.estimated_duration_minutes
+                    FROM appointment a
+                    JOIN doctor_schedule ds ON ds.schedule_id = %s
+                    WHERE (a.schedule_id = %s OR (a.doctor_id = ds.doctor_id AND DATE(a.appointment_date_time) = ds.schedule_date))
+                      AND a.status NOT IN ('Cancelled','No-show')
+                    ORDER BY a.appointment_date_time""", (schedule_id, schedule_id))

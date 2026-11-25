@@ -5,7 +5,8 @@ from ...db import transaction
 from ...entities import Appointment, DoctorSchedule, Patient
 from ...repositories import appointments, patients, consultations, schedules
 from ..doctors import own_doctor, classified_doctor
-from ..common import ensure, found, identity, now
+from ..common import BusinessError, ensure, found, identity, now
+from ..schedules import validate_clinic_slot
 
 
 def accessible(user, appointment_id, *, lock=False):
@@ -40,12 +41,14 @@ def book(user, data):
         ensure(not parent, "Bệnh nhân không thể tự đặt lịch tái khám.")
     begins, minutes = data["appointment_date_time"], data["estimated_duration_minutes"]
     ensure(begins >= now(), "Không thể đặt lịch hẹn trong quá khứ.")
-    ensure(minutes in (15, 30, 45, 60), "Thời lượng khám không hợp lệ.")
+    validate_clinic_slot(begins, minutes)
     ensure(data["appointment_type"] in ("In-person", "Telemedicine"), "Hình thức khám không hợp lệ.")
     with transaction():
         classified_doctor(shift.doctor_id, lock=True)
         shift = found(schedules.get(DoctorSchedule, shift.schedule_id, lock=True))
-        found(patients.get(Patient, patient_id))
+        found(patients.get(Patient, patient_id, lock=True))
+        ensure(begins >= now(), "Khung giờ đã qua.")
+        validate_clinic_slot(begins, minutes)
         end = begins + timedelta(minutes=minutes)
         ensure(shift.availability_status == "Available", "Ca làm không còn khả dụng.")
         ensure(begins.date() == shift.schedule_date
@@ -56,8 +59,16 @@ def book(user, data):
         if parent:
             preceding = accessible(user, parent, lock=True)
             ensure(preceding.patient_id == patient_id and preceding.doctor_id == shift.doctor_id
-                   and preceding.appointment_date_time < begins and preceding.status not in ("Cancelled", "No-show"),
+                   and preceding.appointment_date_time < begins and preceding.status == "Completed",
                    "Lịch tái khám phải tham chiếu lần hẹn trước hợp lệ của cùng bệnh nhân/bác sĩ.")
+            parent_session = consultations.for_appointment(parent)
+            ensure(parent_session is not None and parent_session.end_time is not None,
+                   "Chỉ được đặt lịch tái khám trên phiên khám đã hoàn thành.")
+            existing_fu = appointments.existing_follow_up(parent)
+            if existing_fu is not None:
+                raise BusinessError(
+                    f"Phiên khám đã hoàn thành này đã có lịch tái khám ({existing_fu['appointment_id']}). Mỗi phiên khám chỉ được đặt tối đa 1 lịch tái khám."
+                )
         return appointments.insert(Appointment(appointment_id=identity("APT-"), patient_id=patient_id,
             doctor_id=shift.doctor_id, schedule_id=shift.schedule_id, booked_by_user_id=user.user_id,
             follow_up_from_appt_id=parent, appointment_date_time=begins, estimated_duration_minutes=minutes,
@@ -74,6 +85,9 @@ def change_status(user, appointment_id, target):
     with transaction():
         classified_doctor(current.doctor_id, lock=True)
         current = accessible(user, appointment_id, lock=True)
+        if target == "Checked-In":
+            ensure(now() <= current.appointment_date_time + timedelta(minutes=30),
+                   "Lịch hẹn đã quá thời hạn tiếp nhận.")
         ensure(target in transitions[current.status], "Không thể chuyển trạng thái lịch hẹn như đã yêu cầu.")
         if user.role == "PATIENT":
             ensure(current.status == "Scheduled" and current.appointment_date_time > now(), "Chỉ hủy được lịch hẹn sắp tới chưa check-in.")
@@ -87,15 +101,18 @@ def reschedule(user, appointment_id, data):
         abort(403)
     appointment = accessible(user, appointment_id)
     ensure(data["appointment_date_time"] >= now(), "Không thể chuyển lịch vào quá khứ.")
-    ensure(data["estimated_duration_minutes"] in (15,30,45,60), "Thời lượng không hợp lệ.")
+    validate_clinic_slot(data["appointment_date_time"], data["estimated_duration_minutes"])
     with transaction():
         classified_doctor(appointment.doctor_id, lock=True)
         shift = found(schedules.get(DoctorSchedule, data["schedule_id"], lock=True))
         appointment = accessible(user, appointment_id, lock=True)
+        found(patients.get(Patient, appointment.patient_id, lock=True))
         ensure(appointment.status == "Scheduled" and consultations.for_appointment(appointment_id) is None,
                "Chỉ điều chỉnh lịch hẹn Scheduled chưa có phiên khám.")
         ensure(shift.doctor_id == appointment.doctor_id and shift.availability_status == "Available", "Ca làm không hợp lệ cho bác sĩ đã chọn.")
         begins=data["appointment_date_time"]
+        ensure(begins >= now(), "Khung giờ đã qua.")
+        validate_clinic_slot(begins, data["estimated_duration_minutes"])
         ends=begins+timedelta(minutes=data["estimated_duration_minutes"])
         ensure(begins >= datetime.combine(shift.schedule_date,shift.start_time)
                and ends <= datetime.combine(shift.schedule_date,shift.end_time), "Lịch hẹn phải nằm trong ca làm.")
@@ -107,16 +124,13 @@ def reschedule(user, appointment_id, data):
 
 
 def auto_noshow_appointments():
-    """BR33: Transition overdue Scheduled appointments to No-show."""
+    """Transition unresolved appointments 30 minutes after their start time."""
     from ...db import get_db
     conn = get_db()
     with conn.cursor() as cur:
-        cur.execute("""
-            UPDATE appointment
-            SET status = 'No-show'
-            WHERE status = 'Scheduled'
-              AND DATE_ADD(appointment_date_time, INTERVAL estimated_duration_minutes MINUTE) < %s
-        """, (now(),))
+        cur.execute("CALL sp_auto_noshow_appointments()")
         affected = cur.rowcount
+        while cur.nextset():
+            pass
     conn.commit()
     return affected

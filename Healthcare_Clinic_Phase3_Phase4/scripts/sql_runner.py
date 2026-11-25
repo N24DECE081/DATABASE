@@ -24,7 +24,7 @@ def statements(text):
 
 
 def schema_files():
-    return [ROOT / "database/migrations/001_initial_schema.sql",
+    return sorted((ROOT / "database/migrations").glob("*.sql")) + [
             ROOT / "database/indexes/001_workflow_indexes.sql"] + sorted((ROOT / "database/triggers").rglob("*.sql")) + sorted((ROOT / "database/views").rglob("*.sql"))
 
 

@@ -14,3 +14,51 @@ class ProfileForm(FlaskForm):
     emergency_contact_name = StringField("Người liên hệ khẩn cấp", validators=[InputRequired(), Length(max=100)])
     emergency_contact_phone = StringField("Điện thoại khẩn cấp", validators=[InputRequired(), Length(max=15)])
     submit = SubmitField("Lưu thông tin")
+
+    def validate_full_name(self, field):
+        if field.data:
+            from ...utils.validators import validate_person_name
+            try:
+                field.data = validate_person_name(field.data, "Họ và tên")
+            except Exception as exc:
+                raise ValidationError(str(exc))
+
+    def validate_date_of_birth(self, field):
+        if field.data:
+            from ...utils.validators import validate_dob
+            try:
+                field.data = validate_dob(field.data, "Ngày sinh")
+            except Exception as exc:
+                raise ValidationError(str(exc))
+
+    def validate_phone(self, field):
+        if field.data:
+            from ...utils.validators import validate_phone
+            try:
+                field.data = validate_phone(field.data, "Số điện thoại")
+            except Exception as exc:
+                raise ValidationError(str(exc))
+
+    def validate_email(self, field):
+        if field.data:
+            from ...utils.validators import validate_email
+            try:
+                field.data = validate_email(field.data, "Email", required=False)
+            except Exception as exc:
+                raise ValidationError(str(exc))
+
+    def validate_emergency_contact_name(self, field):
+        if field.data:
+            from ...utils.validators import validate_person_name
+            try:
+                field.data = validate_person_name(field.data, "Người liên hệ khẩn cấp")
+            except Exception as exc:
+                raise ValidationError(str(exc))
+
+    def validate_emergency_contact_phone(self, field):
+        if field.data:
+            from ...utils.validators import validate_phone
+            try:
+                field.data = validate_phone(field.data, "Điện thoại khẩn cấp")
+            except Exception as exc:
+                raise ValidationError(str(exc))

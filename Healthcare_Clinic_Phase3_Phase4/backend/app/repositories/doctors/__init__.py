@@ -9,6 +9,24 @@ def for_user(user_id):
     return Doctor(**row) if row else None
 
 
+def find_by_phone(phone, exclude_doctor_id=None):
+    sql = "SELECT doctor_id FROM doctor WHERE phone = %s"
+    params = [phone]
+    if exclude_doctor_id:
+        sql += " AND doctor_id <> %s"
+        params.append(exclude_doctor_id)
+    return query(sql + " LIMIT 1", tuple(params), one=True)
+
+
+def find_by_email(email, exclude_doctor_id=None):
+    sql = "SELECT doctor_id FROM doctor WHERE LOWER(email) = LOWER(%s)"
+    params = [email]
+    if exclude_doctor_id:
+        sql += " AND doctor_id <> %s"
+        params.append(exclude_doctor_id)
+    return query(sql + " LIMIT 1", tuple(params), one=True)
+
+
 def directory(search="", specialty_id=""):
     sql = """SELECT d.*, st.specialty_id AS specialty_id,
                     CASE WHEN st.doctor_id IS NOT NULL THEN 'SPECIALIST' ELSE 'GENERAL_PRACTITIONER' END AS subtype,

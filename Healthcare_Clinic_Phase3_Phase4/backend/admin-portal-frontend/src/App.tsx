@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import titimiHatLogo from "./assets/titimi-hat-logo.png";
 import * as api from "./api";
 import type {
+  AdminConsultationDetail,
   AdminProfile,
   Appointment,
   Counts,
@@ -12,40 +13,22 @@ import type {
   Specialty,
   User,
 } from "./api";
-
-function normalizeVietnameseName(name: string): string {
-  if (!name) return "";
-  const honorifics: Record<string, string> = {
-    BS: "BS",
-    "BS.": "BS.",
-    TS: "TS",
-    "TS.": "TS.",
-    THS: "ThS",
-    "THS.": "ThS.",
-    PGS: "PGS",
-    "PGS.": "PGS.",
-    GS: "GS",
-    "GS.": "GS.",
-  };
-  return name
-    .trim()
-    .split(/\s+/)
-    .map((word) => {
-      const upper = word.toUpperCase();
-      if (honorifics[upper]) return honorifics[upper];
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    })
-    .join(" ");
-}
-
-function normalizePhone(phone: string): string {
-  if (!phone) return "";
-  return phone.replace(/[^\d+]/g, "").replace(/^\+84/, "0");
-}
-
-function isValidVietnamesePhone(phone: string): boolean {
-  return /^0[35789]\d{8}$/.test(normalizePhone(phone));
-}
+import {
+  assistEmail,
+  clinicTodayIso,
+  filterValidSlots,
+  isCompletedAppointmentStatus,
+  maxDoctorDobIso,
+  maxPatientDobIso,
+  minDoctorDobIso,
+  minPatientDobIso,
+  normalizePhone,
+  normalizeVietnameseName,
+  validateDob,
+  validateEmail,
+  validatePersonName,
+  validatePhone,
+} from "../../shared/clinicRules";
 
 const NAV: { page: Page; label: string; icon: string }[] = [
   { page: "dashboard", label: "Dashboard", icon: "grid" },
@@ -196,15 +179,17 @@ function Button({
   onClick,
   type = "button",
   disabled = false,
+  style,
 }: {
   children: React.ReactNode;
   variant?: "primary" | "secondary" | "ghost" | "danger";
   onClick?: () => void;
   type?: "button" | "submit";
   disabled?: boolean;
+  style?: React.CSSProperties;
 }) {
   return (
-    <button className={`btn btn-${variant}`} onClick={onClick} type={type} disabled={disabled}>
+    <button className={`btn btn-${variant}`} onClick={onClick} type={type} disabled={disabled} style={style}>
       {children}
     </button>
   );
@@ -833,19 +818,30 @@ function UserForm({
     e.preventDefault();
     const cleanName = normalizeVietnameseName(name);
     const cleanPhone = normalizePhone(phone);
-    if (!cleanName) {
-      setError("Vui lòng nhập họ và tên.");
+    const cleanEmail = assistEmail(email);
+    const nameErr = validatePersonName(cleanName, "Họ và tên");
+    if (nameErr) {
+      setError(nameErr);
       return;
     }
-    if (!isValidVietnamesePhone(cleanPhone)) {
-      setError("Số điện thoại phải là số di động Việt Nam gồm 10 chữ số (bắt đầu bằng 03, 05, 07, 08, 09).");
+    const emailErr = validateEmail(cleanEmail, "Email", true);
+    if (emailErr) {
+      setError(emailErr);
+      return;
+    }
+    const phoneErr = validatePhone(cleanPhone, "Số điện thoại");
+    if (phoneErr) {
+      setError(phoneErr);
       return;
     }
     if (!initial && (!username.trim() || password.length < 10 || password.length > 128)) {
       setError("Tên đăng nhập và mật khẩu (từ 10 đến 128 ký tự) là bắt buộc khi tạo tài khoản mới.");
       return;
     }
-    onSave({ name: cleanName, email: email.trim(), phone: cleanPhone, role, status, username: username.trim(), password });
+    setEmail(cleanEmail);
+    setPhone(cleanPhone);
+    setName(cleanName);
+    onSave({ name: cleanName, email: cleanEmail, phone: cleanPhone, role, status, username: username.trim(), password });
   };
 
   return (
@@ -890,16 +886,18 @@ function UserForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@titimi.vn"
+            onBlur={() => setEmail(assistEmail(email))}
+            placeholder="ten@gmail.com"
           />
         </label>
         <label>
           Số điện thoại *
           <Input
             value={phone}
+            maxLength={15}
             onChange={(e) => setPhone(e.target.value)}
             onBlur={() => setPhone(normalizePhone(phone))}
-            placeholder="090 123 4567"
+            placeholder="0901234567"
             required
           />
         </label>
@@ -1225,7 +1223,9 @@ function DoctorForm({
   const [phone, setPhone] = useState(initial?.phone || "");
   const [licenseNumber, setLicenseNumber] = useState(initial?.licenseNumber || "");
   const [gender, setGender] = useState(initial?.gender || "Nam");
-  const [dob, setDob] = useState(initial?.dob || "15/05/1985");
+  const [dob, setDob] = useState(
+    initial?.rawDob || (initial?.dob && initial.dob.includes("/") ? initial.dob.split("/").reverse().join("-") : "")
+  );
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1235,25 +1235,50 @@ function DoctorForm({
     e.preventDefault();
     const cleanName = normalizeVietnameseName(name);
     const cleanPhone = normalizePhone(phone);
-    if (!cleanName || !cleanPhone || !email.trim()) {
-      setError("Vui lòng điền họ tên, số điện thoại và email bác sĩ.");
+    const cleanEmail = assistEmail(email);
+    const nameErr = validatePersonName(cleanName, "Họ và tên bác sĩ");
+    if (nameErr) {
+      setError(nameErr);
       return;
     }
-    if (!isValidVietnamesePhone(cleanPhone)) {
-      setError("Số điện thoại bác sĩ phải là số di động Việt Nam gồm 10 chữ số (bắt đầu bằng 03, 05, 07, 08, 09).");
+    const emailErr = validateEmail(cleanEmail, "Email bác sĩ", true);
+    if (emailErr) {
+      setError(emailErr);
       return;
     }
-    if (password && password.length < 8) {
-      setError("Mật khẩu phải có tối thiểu 8 ký tự.");
+    const phoneErr = initial && cleanPhone === initial.phone
+      ? null
+      : validatePhone(cleanPhone, "Số điện thoại bác sĩ");
+    if (phoneErr) {
+      setError(phoneErr);
       return;
     }
+    if (password && (password.length < 8 || password.length > 128)) {
+      setError("Mật khẩu phải từ 8 đến 128 ký tự.");
+      return;
+    }
+    if (!initial) {
+      const dobErr = validateDob(dob, {
+        required: true,
+        minAge: 22,
+        maxAge: 80,
+        field: "Ngày sinh bác sĩ",
+      });
+      if (dobErr) {
+        setError(dobErr);
+        return;
+      }
+    }
+    setName(cleanName);
+    setEmail(cleanEmail);
+    setPhone(cleanPhone);
     setError("");
     setSaving(true);
     try {
       await onSave({
         name: cleanName,
         specialty: isGP ? "Đa khoa" : specialty,
-        email: email.trim(),
+        email: cleanEmail,
         phone: cleanPhone,
         licenseNumber: licenseNumber.trim(),
         gender,
@@ -1343,25 +1368,41 @@ function DoctorForm({
         </label>
         <label>
           Email *
-          <Input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input
+            required
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={() => setEmail(assistEmail(email))}
+            placeholder="bacsi@gmail.com"
+          />
         </label>
         <label>
           Số điện thoại *
           <Input
             required
+            maxLength={15}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             onBlur={() => setPhone(normalizePhone(phone))}
-            placeholder="090 123 4567"
+            placeholder="0901234567"
           />
         </label>
         <label>
           Số giấy phép hành nghề
-          <Input value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} placeholder="GP-2024-001" />
+          <Input maxLength={50} value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} placeholder="GP-2024-001" />
         </label>
         <label>
-          Ngày sinh
-          <Input value={dob} onChange={(e) => setDob(e.target.value)} placeholder="15/05/1985" />
+          Ngày sinh {initial ? "" : "*"}
+          <Input
+            type="date"
+            min={minDoctorDobIso()}
+            max={maxDoctorDobIso()}
+            required={!initial}
+            disabled={Boolean(initial)}
+            value={dob}
+            onChange={(e) => setDob(e.target.value)}
+          />
         </label>
       </div>
       {error && <p className="form-error" style={{ color: "red", marginTop: "0.5rem" }}>{error}</p>}
@@ -1640,25 +1681,50 @@ function PatientForm({
     e.preventDefault();
     const cleanName = normalizeVietnameseName(name);
     const cleanPhone = normalizePhone(phone);
+    const cleanEmail = assistEmail(email);
     const cleanEmName = normalizeVietnameseName(emergencyName);
     const cleanEmPhone = normalizePhone(emergencyPhone);
 
-    if (!cleanName || !cleanPhone) {
-      setError("Họ và tên và số điện thoại là bắt buộc.");
+    const nameErr = validatePersonName(cleanName, "Họ và tên bệnh nhân");
+    if (nameErr) {
+      setError(nameErr);
       return;
     }
-    if (!isValidVietnamesePhone(cleanPhone)) {
-      setError("Số điện thoại bệnh nhân phải là số di động Việt Nam gồm 10 chữ số (bắt đầu bằng 03, 05, 07, 08, 09).");
+    const dobErr = validateDob(dob, { required: true, minAge: 0, maxAge: 130, field: "Ngày sinh bệnh nhân" });
+    if (dobErr) {
+      setError(dobErr);
       return;
     }
-    if (cleanEmPhone && !isValidVietnamesePhone(cleanEmPhone)) {
-      setError("Số điện thoại người liên hệ khẩn cấp phải là số di động Việt Nam gồm 10 chữ số (bắt đầu bằng 03, 05, 07, 08, 09).");
+    const phoneErr = initial && cleanPhone === initial.phone
+      ? null
+      : validatePhone(cleanPhone, "Số điện thoại bệnh nhân");
+    if (phoneErr) {
+      setError(phoneErr);
       return;
+    }
+    const emailErr = validateEmail(cleanEmail, "Email", false);
+    if (emailErr) {
+      setError(emailErr);
+      return;
+    }
+    if (cleanEmName) {
+      const emNameErr = validatePersonName(cleanEmName, "Người liên hệ khẩn cấp", false);
+      if (emNameErr) {
+        setError(emNameErr);
+        return;
+      }
+    }
+    if (cleanEmPhone) {
+      const emPhoneErr = validatePhone(cleanEmPhone, "Số điện thoại khẩn cấp", false);
+      if (emPhoneErr) {
+        setError(emPhoneErr);
+        return;
+      }
     }
 
     if (!initial) {
-      if (password && password.length < 8) {
-        setError("Mật khẩu phải có tối thiểu 8 ký tự.");
+      if (password && (password.length < 8 || password.length > 128)) {
+        setError("Mật khẩu phải từ 8 đến 128 ký tự.");
         return;
       }
       if (password && password !== confirmPassword) {
@@ -1666,6 +1732,11 @@ function PatientForm({
         return;
       }
     }
+    setName(cleanName);
+    setEmail(cleanEmail);
+    setPhone(cleanPhone);
+    setEmergencyName(cleanEmName);
+    setEmergencyPhone(cleanEmPhone);
     setError("");
     setSaving(true);
     try {
@@ -1677,11 +1748,11 @@ function PatientForm({
         gender,
         dob,
         phone: cleanPhone,
-        email: email.trim() || undefined,
+        email: cleanEmail || undefined,
         address: address.trim(),
         bloodType,
-        allergies,
-        chronicDiseases,
+        allergies: allergies.trim(),
+        chronicDiseases: chronicDiseases.trim(),
         emergencyContactName: cleanEmName,
         emergencyContactPhone: cleanEmPhone,
       });
@@ -1753,7 +1824,8 @@ function PatientForm({
           Ngày sinh *
           <Input
             type="date"
-            max={new Date().toISOString().split("T")[0]}
+            min={minPatientDobIso()}
+            max={maxPatientDobIso()}
             value={dob}
             onChange={(e) => setDob(e.target.value)}
             required
@@ -1763,15 +1835,22 @@ function PatientForm({
           Số điện thoại *
           <Input
             required
+            maxLength={15}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             onBlur={() => setPhone(normalizePhone(phone))}
-            placeholder="090 123 4567"
+            placeholder="0901234567"
           />
         </label>
         <label>
           Email
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={() => setEmail(assistEmail(email))}
+            placeholder="benhnhan@gmail.com"
+          />
         </label>
         <label className="span-2">
           Địa chỉ
@@ -2526,27 +2605,44 @@ function CreateAppointmentModal({
     );
   }, [schedules, doctor, date]);
 
-  const allSlots = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00"];
-
-  const filteredSlots = useMemo(() => {
-    if (!date) return allSlots;
-    if (doctorDayShifts.length === 0) return [];
-    return allSlots.filter((slot) => {
-      return doctorDayShifts.some((shift) => {
-        return slot >= shift.startTime && slot < shift.endTime;
+  const [filteredSlots, setFilteredSlots] = useState<Array<{ starts_at: string; schedule_id: string }>>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const doctorId = doctor?.id;
+  useEffect(() => {
+    setFilteredSlots([]);
+    setTime("");
+    if (!doctorId || !date || date < clinicTodayIso()) return;
+    const controller = new AbortController();
+    setLoadingSlots(true);
+    api.fetchBookingSlots(doctorId, date, {
+      signal: controller.signal,
+      followUpFromApptId: isFollowUp && followUpParentId ? followUpParentId : undefined,
+    })
+      .then((res) => {
+        if (controller.signal.aborted) return;
+        const valid = filterValidSlots(res.slots || [], res.server_now);
+        setFilteredSlots(valid);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
+        setFilteredSlots([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingSlots(false);
       });
-    });
-  }, [date, doctorDayShifts]);
+    return () => { controller.abort(); };
+  }, [doctorId, date, isFollowUp, followUpParentId]);
 
+  const selectedSlotObj = filteredSlots.find((s) => s.starts_at.slice(11, 16) === time);
   const canContinue =
     (step === 1 && Boolean(patient)) ||
     (step === 2 && Boolean(visitType)) ||
     (step === 3 && Boolean(specialty)) ||
     (step === 4 && Boolean(doctor)) ||
-    (step === 5 && Boolean(date && time && filteredSlots.includes(time)));
+    (step === 5 && Boolean(date && date >= clinicTodayIso() && time && selectedSlotObj));
 
   const handleCreate = async () => {
-    if (!patient || !doctor || !date || !time) return;
+    if (!patient || !doctor || !date || !selectedSlotObj) return;
     setSubmitting(true);
     setError("");
     try {
@@ -2558,6 +2654,7 @@ function CreateAppointmentModal({
       await onConfirm({
         patientId: patient.id,
         doctorId: doctor.id,
+        scheduleId: selectedSlotObj.schedule_id,
         dateTime,
         duration: 30,
         visitType,
@@ -2596,7 +2693,13 @@ function CreateAppointmentModal({
                   <div
                     key={p.id}
                     className={`select-item ${isSelected ? "selected" : ""}`}
-                    onClick={() => setPatient(p)}
+                    onClick={() => {
+                      if (patient?.id !== p.id) {
+                        setIsFollowUp(false);
+                        setFollowUpParentId("");
+                      }
+                      setPatient(p);
+                    }}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -2741,7 +2844,14 @@ function CreateAppointmentModal({
             <h4 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "0.5rem" }}>Bước 3: Chọn chuyên khoa</h4>
             <div className="grid-list" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginTop: "1rem" }}>
               <div
-                onClick={() => setSpecialty("Đa khoa")}
+                onClick={() => {
+                  if (specialty !== "Đa khoa") {
+                    setDoctor(undefined);
+                    setDate("");
+                    setTime("");
+                  }
+                  setSpecialty("Đa khoa");
+                }}
                 style={{
                   padding: "1rem 1.2rem",
                   border: "1.5px solid",
@@ -2782,7 +2892,14 @@ function CreateAppointmentModal({
                 return (
                   <div
                     key={s.id}
-                    onClick={() => setSpecialty(s.name)}
+                    onClick={() => {
+                      if (specialty !== s.name) {
+                        setDoctor(undefined);
+                        setDate("");
+                        setTime("");
+                      }
+                      setSpecialty(s.name);
+                    }}
                     style={{
                       padding: "1rem 1.2rem",
                       border: "1.5px solid",
@@ -2835,7 +2952,13 @@ function CreateAppointmentModal({
                 return (
                   <div
                     key={d.id}
-                    onClick={() => setDoctor(d)}
+                    onClick={() => {
+                      if (doctor?.id !== d.id) {
+                        setDate("");
+                        setTime("");
+                      }
+                      setDoctor(d);
+                    }}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -2915,16 +3038,22 @@ function CreateAppointmentModal({
                   <b>Ngày khám:</b>
                   <Input
                     type="date"
-                    min={new Date().toISOString().split("T")[0]}
+                    min={clinicTodayIso()}
                     value={date}
                     onChange={(e) => {
                       setDate(e.target.value);
                       setTime("");
+                      setError("");
                     }}
                     style={{ marginTop: "0.5rem" }}
                   />
                 </label>
-                {date && doctor && (
+                {date && date < clinicTodayIso() && (
+                  <small style={{ color: "#b91c1c", display: "block", marginTop: "0.4rem" }}>
+                    Không thể chọn ngày khám trong quá khứ.
+                  </small>
+                )}
+                {date && doctor && date >= clinicTodayIso() && (
                   <div style={{ marginTop: "0.75rem" }}>
                     {doctorDayShifts.length > 0 ? (
                       <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "0.5rem 0.75rem", borderRadius: "6px", fontSize: "0.85rem", color: "#166534" }}>
@@ -2941,29 +3070,36 @@ function CreateAppointmentModal({
               <div>
                 <b>Khung giờ khám trong ca trực:</b>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
-                  {filteredSlots.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setTime(s)}
-                      style={{
-                        padding: "0.5rem",
-                        border: "1px solid",
-                        borderColor: time === s ? "#286A9B" : "#cbd5e1",
-                        background: time === s ? "#286A9B" : "#fff",
-                        color: time === s ? "#fff" : "#1e293b",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                  {filteredSlots.map((slot) => {
+                    const s = slot.starts_at.slice(11, 16);
+                    return (
+                      <button
+                        key={slot.starts_at}
+                        type="button"
+                        onClick={() => setTime(s)}
+                        style={{
+                          padding: "0.5rem",
+                          border: "1px solid",
+                          borderColor: time === s ? "#286A9B" : "#cbd5e1",
+                          background: time === s ? "#286A9B" : "#fff",
+                          color: time === s ? "#fff" : "#1e293b",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {s}
+                      </button>
+                    );
+                  })}
                 </div>
-                {!filteredSlots.length && (
+                {loadingSlots ? (
                   <small style={{ color: "#64748b", display: "block", marginTop: "0.5rem" }}>
-                    {date ? "Không có khung giờ trong ca trực khả dụng." : "Vui lòng chọn ngày khám trước."}
+                    Đang tải khung giờ khả dụng...
+                  </small>
+                ) : !filteredSlots.length && (
+                  <small style={{ color: "#64748b", display: "block", marginTop: "0.5rem" }}>
+                    {date ? "Không còn khung giờ khả dụng trong ngày này." : "Vui lòng chọn ngày khám trước."}
                   </small>
                 )}
               </div>
@@ -3006,18 +3142,34 @@ function CreateAppointmentModal({
                 {isFollowUp && (
                   <div style={{ marginTop: "0.5rem" }}>
                     <small style={{ color: "#64748b", display: "block", marginBottom: "0.25rem" }}>
-                      Chọn lịch hẹn gốc đã hoàn thành của bệnh nhân:
+                      Chọn phiên khám đã hoàn thành của bệnh nhân (tối đa 1 lịch tái khám / phiên khám):
                     </small>
-                    <Select value={followUpParentId} onChange={(e) => setFollowUpParentId(e.target.value)}>
-                      <option value="">-- Chọn lịch hẹn gốc --</option>
-                      {appointments
-                        .filter((a) => (a.patientId === patient.id || a.patient === patient.name) && (a.status === "Hoàn thành" || a.rawStatus === "Completed"))
-                        .map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.id} - Ngày {a.date} (BS. {a.doctor}) - {a.reason || "Đã hoàn thành"}
-                          </option>
-                        ))}
-                    </Select>
+                    {(() => {
+                      const eligibleParents = appointments.filter(
+                        (a) =>
+                          (a.patientId === patient.id || a.patient === patient.name) &&
+                          (a.status === "Hoàn thành" || a.rawStatus === "Completed") &&
+                          (a.hasCompletedSession ?? Boolean(a.hasSession || a.sessionId)) &&
+                          !a.hasFollowUp,
+                      );
+                      if (!eligibleParents.length) {
+                        return (
+                          <small style={{ color: "#b91c1c", display: "block", marginTop: "0.25rem" }}>
+                            Bệnh nhân chưa có phiên khám đã hoàn thành nào khả dụng để đặt tái khám (mỗi phiên khám đã hoàn thành chỉ đặt tối đa 1 lịch tái khám).
+                          </small>
+                        );
+                      }
+                      return (
+                        <Select value={followUpParentId} onChange={(e) => setFollowUpParentId(e.target.value)}>
+                          <option value="">-- Chọn lịch hẹn gốc --</option>
+                          {eligibleParents.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.id} - Ngày {a.date} (BS. {a.doctor}) - {a.reason || "Đã hoàn thành"}
+                            </option>
+                          ))}
+                        </Select>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -3056,11 +3208,13 @@ function AppointmentDetail({
   onClose,
   onStatusChange,
   onReschedule,
+  onViewSession,
 }: {
   appointment: Appointment;
   onClose: () => void;
   onStatusChange?: (status: string) => Promise<void>;
   onReschedule?: () => void;
+  onViewSession?: (sessionId: string) => void;
 }) {
   return (
     <Modal title="Chi tiết lịch hẹn" onClose={onClose} wide>
@@ -3119,9 +3273,6 @@ function AppointmentDetail({
                   Xác nhận lịch
                 </Button>
               )}
-              <Button variant="secondary" onClick={() => onStatusChange("Hoàn thành")}>
-                Đánh dấu Hoàn thành
-              </Button>
               {!appointment.hasSession && (
                 <Button variant="danger" onClick={() => onStatusChange("Đã hủy")}>
                   Hủy lịch hẹn
@@ -3129,15 +3280,111 @@ function AppointmentDetail({
               )}
             </>
           )}
-          {onReschedule && !appointment.hasSession && appointment.status === "Đã xác nhận" && (
+          {onReschedule && !appointment.hasSession && appointment.status === "Chờ xác nhận" && (
             <Button variant="secondary" onClick={onReschedule}>
               Đổi lịch khám
             </Button>
+          )}
+          {isCompletedAppointmentStatus(appointment.status) && (
+            appointment.sessionId && onViewSession ? (
+              <Button variant="primary" onClick={() => onViewSession(appointment.sessionId!)}>
+                Xem phiên khám
+              </Button>
+            ) : (
+              <span style={{ fontSize: "0.85rem", color: "#64748b" }}>
+                Chưa có phiên khám liên kết
+              </span>
+            )
           )}
         </div>
         <Button variant="secondary" onClick={onClose}>
           Đóng
         </Button>
+      </div>
+    </Modal>
+  );
+}
+
+function ConsultationSessionModal({
+  sessionId,
+  onClose,
+}: {
+  sessionId: string;
+  onClose: () => void;
+}) {
+  const [session, setSession] = useState<AdminConsultationDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+    api.fetchAdminConsultation(sessionId, controller.signal)
+      .then((res) => {
+        if (!controller.signal.aborted) setSession(res.consultation);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
+        setError(err?.message || "Không tìm thấy chi tiết phiên khám.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => { controller.abort(); };
+  }, [sessionId]);
+
+  return (
+    <Modal title={`Chi tiết phiên khám · ${sessionId}`} onClose={onClose} wide>
+      {loading ? (
+        <p style={{ padding: "1.5rem 0", color: "#64748b" }}>Đang tải thông tin phiên khám...</p>
+      ) : error || !session ? (
+        <div style={{ padding: "1rem", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", color: "#991b1b" }}>
+          {error || "Không tìm thấy thông tin phiên khám."}
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div className="detail-grid">
+            <div><small>Mã phiên khám</small><b>{session.id}</b></div>
+            <div><small>Mã lịch hẹn</small><b>{session.appointmentId}</b></div>
+            <div><small>Bệnh nhân</small><b>{session.patientName} ({session.patientId})</b></div>
+            <div><small>Bác sĩ</small><b>BS. {session.doctorName} ({session.specialty})</b></div>
+            <div><small>Thời gian khám</small><b>{session.startedAt}{session.endedAt ? ` → ${session.endedAt}` : ""}</b></div>
+            <div><small>Hình thức & Trạng thái</small><b>{session.modality} · {session.status}</b></div>
+          </div>
+          {session.diagnosisNotes && (
+            <div style={{ padding: "0.75rem 1rem", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+              <small style={{ color: "#64748b", display: "block", marginBottom: "0.25rem" }}>Ghi chú phiên khám</small>
+              <pre style={{ margin: 0, whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: "0.9rem" }}>{session.diagnosisNotes}</pre>
+            </div>
+          )}
+          {session.histories.length > 0 && (
+            <div style={{ padding: "0.75rem 1rem", background: "#f0fdf4", borderRadius: "8px", border: "1px solid #bbf7d0" }}>
+              <small style={{ color: "#166534", fontWeight: 700, display: "block", marginBottom: "0.35rem" }}>Bệnh sử ghi nhận</small>
+              {session.histories.map((h) => (
+                <div key={h.id} style={{ fontSize: "0.9rem", marginBottom: "0.35rem" }}>
+                  <b>{h.diagnosis}</b> — Triệu chứng: {h.symptoms}
+                  {h.progressNotes && <div style={{ color: "#475569" }}>Ghi chú: {h.progressNotes}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+          {session.prescriptions.length > 0 && (
+            <div style={{ padding: "0.75rem 1rem", background: "#eff6ff", borderRadius: "8px", border: "1px solid #bfdbfe" }}>
+              <small style={{ color: "#1e40af", fontWeight: 700, display: "block", marginBottom: "0.35rem" }}>Đơn thuốc ({session.prescriptions[0].id})</small>
+              {session.prescriptions.map((rx) => (
+                <ul key={rx.id} style={{ margin: 0, paddingLeft: "1.25rem", fontSize: "0.9rem" }}>
+                  {rx.items.map((it, idx) => (
+                    <li key={idx}><b>{it.name}</b>: {it.dosage} · {it.frequency} · {it.duration}</li>
+                  ))}
+                </ul>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <div className="modal-actions" style={{ marginTop: "1rem" }}>
+        <Button variant="secondary" onClick={onClose}>Đóng</Button>
       </div>
     </Modal>
   );
@@ -3168,12 +3415,37 @@ function AppointmentsPage({
   const [status, setStatus] = useState("Tất cả");
   const [specialty, setSpecialty] = useState("Tất cả");
   const [selected, setSelected] = useState<Appointment>();
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [rescheduling, setRescheduling] = useState<Appointment | null>(null);
   const [newDate, setNewDate] = useState("");
-  const [newTime, setNewTime] = useState("09:00");
+  const [newTime, setNewTime] = useState("");
+  const [rescheduleSlots, setRescheduleSlots] = useState<Array<{ starts_at: string; schedule_id: string }>>([]);
+  const [loadingRescheduleSlots, setLoadingRescheduleSlots] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 10;
+
+  useEffect(() => {
+    setRescheduleSlots([]);
+    setNewTime("");
+    if (!rescheduling?.doctorId || !newDate || newDate < clinicTodayIso()) return;
+    const controller = new AbortController();
+    setLoadingRescheduleSlots(true);
+    api.fetchBookingSlots(rescheduling.doctorId, newDate, { signal: controller.signal })
+      .then((res) => {
+        if (controller.signal.aborted) return;
+        const valid = filterValidSlots(res.slots || [], res.server_now);
+        setRescheduleSlots(valid);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
+        setRescheduleSlots([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingRescheduleSlots(false);
+      });
+    return () => { controller.abort(); };
+  }, [rescheduling?.doctorId, newDate]);
 
   const filtered = useMemo(() => {
     return appointments.filter(
@@ -3200,15 +3472,19 @@ function AppointmentsPage({
   }, [appointments]);
 
   const handleExecuteReschedule = async () => {
-    if (!rescheduling || !newDate || !newTime) {
-      notify("Vui lòng chọn ngày và giờ mới.");
+    const slotMatch = rescheduleSlots.find((s) => s.starts_at.slice(11, 16) === newTime);
+    if (!rescheduling || !newDate || newDate < clinicTodayIso() || !newTime || !slotMatch) {
+      notify("Vui lòng chọn ngày và khung giờ khả dụng hợp lệ.");
       return;
     }
     await onReschedule(rescheduling.id, {
+      scheduleId: slotMatch.schedule_id,
       dateTime: `${newDate} ${newTime}:00`,
       duration: 30,
     });
     setRescheduling(null);
+    setNewDate("");
+    setNewTime("");
   };
 
   return (
@@ -3321,21 +3597,36 @@ function AppointmentsPage({
                       </button>
                       {a.status !== "Hoàn thành" && a.status !== "Đã hủy" && a.status !== "Không đến khám" && (
                         <>
-                          <Button
-                            variant="secondary"
-                            onClick={() => onStatusChange(a.id, a.status === "Đã xác nhận" ? "Hoàn thành" : "Đã xác nhận")}
-                          >
-                            {a.status === "Đã xác nhận" ? "Hoàn thành" : "Xác nhận"}
-                          </Button>
-                          {!a.hasSession && a.status === "Đã xác nhận" && (
+                          {a.status === "Chờ xác nhận" && (
+                            <Button variant="secondary" onClick={() => onStatusChange(a.id, "Đã xác nhận")}>
+                              Xác nhận
+                            </Button>
+                          )}
+                          {!a.hasSession && a.status === "Chờ xác nhận" && (
                             <Button
                               variant="ghost"
-                              onClick={() => setRescheduling(a)}
+                              onClick={() => {
+                                setNewDate("");
+                                setNewTime("");
+                                setRescheduling(a);
+                              }}
                             >
                               Dời lịch
                             </Button>
                           )}
                         </>
+                      )}
+                      {isCompletedAppointmentStatus(a.status) && (
+                        a.sessionId ? (
+                          <Button
+                            variant="secondary"
+                            onClick={() => setSelectedSessionId(a.sessionId!)}
+                          >
+                            Xem phiên khám
+                          </Button>
+                        ) : (
+                          <small style={{ color: "#64748b" }}>Chưa có phiên</small>
+                        )
                       )}
                     </div>
                   </td>
@@ -3359,8 +3650,21 @@ function AppointmentsPage({
           onReschedule={() => {
             const current = selected;
             setSelected(undefined);
+            setNewDate("");
+            setNewTime("");
             setRescheduling(current);
           }}
+          onViewSession={(sessionId) => {
+            setSelected(undefined);
+            setSelectedSessionId(sessionId);
+          }}
+        />
+      )}
+
+      {selectedSessionId && (
+        <ConsultationSessionModal
+          sessionId={selectedSessionId}
+          onClose={() => setSelectedSessionId(null)}
         />
       )}
 
@@ -3385,35 +3689,42 @@ function AppointmentsPage({
                 Ngày hẹn mới *
                 <Input
                   type="date"
-                  min={new Date().toISOString().split("T")[0]}
+                  min={clinicTodayIso()}
                   value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
+                  onChange={(e) => {
+                    setNewDate(e.target.value);
+                    setNewTime("");
+                  }}
                   required
                 />
               </label>
               <label>
                 Giờ hẹn mới *
-                <Select value={newTime} onChange={(e) => setNewTime(e.target.value)}>
-                  {["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00"].map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
+                <Select value={newTime} onChange={(e) => setNewTime(e.target.value)} disabled={loadingRescheduleSlots || !rescheduleSlots.length}>
+                  <option value="">{loadingRescheduleSlots ? "Đang tải khung giờ..." : rescheduleSlots.length ? "-- Chọn khung giờ --" : "Không có khung giờ trống"}</option>
+                  {rescheduleSlots.map((slot) => {
+                    const t = slot.starts_at.slice(11, 16);
+                    return <option key={slot.starts_at} value={t}>{t}</option>;
+                  })}
                 </Select>
               </label>
             </div>
             {newDate && (
               <div style={{ marginTop: "0.75rem" }}>
-                {schedules.some((s) => s.doctorId === rescheduling.doctorId && s.date === newDate && (s.status === "Available" || s.status === "Khả dụng")) ? (
-                  <small style={{ color: "#166534" }}>✓ Bác sĩ có ca trực khả dụng vào ngày này.</small>
-                ) : (
-                  <small style={{ color: "#991b1b" }}>⚠️ Bác sĩ chưa có ca trực khả dụng vào ngày này. Cần ca trực khả dụng để xác nhận dời lịch (BR26–36).</small>
-                )}
+                {newDate < clinicTodayIso() ? (
+                  <small style={{ color: "#991b1b" }}>⚠️ Không thể dời lịch về ngày trong quá khứ.</small>
+                ) : rescheduleSlots.length > 0 ? (
+                  <small style={{ color: "#166534" }}>✓ Có {rescheduleSlots.length} khung giờ trống khả dụng vào ngày này.</small>
+                ) : !loadingRescheduleSlots ? (
+                  <small style={{ color: "#991b1b" }}>⚠️ Bác sĩ chưa có khung giờ khả dụng vào ngày này (BR26–36).</small>
+                ) : null}
               </div>
             )}
             <div className="modal-actions" style={{ marginTop: "1.5rem" }}>
               <Button variant="secondary" onClick={() => setRescheduling(null)}>
                 Hủy
               </Button>
-              <Button onClick={handleExecuteReschedule}>
+              <Button onClick={handleExecuteReschedule} disabled={!newTime}>
                 Lưu lịch hẹn mới
               </Button>
             </div>
@@ -3433,15 +3744,10 @@ const TIME_SLOTS = [
   "09:00",
   "10:00",
   "11:00",
-  "12:00",
   "13:00",
   "14:00",
   "15:00",
   "16:00",
-  "17:00",
-  "18:00",
-  "19:00",
-  "20:00",
 ];
 
 function SchedulePage({
@@ -3526,6 +3832,10 @@ function SchedulePage({
     if (!newDoctorId || !newDate) return;
     if (newEnd <= newStart) {
       setAddError("Giờ kết thúc ca trực phải sau giờ bắt đầu (BR21).");
+      return;
+    }
+    if (newStart < "08:00" || newEnd > "17:00") {
+      setAddError("Ca trực phải nằm trong giờ hành chính phòng khám (08:00–17:00).");
       return;
     }
     const today = new Date().toISOString().split("T")[0];
@@ -4034,8 +4344,21 @@ function SettingsPage({
   const [pwLoading, setPwLoading] = useState(false);
 
   const handleSaveProfile = async () => {
+    const cleanName = normalizeVietnameseName(name);
+    const cleanEmail = assistEmail(email);
+    const cleanPhone = normalizePhone(phone);
+    const nameErr = validatePersonName(cleanName, "Họ và tên");
+    const emailErr = validateEmail(cleanEmail, "Email", true);
+    const phoneErr = validatePhone(cleanPhone, "Số điện thoại");
+    if (nameErr || emailErr || phoneErr) {
+      notify(nameErr || emailErr || phoneErr || "Dữ liệu hồ sơ không hợp lệ.");
+      return;
+    }
+    setName(cleanName);
+    setEmail(cleanEmail);
+    setPhone(cleanPhone);
     try {
-      await onUpdateProfile({ name, email, phone });
+      await onUpdateProfile({ name: cleanName, email: cleanEmail, phone: cleanPhone });
     } catch (err: any) {
       notify(err.message || "Lỗi lưu thông tin hồ sơ.");
     }
@@ -4718,11 +5041,19 @@ export default function App() {
       time: res.appointment.time,
       reason: res.appointment?.reason || payload.reason || (payload.followUpFromApptId ? "Tái khám theo hẹn." : "Khám sức khỏe tổng quát"),
       visitType: payload.visitType || "Khám trực tiếp",
-      status: "Đã xác nhận",
+      status: (res.appointment?.status as Appointment["status"]) || "Chờ xác nhận",
       fee: 250000,
       isFollowUp: Boolean(res.appointment?.isFollowUp || payload.followUpFromApptId),
+      sessionId: res.appointment?.sessionId ?? null,
     };
-    setAppointments((curr) => [newAppt, ...curr]);
+    setAppointments((curr) => [
+      newAppt,
+      ...curr.map((a) =>
+        payload.followUpFromApptId && a.id === payload.followUpFromApptId
+          ? { ...a, hasFollowUp: true, followUpAppointmentId: newAppt.id }
+          : a,
+      ),
+    ]);
     setCounts((prev) => ({
       ...prev,
       appointments: prev.appointments + 1,

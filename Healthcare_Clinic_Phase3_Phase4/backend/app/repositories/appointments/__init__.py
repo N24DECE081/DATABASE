@@ -35,3 +35,11 @@ def patient_overlap(patient_id, begins, ends, exclude=""):
                     AND appointment_date_time < %s
                     AND DATE_ADD(appointment_date_time, INTERVAL estimated_duration_minutes MINUTE) > %s
                     LIMIT 1""", (patient_id, exclude, ends, begins), one=True)
+
+
+def existing_follow_up(parent_appointment_id, exclude=""):
+    return query("""SELECT appointment_id, status FROM appointment
+                    WHERE follow_up_from_appt_id = %s
+                      AND appointment_id <> %s
+                      AND status <> 'Cancelled'
+                    LIMIT 1""", (parent_appointment_id, exclude), one=True)

@@ -43,6 +43,51 @@
       "'": "&#39;",
     })[character]);
 
+  const controllers = {
+    specialties: null,
+    doctors: null,
+    calendar: null,
+    slots: null,
+    patients: null,
+  };
+  let requestSeq = 0;
+
+  function clinicNowIsoMinute() {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Bangkok",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(new Date());
+    const get = (t) => parts.find((p) => p.type === t)?.value || "00";
+    const hh = get("hour") === "24" ? "00" : get("hour");
+    return `${get("year")}-${get("month")}-${get("day")}T${hh}:${get("minute")}`;
+  }
+
+  function isPastSlot(startsAt, serverNow) {
+    const slotKey = String(startsAt || "").slice(0, 16);
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(slotKey)) return true;
+    const hhmm = slotKey.slice(11, 16);
+    const mm = hhmm.slice(3, 5);
+    if (mm !== "00" && mm !== "30") return true;
+    const inOfficeHours = (hhmm >= "08:00" && hhmm <= "11:30") || (hhmm >= "13:00" && hhmm <= "16:30");
+    if (!inOfficeHours) return true;
+    const localNow = clinicNowIsoMinute();
+    const srvNow = serverNow ? String(serverNow).slice(0, 16) : "";
+    const cutoff = srvNow > localNow ? srvNow : localNow;
+    return slotKey < cutoff;
+  }
+
+  function abortKey(key) {
+    if (controllers[key]) {
+      controllers[key].abort();
+      controllers[key] = null;
+    }
+  }
+
   async function api(url, options = {}) {
     const response = await fetch(url, {
       credentials: "same-origin",
@@ -223,10 +268,15 @@
   }
 
   async function loadSpecialties() {
+    abortKey("specialties");
+    const ctrl = new AbortController();
+    controllers.specialties = ctrl;
+    const seq = ++requestSeq;
     const list = $("#specialty-options");
     addEmpty(list, "Đang tải chuyên khoa có giờ khám trống…");
     try {
-      const data = await api(`/api/appointments/options?duration=${state.duration}`);
+      const data = await api(`/api/appointments/options?duration=${state.duration}`, { signal: ctrl.signal });
+      if (seq !== requestSeq || ctrl.signal.aborted) return;
       if (!data.specialties.length) return addEmpty(list, "Chưa có chuyên khoa với ca khám còn trống.");
       list.replaceChildren(...data.specialties.map((item) => optionButton({
         id: item.specialty_id,
@@ -245,6 +295,7 @@
         },
       })));
     } catch (error) {
+      if (error.name === "AbortError" || ctrl.signal.aborted) return;
       showMessage(error.message);
       addEmpty(list, "Không tải được chuyên khoa.");
     }
@@ -252,13 +303,16 @@
 
   let doctorsRequest = 0;
   async function loadDoctors(search = "") {
+    abortKey("doctors");
+    const ctrl = new AbortController();
+    controllers.doctors = ctrl;
     const requestId = ++doctorsRequest;
     const list = $("#doctor-options");
     addEmpty(list, "Đang tìm bác sĩ còn giờ khám trống…");
     const params = new URLSearchParams({ duration: String(state.duration), specialty_id: state.specialty, q: search });
     try {
-      const data = await api(`/api/appointments/options?${params}`);
-      if (requestId !== doctorsRequest) return;
+      const data = await api(`/api/appointments/options?${params}`, { signal: ctrl.signal });
+      if (requestId !== doctorsRequest || ctrl.signal.aborted) return;
       if (!data.doctors.length) return addEmpty(list, "Không có bác sĩ khả dụng phù hợp với lựa chọn này.");
       list.replaceChildren(...data.doctors.map((item) => optionButton({
         id: item.doctor_id,
@@ -276,7 +330,7 @@
         },
       })));
     } catch (error) {
-      if (requestId !== doctorsRequest) return;
+      if (error.name === "AbortError" || requestId !== doctorsRequest || ctrl.signal.aborted) return;
       showMessage(error.message);
       addEmpty(list, "Không tải được danh sách bác sĩ.");
     }
@@ -286,7 +340,13 @@
     return `${state.month.getFullYear()}-${String(state.month.getMonth() + 1).padStart(2, "0")}`;
   }
 
+  let calendarRequest = 0;
   async function loadCalendar() {
+    abortKey("calendar");
+    abortKey("slots");
+    const ctrl = new AbortController();
+    controllers.calendar = ctrl;
+    const reqId = ++calendarRequest;
     $("#month-label").textContent = state.month.toLocaleDateString("vi-VN", { month: "long", year: "numeric" });
     const params = new URLSearchParams({
       month: monthKey(),
@@ -297,10 +357,14 @@
     $("#booking-calendar").replaceChildren();
     $("#time-options").replaceChildren();
     try {
-      const data = await api(`/api/appointments/options?${params}`);
-      drawCalendar(new Set(data.available_dates));
+      const data = await api(`/api/appointments/options?${params}`, { signal: ctrl.signal });
+      if (reqId !== calendarRequest || ctrl.signal.aborted) return;
+      const todayIso = clinicNowIsoMinute().slice(0, 10);
+      const validDates = new Set((data.available_dates || []).filter((d) => d >= todayIso));
+      drawCalendar(validDates);
       if (state.date) await loadSlots();
     } catch (error) {
+      if (error.name === "AbortError" || reqId !== calendarRequest || ctrl.signal.aborted) return;
       showMessage(error.message);
       drawCalendar(new Set());
     }
@@ -345,7 +409,12 @@
     }
   }
 
+  let slotsRequest = 0;
   async function loadSlots() {
+    abortKey("slots");
+    const ctrl = new AbortController();
+    controllers.slots = ctrl;
+    const reqId = ++slotsRequest;
     const heading = $("#time-heading");
     const list = $("#time-options");
     heading.textContent = state.date ? `Giờ còn trống · ${new Date(`${state.date}T12:00:00`).toLocaleDateString("vi-VN")}` : "Chọn một ngày để xem giờ trống";
@@ -358,14 +427,20 @@
       doctor_id: state.doctor?.doctor_id || "",
     });
     try {
-      const data = await api(`/api/appointments/options?${params}`);
-      if (!data.slots.length) return addEmpty(list, "Ngày này không còn giờ phù hợp. Hãy chọn ngày khác.");
-      list.replaceChildren(...data.slots.map((slot) => {
+      const data = await api(`/api/appointments/options?${params}`, { signal: ctrl.signal });
+      if (reqId !== slotsRequest || ctrl.signal.aborted) return;
+      const validSlots = (data.slots || []).filter((slot) => !isPastSlot(slot.starts_at, data.server_now));
+      if (!validSlots.length) return addEmpty(list, "Ngày này không còn giờ phù hợp. Hãy chọn ngày khác.");
+      list.replaceChildren(...validSlots.map((slot) => {
         const button = document.createElement("button");
         button.type = "button";
         button.className = `booking-time-option${state.slot?.starts_at === slot.starts_at ? " selected" : ""}`;
         button.textContent = slot.starts_at.slice(11, 16);
         button.addEventListener("click", () => {
+          if (isPastSlot(slot.starts_at, data.server_now)) {
+            showMessage("Khung giờ đã qua. Vui lòng chọn khung giờ khác.");
+            return;
+          }
           state.slot = slot;
           list.querySelectorAll(".booking-time-option").forEach((item) => item.classList.toggle("selected", item === button));
           render();
@@ -373,6 +448,7 @@
         return button;
       }));
     } catch (error) {
+      if (error.name === "AbortError" || reqId !== slotsRequest || ctrl.signal.aborted) return;
       showMessage(error.message);
       addEmpty(list, "Không tải được giờ khám.");
     }
@@ -451,6 +527,7 @@
   }
 
   async function enterStep(key) {
+    Object.keys(controllers).forEach(abortKey);
     showMessage("");
     if (key === "specialty") await loadSpecialties();
     if (key === "doctor") await loadDoctors($("#doctor-search").value);
@@ -459,6 +536,7 @@
   }
 
   $("#booking-previous").addEventListener("click", async () => {
+    Object.keys(controllers).forEach(abortKey);
     if (state.index === 0) {
       if (root.dataset.modal === "true") return closeModal();
       return window.location.assign(root.dataset.backUrl);

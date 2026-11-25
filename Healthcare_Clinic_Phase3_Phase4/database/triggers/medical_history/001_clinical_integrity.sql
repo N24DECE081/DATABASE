@@ -7,8 +7,8 @@ BEGIN
     DECLARE state_value VARCHAR(15);
     SELECT a.status INTO state_value FROM appointment a JOIN consultation_session cs
         ON cs.appointment_id = a.appointment_id WHERE cs.session_id = sid FOR UPDATE;
-    IF state_value IS NULL OR state_value NOT IN ('Checked-In', 'Completed') THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Clinical records require an in-progress or completed appointment.';
+    IF state_value IS NULL OR state_value <> 'Completed' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Clinical records require a completed appointment.';
     END IF;
 END$$
 CREATE TRIGGER history_before_insert BEFORE INSERT ON medical_history FOR EACH ROW

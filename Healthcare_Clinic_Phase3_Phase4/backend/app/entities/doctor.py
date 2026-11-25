@@ -1,6 +1,7 @@
 """Row representation of baseline DOCTOR; integrity is enforced by DB/services."""
 
 from dataclasses import dataclass
+from datetime import date
 from typing import ClassVar
 
 
@@ -15,3 +16,4 @@ class Doctor:
     phone: str
     email: str
     license_number: str
+    date_of_birth: date | None = None

@@ -43,6 +43,7 @@ export type Doctor = {
   rawStatus?: string;
   gender: string;
   dob: string;
+  rawDob?: string;
 };
 
 export type Patient = {
@@ -93,7 +94,50 @@ export type Appointment = {
   rawStatus?: string;
   scheduleId?: string;
   duration?: number;
+  sessionId?: string | null;
   hasSession?: boolean;
+  hasCompletedSession?: boolean;
+  hasFollowUp?: boolean;
+  followUpAppointmentId?: string | null;
+};
+
+export type AdminConsultationDetail = {
+  id: string;
+  appointmentId: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  specialty: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  startedAt: string;
+  endedAt: string;
+  duration: number | null;
+  modality: string;
+  meetingUrl: string;
+  diagnosisNotes: string;
+  status: string;
+  histories: Array<{
+    id: string;
+    recordDate: string;
+    diagnosis: string;
+    symptoms: string;
+    progressNotes: string;
+  }>;
+  prescriptions: Array<{
+    id: string;
+    prescriptionDate: string;
+    diagnosisIcd: string;
+    instructions: string;
+    items: Array<{
+      name: string;
+      dosage: string;
+      frequency: string;
+      duration: string;
+      instructions: string;
+    }>;
+  }>;
 };
 
 export type Schedule = {
@@ -315,6 +359,31 @@ export const updateSpecialty = (specialtyId: string, payload: { name?: string; d
   });
 
 export const fetchAppointments = () => request<{ appointments: Appointment[] }>("/api/admin/appointments");
+export const fetchBookingSlots = (
+  doctorId: string,
+  day: string,
+  options: { signal?: AbortSignal; followUpFromApptId?: string; duration?: number } = {},
+) => {
+  const params = new URLSearchParams({
+    doctor_id: doctorId,
+    day,
+    duration: String(options.duration || 30),
+  });
+  if (options.followUpFromApptId) {
+    params.set("follow_up_from_appt_id", options.followUpFromApptId);
+  }
+  return request<{
+    slots: Array<{ schedule_id: string; doctor_id: string; starts_at: string; duration_minutes: number }>;
+    available_dates: string[];
+    server_now?: string;
+  }>(`/api/appointments/options?${params.toString()}`, { signal: options.signal });
+};
+
+export const fetchAdminConsultation = (sessionId: string, signal?: AbortSignal) =>
+  request<{ consultation: AdminConsultationDetail }>(
+    `/api/admin/consultations/${encodeURIComponent(sessionId)}`,
+    { signal },
+  );
 
 export const createAppointment = (payload: {
   patientId: string;

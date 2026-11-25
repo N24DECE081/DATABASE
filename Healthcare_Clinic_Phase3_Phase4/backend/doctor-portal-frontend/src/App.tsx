@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   createConsultation,
+  createFollowUpAppointment,
   finishConsultation,
   createPrescription,
+  fetchDoctorBookingSlots,
   loadDoctorPortal,
   loadMedications,
   logoutDoctor,
@@ -13,8 +15,10 @@ import {
   type AppointmentStatus,
   type Consultation,
   type CreatePrescriptionPayload,
+  type DoctorBookingSlot,
   type DoctorPortalData,
   type DoctorProfile,
+  type FollowUpPayload,
   type MedicalRecord,
   type MedicationCatalogItem,
   type Patient,
@@ -22,6 +26,17 @@ import {
   type PrescriptionItemInput,
   type Schedule,
 } from "./api";
+import {
+  assistEmail,
+  clinicTodayIso,
+  filterValidSlots,
+  isCompletedAppointmentStatus,
+  normalizePhone,
+  normalizeVietnameseName,
+  validateEmail,
+  validatePersonName,
+  validatePhone,
+} from "../../shared/clinicRules";
 import titimiLogo from "./assets/titimi-logo.png";
 
 type Page =
@@ -483,18 +498,22 @@ function Field({
   label,
   value,
   onChange,
+  onBlur,
   placeholder,
   type = "text",
   required = false,
   disabled = false,
+  maxLength,
 }: {
   label?: string;
   value: string;
   onChange: (v: string) => void;
+  onBlur?: () => void;
   placeholder?: string;
   type?: string;
   required?: boolean;
   disabled?: boolean;
+  maxLength?: number;
 }) {
   return (
     <label className="field">
@@ -508,9 +527,11 @@ function Field({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         required={required}
         disabled={disabled}
+        maxLength={maxLength}
       />
     </label>
   );
@@ -787,10 +808,12 @@ function PageHeading({
 function AppointmentTable({
   items,
   onView,
+  onOpenSession,
   compact = false,
 }: {
   items: Appointment[];
   onView: (a: Appointment) => void;
+  onOpenSession?: (a: Appointment) => void;
   compact?: boolean;
 }) {
   return (
@@ -837,9 +860,20 @@ function AppointmentTable({
                 <StatusBadge status={a.status} />
               </td>
               <td>
-                <button className="view-link" onClick={() => onView(a)}>
-                  Chi tiết <Icon name="chevron" size={14} />
-                </button>
+                <div className="row-actions">
+                  <button className="view-link" onClick={() => onView(a)}>
+                    Chi tiết <Icon name="chevron" size={14} />
+                  </button>
+                  {isCompletedAppointmentStatus(a.status) && onOpenSession && (
+                    a.sessionId ? (
+                      <button className="confirm-link" onClick={() => onOpenSession(a)}>
+                        Xem phiên khám
+                      </button>
+                    ) : (
+                      <small style={{ color: "#64748b", fontSize: "12px" }}>Chưa có phiên</small>
+                    )
+                  )}
+                </div>
               </td>
             </tr>
           ))}
@@ -855,11 +889,13 @@ function Dashboard({
   profile,
   navigate,
   viewAppointment,
+  openSession,
 }: {
   appointments: Appointment[];
   profile: DoctorProfile;
   navigate: (p: Page) => void;
   viewAppointment: (a: Appointment) => void;
+  openSession: (a: Appointment) => void;
 }) {
   const todayKey = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000)
     .toISOString()
@@ -931,7 +967,7 @@ function Dashboard({
               Xem tất cả <Icon name="chevron" size={14} />
             </button>
           </div>
-          <AppointmentTable items={today.slice(0, 4)} onView={viewAppointment} compact />
+          <AppointmentTable items={today.slice(0, 4)} onView={viewAppointment} onOpenSession={openSession} compact />
         </section>
         <aside className="dashboard-side">
           <section className="card upcoming">
@@ -1002,11 +1038,13 @@ function AppointmentsPage({
   appointments,
   updateStatus,
   viewAppointment,
+  openSession,
   toast,
 }: {
   appointments: Appointment[];
   updateStatus: (id: string, status: AppointmentStatus) => Promise<void>;
   viewAppointment: (a: Appointment) => void;
+  openSession: (a: Appointment) => void;
   toast: (m: string) => void;
 }) {
   const [search, setSearch] = useState("");
@@ -1140,6 +1178,15 @@ function AppointmentsPage({
                           Hủy
                         </button>
                       )}
+                      {isCompletedAppointmentStatus(a.status) && (
+                        a.sessionId ? (
+                          <button className="confirm-link" onClick={() => openSession(a)}>
+                            Xem phiên khám
+                          </button>
+                        ) : (
+                          <small style={{ color: "#64748b", fontSize: "12px" }}>Chưa có phiên</small>
+                        )
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1170,6 +1217,7 @@ function AppointmentDetail({
   back,
   toast,
   startConsultation,
+  openSession,
 }: {
   appointment: Appointment;
   patients: Patient[];
@@ -1177,9 +1225,13 @@ function AppointmentDetail({
   back: () => void;
   toast: (m: string) => void;
   startConsultation: () => void;
+  openSession: (a: Appointment) => void;
 }) {
   const [item, setItem] = useState(appointment);
   const [cancel, setCancel] = useState(false);
+  useEffect(() => {
+    setItem(appointment);
+  }, [appointment]);
   const patient = patients.find((p) => p.id === item.patientId);
   const update = async (status: AppointmentStatus) => {
     try {
@@ -1261,6 +1313,18 @@ function AppointmentDetail({
             <Button variant="secondary" icon="stethoscope" onClick={startConsultation}>
               Bắt đầu phiên khám
             </Button>
+          )}
+          {isCompletedAppointmentStatus(item.status) && (
+            item.sessionId ? (
+              <Button variant="secondary" icon="file" onClick={() => openSession(item)}>
+                Xem phiên khám
+              </Button>
+            ) : (
+              <div className="action-note">
+                <Icon name="file" />
+                <p>Lịch hẹn đã hoàn thành nhưng chưa có phiên khám liên kết.</p>
+              </div>
+            )
           )}
           {item.status !== "Đã hủy" && item.status !== "Hoàn thành" && (
             <Button variant="ghost" icon="x" onClick={() => setCancel(true)}>
@@ -1706,10 +1770,10 @@ function ConsultationsPage({
   selected: string | null;
   setSelected: (id: string | null) => void;
   onSave: (appointmentId: string, sessionId: string | null, meetingUrl: string, notes: string) => Promise<void>;
-  onFinish: (sessionId: string) => Promise<void>;
+  onFinish: (sessionId: string, prescription: CreatePrescriptionPayload | undefined, medicalHistory: { diagnosis: string; symptoms: string; progress_notes?: string }) => Promise<void>;
   onAddPrescription: (sessionId: string, payload: CreatePrescriptionPayload) => Promise<void>;
   toast: (m: string) => void;
-  createFollowUp: (appointment: Appointment) => void;
+  createFollowUp: (payload: FollowUpPayload) => Promise<void>;
 }) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("Tất cả");
@@ -1720,6 +1784,7 @@ function ConsultationsPage({
     if (!appointment) return <div className="page"><div className="empty">Không tìm thấy lịch hẹn.</div></div>;
     return (
       <ConsultationDetail
+        key={appointment.id}
         appointment={appointment}
         consultation={c}
         prescriptions={prescriptions}
@@ -1845,10 +1910,10 @@ function ConsultationDetail({
   medications: MedicationCatalogItem[];
   back: () => void;
   onSave: (appointmentId: string, sessionId: string | null, meetingUrl: string, notes: string) => Promise<void>;
-  onFinish: (sessionId: string) => Promise<void>;
+  onFinish: (sessionId: string, prescription: CreatePrescriptionPayload | undefined, medicalHistory: { diagnosis: string; symptoms: string; progress_notes?: string }) => Promise<void>;
   onAddPrescription: (sessionId: string, payload: CreatePrescriptionPayload) => Promise<void>;
   toast: (m: string) => void;
-  createFollowUp: (appointment: Appointment) => void;
+  createFollowUp: (payload: FollowUpPayload) => Promise<void>;
 }) {
   const [followUpOpen, setFollowUpOpen] = useState(false);
   const [form, setForm] = useState({
@@ -1878,16 +1943,60 @@ function ConsultationDetail({
   const [prescribing, setPrescribing] = useState(false);
   const [rxError, setRxError] = useState("");
 
+  const normMedName = (name?: string) => (name || "").trim().replace(/\s+/g, " ").toLowerCase();
+  const medById = useMemo(() => {
+    const map = new Map<string, MedicationCatalogItem>();
+    medications.forEach((m) => map.set(m.id, m));
+    return map;
+  }, [medications]);
+
+  const isMedicationTaken = (med: MedicationCatalogItem, skipIndex?: number) =>
+    rxItems.some((item, idx) => {
+      if (idx === skipIndex) return false;
+      if (item.medication_id === med.id) return true;
+      const existingName = normMedName(medById.get(item.medication_id)?.name);
+      return Boolean(existingName && existingName === normMedName(med.name));
+    });
+
+  const nextUnusedMedication = medications.find((m) => !isMedicationTaken(m));
+
+  const validateRxItems = (): string | null => {
+    if (rxItems.length === 0) {
+      return "Vui lòng thêm ít nhất 1 loại thuốc vào đơn.";
+    }
+    const seenIds = new Set<string>();
+    const seenNames = new Set<string>();
+    for (const item of rxItems) {
+      if (!item.medication_id || !item.dosage.trim() || !item.frequency.trim() || !item.duration.trim()) {
+        return "Vui lòng điền đầy đủ tên thuốc, liều lượng, tần suất và thời gian dùng cho tất cả các thuốc.";
+      }
+      if (seenIds.has(item.medication_id)) {
+        return "Không được kê trùng loại thuốc trong cùng đơn thuốc.";
+      }
+      seenIds.add(item.medication_id);
+      const medName = normMedName(medById.get(item.medication_id)?.name);
+      if (medName && seenNames.has(medName)) {
+        return "Không được kê trùng tên thuốc trong cùng đơn thuốc.";
+      }
+      if (medName) seenNames.add(medName);
+    }
+    return null;
+  };
+
   const handleAddRxItem = () => {
     if (rxItems.length >= 10) {
       setRxError("Đơn thuốc tối đa 10 loại thuốc theo quy định.");
       return;
     }
-    const unusedMed = medications.find((m) => !rxItems.some((item) => item.medication_id === m.id)) || medications[0];
+    if (!nextUnusedMedication) {
+      setRxError("Không còn loại thuốc khác trong danh mục để thêm (không được trùng tên thuốc).");
+      return;
+    }
+    setRxError("");
     setRxItems((curr) => [
       ...curr,
       {
-        medication_id: unusedMed?.id || "",
+        medication_id: nextUnusedMedication.id,
         dosage: "1 viên",
         frequency: "2 lần / ngày",
         duration: "5 ngày",
@@ -1897,10 +2006,19 @@ function ConsultationDetail({
   };
 
   const handleRemoveRxItem = (idx: number) => {
+    setRxError("");
     setRxItems((curr) => curr.filter((_, i) => i !== idx));
   };
 
   const handleUpdateRxItem = (idx: number, field: keyof PrescriptionItemInput, val: string) => {
+    if (field === "medication_id") {
+      const targetMed = medById.get(val);
+      if (targetMed && isMedicationTaken(targetMed, idx)) {
+        setRxError(`Thuốc "${targetMed.name}" đã có trong đơn. Vui lòng chọn loại thuốc khác.`);
+        return;
+      }
+    }
+    setRxError("");
     setRxItems((curr) =>
       curr.map((item, i) => (i === idx ? { ...item, [field]: val } : item))
     );
@@ -1911,20 +2029,10 @@ function ConsultationDetail({
       setRxError("Vui lòng lưu phiếu khám trước khi kê đơn thuốc.");
       return;
     }
-    if (rxItems.length === 0) {
-      setRxError("Vui lòng thêm ít nhất 1 loại thuốc vào đơn.");
+    const validationError = validateRxItems();
+    if (validationError) {
+      setRxError(validationError);
       return;
-    }
-    const medIds = rxItems.map((item) => item.medication_id);
-    if (new Set(medIds).size !== medIds.length) {
-      setRxError("Mỗi loại thuốc chỉ được xuất hiện một lần trong đơn thuốc.");
-      return;
-    }
-    for (const item of rxItems) {
-      if (!item.medication_id || !item.dosage.trim() || !item.frequency.trim() || !item.duration.trim()) {
-        setRxError("Vui lòng điền đầy đủ liều lượng, tần suất và thời gian dùng cho tất cả các thuốc.");
-        return;
-      }
     }
     setPrescribing(true);
     setRxError("");
@@ -1952,6 +2060,10 @@ function ConsultationDetail({
   const [error, setError] = useState("");
   const set = (key: keyof typeof form, value: string) => setForm({ ...form, [key]: value });
   const isComplete = consultation?.status === "Hoàn thành";
+  const isClosedAppointment = appointment.status === "Vắng mặt" || appointment.status === "Đã hủy";
+  const existingFollowUpId = consultation?.followUpAppointmentId || null;
+  const hasExistingFollowUp = Boolean(consultation?.hasFollowUp || existingFollowUpId);
+  const canCreateFollowUp = Boolean(consultation && isComplete && !hasExistingFollowUp);
   const isOnline = appointment.modality === "Tư vấn trực tuyến";
   const safeMeetingUrl = (() => {
     try {
@@ -2141,7 +2253,7 @@ function ConsultationDetail({
                       <span style={{ fontSize: "12px", fontWeight: 700, color: "#334155" }}>
                         Danh sách mục thuốc ({rxItems.length}/10):
                       </span>
-                      {!isComplete && rxItems.length < 10 && (
+                      {!isComplete && rxItems.length < 10 && nextUnusedMedication && (
                         <button
                           type="button"
                           onClick={handleAddRxItem}
@@ -2184,11 +2296,14 @@ function ConsultationDetail({
                               disabled={isComplete}
                               style={{ width: "100%", padding: "4px 6px", fontSize: "11.5px", borderRadius: "4px", border: "1px solid #cbd5e1" }}
                             >
-                              {medications.map((m) => (
-                                <option key={m.id} value={m.id}>
-                                  {m.name}
-                                </option>
-                              ))}
+                              {medications.map((m) => {
+                                const takenElsewhere = isMedicationTaken(m, idx);
+                                return (
+                                  <option key={m.id} value={m.id} disabled={takenElsewhere}>
+                                    {takenElsewhere ? `${m.name} (đã chọn)` : m.name}
+                                  </option>
+                                );
+                              })}
                             </select>
                           </div>
                           <div>
@@ -2266,24 +2381,10 @@ function ConsultationDetail({
 
                     {rxError && <p style={{ color: "#b91c1c", fontSize: "11.5px", margin: "4px 0" }}>⚠️ {rxError}</p>}
 
-                    {!isComplete && (
-                      <button
-                        type="button"
-                        disabled={prescribing || !consultation}
-                        onClick={handleSavePrescription}
-                        style={{
-                          background: consultation ? "#0284c7" : "#94a3b8",
-                          color: "#fff",
-                          padding: "6px 14px",
-                          borderRadius: "6px",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          border: "none",
-                          cursor: consultation ? "pointer" : "not-allowed",
-                        }}
-                      >
-                        {prescribing ? "Đang cấp đơn..." : "💾 Cấp đơn thuốc này"}
-                      </button>
+                    {!isComplete && consultation && (
+                      <small style={{ display: "block", color: "#0369a1", marginTop: "4px", fontSize: "11px" }}>
+                        Đơn thuốc sẽ được lưu cùng giao dịch khi kết thúc phiên khám.
+                      </small>
                     )}
                     {!consultation && (
                       <small style={{ display: "block", color: "#64748b", marginTop: "4px", fontSize: "11px" }}>
@@ -2297,15 +2398,23 @@ function ConsultationDetail({
               <div className="follow-up-action">
                 <div>
                   <strong>Lịch tái khám</strong>
-                  <span>Tạo lịch hẹn tiếp theo cho bệnh nhân sau phiên khám này.</span>
+                  <span>
+                    {hasExistingFollowUp
+                      ? `Phiên khám này đã có lịch tái khám${existingFollowUpId ? ` (${existingFollowUpId})` : ""}. Mỗi phiên khám đã hoàn thành chỉ được đặt tối đa 1 lịch tái khám.`
+                      : !isComplete
+                        ? "Chỉ được đặt lịch tái khám sau khi hoàn thành phiên khám."
+                        : "Tạo lịch hẹn tiếp theo cho bệnh nhân sau phiên khám này."}
+                  </span>
                 </div>
                 <Button
                   variant="secondary"
                   icon="calendarPlus"
-                  disabled={!consultation}
-                  onClick={() => setFollowUpOpen(true)}
+                  disabled={!canCreateFollowUp}
+                  onClick={() => {
+                    if (canCreateFollowUp) setFollowUpOpen(true);
+                  }}
                 >
-                  Đặt lịch tái khám
+                  {hasExistingFollowUp ? "Đã đặt tái khám" : "Đặt lịch tái khám"}
                 </Button>
               </div>
             </section>
@@ -2348,10 +2457,10 @@ function ConsultationDetail({
               </section>
             )}
             {error && <div className="form-error">{error}</div>}
-            <Button type="submit" icon="check" disabled={saving || isComplete}>
+            <Button type="submit" icon="check" disabled={saving || isComplete || isClosedAppointment}>
               {saving ? "Đang lưu..." : "Lưu phiếu khám"}
             </Button>
-            {consultation && !isComplete && (
+            {consultation && !isComplete && !isClosedAppointment && (
               <Button
                 variant="secondary"
                 disabled={saving}
@@ -2362,8 +2471,33 @@ function ConsultationDetail({
                     if (isOnline && meetingUrl.trim() && !safeMeetingUrl) {
                       throw new Error("Liên kết cuộc gọi phải là URL HTTPS hợp lệ.");
                     }
+                    if (!form.diagnosis.trim() || !form.symptoms.trim()) {
+                      throw new Error("Cần nhập chẩn đoán và triệu chứng trước khi kết thúc phiên khám.");
+                    }
+                    if (!existingPrescription) {
+                      const rxValidationError = validateRxItems();
+                      if (rxValidationError) {
+                        setRxError(rxValidationError);
+                        throw new Error(rxValidationError);
+                      }
+                    }
                     await onSave(appointment.id, consultation.id, safeMeetingUrl, diagnosisNotes);
-                    await onFinish(consultation.id);
+                    const prescriptionPayload = existingPrescription ? undefined : {
+                      diagnosis_icd: rxIcd.trim() || undefined,
+                      instructions: rxInstructions.trim() || undefined,
+                      items: rxItems.map((item) => ({
+                        medication_id: item.medication_id,
+                        dosage: item.dosage.trim(),
+                        frequency: item.frequency.trim(),
+                        duration: item.duration.trim(),
+                        special_instructions: item.special_instructions?.trim() || undefined,
+                      })),
+                    };
+                    await onFinish(consultation.id, prescriptionPayload, {
+                      diagnosis: form.diagnosis.trim(),
+                      symptoms: form.symptoms.trim(),
+                      progress_notes: [form.notes.trim(), form.plan.trim()].filter(Boolean).join("\n") || undefined,
+                    });
                   } catch (finishError) {
                     setError(finishError instanceof Error ? finishError.message : "Không thể kết thúc phiên khám.");
                   } finally {
@@ -2381,8 +2515,8 @@ function ConsultationDetail({
         <FollowUpModal
           consultation={consultation}
           onClose={() => setFollowUpOpen(false)}
-          onCreate={(appointment) => {
-            createFollowUp(appointment);
+          onCreate={async (payload) => {
+            await createFollowUp(payload);
             setFollowUpOpen(false);
             toast("Đã tạo lịch tái khám. Lịch mới đã được thêm vào mục Lịch hẹn.");
           }}
@@ -2399,33 +2533,86 @@ function FollowUpModal({
 }: {
   consultation: Consultation;
   onClose: () => void;
-  onCreate: (appointment: Appointment) => void;
+  onCreate: (payload: FollowUpPayload) => Promise<void>;
 }) {
+  const todayIso = clinicTodayIso();
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState<DoctorBookingSlot | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<DoctorBookingSlot[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [modality, setModality] = useState<"Khám trực tiếp" | "Tư vấn trực tuyến">(
     "Khám trực tiếp",
   );
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
-  const timeSlots = ["08:00", "08:30", "09:30", "10:30", "14:00", "15:00", "16:00"];
 
-  const submit = () => {
-    if (!date || !time) {
-      setError("Vui lòng chọn ngày và giờ tái khám.");
+  useEffect(() => {
+    setAvailableSlots([]);
+    setSelectedSlot(null);
+    if (!date) {
+      setLoadingSlots(false);
       return;
     }
-    onCreate({
-      id: `LH-${Date.now().toString().slice(-6)}`,
-      patientId: consultation.patientId,
-      patient: consultation.patient,
-      date,
-      time,
-      reason: reason.trim() || "Tái khám theo kế hoạch điều trị",
-      type: "Tái khám",
-      modality,
-      status: "Chờ xác nhận",
-    });
+    if (date < todayIso) {
+      setLoadingSlots(false);
+      setError("Không thể chọn ngày tái khám trong quá khứ.");
+      return;
+    }
+    const controller = new AbortController();
+    setLoadingSlots(true);
+    setError("");
+    fetchDoctorBookingSlots({
+      day: date,
+      followUpFromApptId: consultation.appointmentId,
+      signal: controller.signal,
+    })
+      .then((res) => {
+        if (controller.signal.aborted) return;
+        const valid = filterValidSlots(res.slots || [], res.server_now, consultation.startedAt);
+        setAvailableSlots(valid);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
+        setAvailableSlots([]);
+        setError(err instanceof Error ? err.message : "Không tải được khung giờ trống.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingSlots(false);
+      });
+    return () => {
+      controller.abort();
+    };
+  }, [date, todayIso, consultation.appointmentId, consultation.startedAt]);
+
+  const submit = async () => {
+    if (!date || date < todayIso) {
+      setError("Vui lòng chọn ngày tái khám hợp lệ (từ hôm nay trở đi).");
+      return;
+    }
+    if (!selectedSlot || !filterValidSlots([selectedSlot], undefined, consultation.startedAt).length) {
+      setError("Vui lòng chọn khung giờ tái khám khả dụng (không ở quá khứ).");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    try {
+      const formattedDateTime = selectedSlot.starts_at.length === 16
+        ? `${selectedSlot.starts_at}:00`
+        : selectedSlot.starts_at;
+      await onCreate({
+        scheduleId: selectedSlot.schedule_id,
+        patientId: consultation.patientId,
+        appointmentDateTime: formattedDateTime,
+        appointmentType: modality === "Tư vấn trực tuyến" ? "Telemedicine" : "In-person",
+        followUpFromApptId: consultation.appointmentId,
+        reason: reason.trim() || "Tái khám theo kế hoạch điều trị",
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tạo lịch tái khám.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -2467,10 +2654,11 @@ function FollowUpModal({
             </span>
             <input
               type="date"
-              min="2025-06-19"
+              min={todayIso}
               value={date}
               onChange={(e) => {
                 setDate(e.target.value);
+                setSelectedSlot(null);
                 setError("");
               }}
             />
@@ -2480,21 +2668,38 @@ function FollowUpModal({
             <legend>
               Giờ tái khám <b>*</b>
             </legend>
-            <div className="time-slots">
-              {timeSlots.map((slot) => (
-                <button
-                  type="button"
-                  className={time === slot ? "selected" : ""}
-                  onClick={() => {
-                    setTime(slot);
-                    setError("");
-                  }}
-                  key={slot}
-                >
-                  {slot}
-                </button>
-              ))}
-            </div>
+            {loadingSlots ? (
+              <small style={{ color: "#64748b", display: "block", padding: "0.5rem 0" }}>
+                Đang kiểm tra khung giờ trống trong ca trực...
+              </small>
+            ) : !date ? (
+              <small style={{ color: "#64748b", display: "block", padding: "0.5rem 0" }}>
+                Vui lòng chọn ngày tái khám để xem khung giờ khả dụng.
+              </small>
+            ) : availableSlots.length === 0 ? (
+              <small style={{ color: "#b91c1c", display: "block", padding: "0.5rem 0" }}>
+                Không còn khung giờ khả dụng trong ngày này (hoặc bác sĩ chưa có ca trực).
+              </small>
+            ) : (
+              <div className="time-slots">
+                {availableSlots.map((slot) => {
+                  const hhmm = slot.starts_at.slice(11, 16);
+                  return (
+                    <button
+                      type="button"
+                      className={selectedSlot?.starts_at === slot.starts_at ? "selected" : ""}
+                      onClick={() => {
+                        setSelectedSlot(slot);
+                        setError("");
+                      }}
+                      key={slot.starts_at}
+                    >
+                      {hhmm}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </fieldset>
 
           <fieldset className="modality-field">
@@ -2531,11 +2736,11 @@ function FollowUpModal({
         </div>
 
         <div className="follow-up-modal-actions">
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={submitting}>
             Hủy
           </Button>
-          <Button icon="calendarPlus" onClick={submit}>
-            Xác nhận tạo lịch
+          <Button icon="calendarPlus" onClick={submit} disabled={submitting || loadingSlots || !selectedSlot}>
+            {submitting ? "Đang tạo..." : "Xác nhận tạo lịch"}
           </Button>
         </div>
       </div>
@@ -3003,12 +3208,21 @@ function ProfilePage({
   useEffect(() => setData(profile), [profile]);
   const set = (key: keyof DoctorProfile, value: string) => setData({ ...data, [key]: value });
   const save = async () => {
-    if (!data.name || !data.email.includes("@") || !data.phone) {
-      setError("Vui lòng nhập họ tên, email và số điện thoại hợp lệ.");
+    const cleanName = normalizeVietnameseName(data.name);
+    const cleanEmail = assistEmail(data.email);
+    const cleanPhone = normalizePhone(data.phone);
+    const cleanLicense = (data.license || "").trim();
+    const nameErr = validatePersonName(cleanName, "Họ và tên bác sĩ");
+    const emailErr = validateEmail(cleanEmail, "Email bác sĩ", true);
+    const phoneErr = cleanPhone === profile.phone ? null : validatePhone(cleanPhone, "Số điện thoại bác sĩ");
+    if (nameErr || emailErr || phoneErr || !cleanLicense) {
+      setError(nameErr || emailErr || phoneErr || "Vui lòng nhập đầy đủ số chứng chỉ hành nghề.");
       return;
     }
+    const nextData = { ...data, name: cleanName, email: cleanEmail, phone: cleanPhone, license: cleanLicense };
+    setData(nextData);
     try {
-      await updateDoctorProfile(data);
+      await updateDoctorProfile(nextData);
       await onSaved();
       setError("");
       setEditing(false);
@@ -3054,7 +3268,9 @@ function ProfilePage({
               label="Họ và tên"
               value={data.name}
               disabled={!editing}
+              maxLength={100}
               onChange={(v) => set("name", v)}
+              onBlur={() => set("name", normalizeVietnameseName(data.name))}
             />
             <Field label="Mã bác sĩ" value={data.id} disabled onChange={() => {}} />
           </div>
@@ -3075,13 +3291,17 @@ function ProfilePage({
               type="email"
               value={data.email}
               disabled={!editing}
+              maxLength={100}
               onChange={(v) => set("email", v)}
+              onBlur={() => set("email", assistEmail(data.email))}
             />
             <Field
               label="Số điện thoại"
               value={data.phone}
               disabled={!editing}
+              maxLength={15}
               onChange={(v) => set("phone", v)}
+              onBlur={() => set("phone", normalizePhone(data.phone))}
             />
           </div>
         </section>
@@ -3197,10 +3417,15 @@ export default function App() {
     await refreshPortal();
     toast("Đã lưu nội dung phiếu khám.");
   };
-  const completeConsultation = async (sessionId: string) => {
-    await finishConsultation(sessionId);
-    await refreshPortal();
-    toast("Đã kết thúc phiên khám.");
+  const completeConsultation = async (sessionId: string, prescription: CreatePrescriptionPayload | undefined, medicalHistory: { diagnosis: string; symptoms: string; progress_notes?: string }) => {
+    try {
+      await finishConsultation(sessionId, prescription, medicalHistory);
+      await refreshPortal();
+      toast("Đã kết thúc phiên khám.");
+    } catch (err) {
+      await refreshPortal().catch(() => {});
+      throw err;
+    }
   };
   if (!portal)
     return (
@@ -3231,6 +3456,13 @@ export default function App() {
           back={() => setAppointmentDetail(null)}
           toast={toast}
           startConsultation={() => openConsultation(appointmentDetail)}
+          openSession={(a) => {
+            if (!a.sessionId) {
+              toast("Lịch hẹn này chưa có phiên khám liên kết.");
+              return;
+            }
+            openConsultation(a);
+          }}
         />
       );
     if (patientDetail)
@@ -3264,6 +3496,13 @@ export default function App() {
             profile={profile}
             navigate={navigate}
             viewAppointment={viewAppointment}
+            openSession={(a) => {
+              if (!a.sessionId) {
+                toast("Lịch hẹn này chưa có phiên khám liên kết.");
+                return;
+              }
+              openConsultation(a);
+            }}
           />
         );
       case "appointments":
@@ -3272,6 +3511,13 @@ export default function App() {
             appointments={appointments}
             updateStatus={saveAppointmentStatus}
             viewAppointment={viewAppointment}
+            openSession={(a) => {
+              if (!a.sessionId) {
+                toast("Lịch hẹn này chưa có phiên khám liên kết.");
+                return;
+              }
+              openConsultation(a);
+            }}
             toast={toast}
           />
         );
@@ -3296,13 +3542,9 @@ export default function App() {
               toast(res.message || "Đã cấp đơn thuốc thành công.");
             }}
             toast={toast}
-            createFollowUp={(appointment) => {
-              const previous = appointments.find((item) => item.patientId === appointment.patientId);
-              if (!previous) {
-                toast("Không tìm thấy lịch khám trước để tạo lịch tái khám.");
-                return;
-              }
-              window.location.assign(`/appointments/new?follow_up=${encodeURIComponent(previous.id)}`);
+            createFollowUp={async (payload) => {
+              await createFollowUpAppointment(payload);
+              await refreshPortal();
             }}
           />
         );

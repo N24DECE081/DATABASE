@@ -9,6 +9,24 @@ def for_user(user_id):
     return Patient(**row) if row else None
 
 
+def find_by_phone(phone, exclude_patient_id=None):
+    sql = "SELECT patient_id FROM patient WHERE phone = %s"
+    params = [phone]
+    if exclude_patient_id:
+        sql += " AND patient_id <> %s"
+        params.append(exclude_patient_id)
+    return query(sql + " LIMIT 1", tuple(params), one=True)
+
+
+def find_by_email(email, exclude_patient_id=None):
+    sql = "SELECT patient_id FROM patient WHERE LOWER(email) = LOWER(%s)"
+    params = [email]
+    if exclude_patient_id:
+        sql += " AND patient_id <> %s"
+        params.append(exclude_patient_id)
+    return query(sql + " LIMIT 1", tuple(params), one=True)
+
+
 def list_patients(search=""):
     sql = """SELECT p.patient_id, p.user_id, p.full_name, p.phone, p.email,
                     p.date_of_birth, p.gender

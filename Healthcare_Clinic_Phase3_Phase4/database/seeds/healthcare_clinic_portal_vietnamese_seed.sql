@@ -223,6 +223,7 @@ INSERT INTO `patient` (`patient_id`, `user_id`, `full_name`, `date_of_birth`, `g
   ('PAT-080', 'USER-PAT-080', 'Mai Ngọc Quân', '1950-07-08', 'Female', '0841633520', 'maingocquan080@gmail.com', 'Số 92, đường Nguyễn Huệ, Lê Chân, Hải Phòng', 'O+', 'Phấn hoa', 'Tăng huyết áp', 'Mai Quốc Quân', '0942362520');
 
 INSERT INTO `specialty` (`specialty_id`, `specialty_name`, `description`) VALUES
+  ('SPC-000', 'Đa khoa', 'Khám và chăm sóc sức khỏe ban đầu tổng quát.'),
   ('SPC-001', 'Tim mạch', 'Khám và theo dõi các bệnh lý tim mạch.'),
   ('SPC-002', 'Nhi khoa', 'Khám và chăm sóc sức khỏe trẻ em.'),
   ('SPC-003', 'Da liễu', 'Khám và điều trị các bệnh về da.'),

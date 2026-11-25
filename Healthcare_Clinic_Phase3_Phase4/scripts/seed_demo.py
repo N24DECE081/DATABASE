@@ -53,11 +53,11 @@ def seed(connection, clock=None):
                 role=role, account_status="Active", created_at=clock)
         patients = [
             ("PAT-001", "USER-004", "Nguyễn Minh An", today.replace(year=today.year-32, month=4, day=12),
-             "Male", "09xx-xxx-101", "minh.an@example.invalid", "Ba Đình, Hà Nội (demo)", "O+",
-             "Không ghi nhận (demo)", "Không ghi nhận (demo)", "Nguyễn Văn Bình (demo)", "09xx-xxx-201"),
+             "Male", "0900000101", "minh.an@example.invalid", "Ba Đình, Hà Nội (demo)", "O+",
+             "Không ghi nhận (demo)", "Không ghi nhận (demo)", "Nguyễn Văn Bình (demo)", "0900000201"),
             ("PAT-002", "USER-005", "Trần Thu Hà", today.replace(year=today.year-38, month=9, day=23),
-             "Female", "09xx-xxx-102", "thu.ha@example.invalid", "Cầu Giấy, Hà Nội (demo)", "A+",
-             "Phấn hoa (demo)", "Không ghi nhận (demo)", "Trần Thị Mai (demo)", "09xx-xxx-202"),
+             "Female", "0900000102", "thu.ha@example.invalid", "Cầu Giấy, Hà Nội (demo)", "A+",
+             "Phấn hoa (demo)", "Không ghi nhận (demo)", "Trần Thị Mai (demo)", "0900000202"),
         ]
         for patient in patients:
             add("patient", patient_id=patient[0], user_id=patient[1], full_name=patient[2],
@@ -90,13 +90,11 @@ def seed(connection, clock=None):
         past = datetime.combine(today-timedelta(days=1), time(9))
         add("appointment", appointment_id="APT-001", patient_id="PAT-001", doctor_id="DOC-001",
             schedule_id=schedule_ids[("DOC-001", -1)], booked_by_user_id="USER-001", appointment_date_time=past,
-            estimated_duration_minutes=30, appointment_type="In-person", status="Checked-In",
+            estimated_duration_minutes=30, appointment_type="In-person", status="Completed",
             reason="Tái khám dị ứng theo lịch (giả lập)")
         add("consultation_session", session_id="SES-001", appointment_id="APT-001", start_time=past,
             end_time=past+timedelta(minutes=30), actual_duration_minutes=30, session_type="In-person",
             diagnosis_notes="Viêm mũi dị ứng theo mùa (tình huống giả lập)")
-        with connection.cursor() as cursor:
-            cursor.execute("UPDATE appointment SET status = 'Completed' WHERE appointment_id = %s", ("APT-001",))
         add("medical_history", medical_history_id="HIS-001", session_id="SES-001",
             record_date=past+timedelta(minutes=30), diagnosis="Viêm mũi dị ứng theo mùa (giả lập)",
             symptoms="Hắt hơi, nghẹt mũi theo mùa (giả lập)",
