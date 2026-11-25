@@ -1706,7 +1706,7 @@ function ConsultationsPage({
   selected: string | null;
   setSelected: (id: string | null) => void;
   onSave: (appointmentId: string, sessionId: string | null, meetingUrl: string, notes: string) => Promise<void>;
-  onFinish: (sessionId: string) => Promise<void>;
+  onFinish: (sessionId: string, prescription: CreatePrescriptionPayload | undefined, medicalHistory: { diagnosis: string; symptoms: string; progress_notes?: string }) => Promise<void>;
   onAddPrescription: (sessionId: string, payload: CreatePrescriptionPayload) => Promise<void>;
   toast: (m: string) => void;
   createFollowUp: (appointment: Appointment) => void;
@@ -1845,7 +1845,7 @@ function ConsultationDetail({
   medications: MedicationCatalogItem[];
   back: () => void;
   onSave: (appointmentId: string, sessionId: string | null, meetingUrl: string, notes: string) => Promise<void>;
-  onFinish: (sessionId: string) => Promise<void>;
+  onFinish: (sessionId: string, prescription: CreatePrescriptionPayload | undefined, medicalHistory: { diagnosis: string; symptoms: string; progress_notes?: string }) => Promise<void>;
   onAddPrescription: (sessionId: string, payload: CreatePrescriptionPayload) => Promise<void>;
   toast: (m: string) => void;
   createFollowUp: (appointment: Appointment) => void;
@@ -2266,24 +2266,10 @@ function ConsultationDetail({
 
                     {rxError && <p style={{ color: "#b91c1c", fontSize: "11.5px", margin: "4px 0" }}>⚠️ {rxError}</p>}
 
-                    {!isComplete && (
-                      <button
-                        type="button"
-                        disabled={prescribing || !consultation}
-                        onClick={handleSavePrescription}
-                        style={{
-                          background: consultation ? "#0284c7" : "#94a3b8",
-                          color: "#fff",
-                          padding: "6px 14px",
-                          borderRadius: "6px",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          border: "none",
-                          cursor: consultation ? "pointer" : "not-allowed",
-                        }}
-                      >
-                        {prescribing ? "Đang cấp đơn..." : "💾 Cấp đơn thuốc này"}
-                      </button>
+                    {!isComplete && consultation && (
+                      <small style={{ display: "block", color: "#0369a1", marginTop: "4px", fontSize: "11px" }}>
+                        Đơn thuốc sẽ được lưu cùng giao dịch khi kết thúc phiên khám.
+                      </small>
                     )}
                     {!consultation && (
                       <small style={{ display: "block", color: "#64748b", marginTop: "4px", fontSize: "11px" }}>
@@ -2362,8 +2348,26 @@ function ConsultationDetail({
                     if (isOnline && meetingUrl.trim() && !safeMeetingUrl) {
                       throw new Error("Liên kết cuộc gọi phải là URL HTTPS hợp lệ.");
                     }
+                    if (!form.diagnosis.trim() || !form.symptoms.trim()) {
+                      throw new Error("Cần nhập chẩn đoán và triệu chứng trước khi kết thúc phiên khám.");
+                    }
                     await onSave(appointment.id, consultation.id, safeMeetingUrl, diagnosisNotes);
-                    await onFinish(consultation.id);
+                    const prescriptionPayload = existingPrescription ? undefined : {
+                      diagnosis_icd: rxIcd.trim() || undefined,
+                      instructions: rxInstructions.trim() || undefined,
+                      items: rxItems.map((item) => ({
+                        medication_id: item.medication_id,
+                        dosage: item.dosage.trim(),
+                        frequency: item.frequency.trim(),
+                        duration: item.duration.trim(),
+                        special_instructions: item.special_instructions?.trim() || undefined,
+                      })),
+                    };
+                    await onFinish(consultation.id, prescriptionPayload, {
+                      diagnosis: form.diagnosis.trim(),
+                      symptoms: form.symptoms.trim(),
+                      progress_notes: [form.notes.trim(), form.plan.trim()].filter(Boolean).join("\n") || undefined,
+                    });
                   } catch (finishError) {
                     setError(finishError instanceof Error ? finishError.message : "Không thể kết thúc phiên khám.");
                   } finally {
@@ -3197,8 +3201,8 @@ export default function App() {
     await refreshPortal();
     toast("Đã lưu nội dung phiếu khám.");
   };
-  const completeConsultation = async (sessionId: string) => {
-    await finishConsultation(sessionId);
+  const completeConsultation = async (sessionId: string, prescription: CreatePrescriptionPayload | undefined, medicalHistory: { diagnosis: string; symptoms: string; progress_notes?: string }) => {
+    await finishConsultation(sessionId, prescription, medicalHistory);
     await refreshPortal();
     toast("Đã kết thúc phiên khám.");
   };

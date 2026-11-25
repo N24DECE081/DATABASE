@@ -4,10 +4,10 @@ from urllib.parse import urlsplit
 
 from flask import Blueprint, abort, g, jsonify, request
 
-from ...db import query
+from ...db import query, transaction
 from ...repositories import appointments, doctors, medical_history, patients, prescriptions, schedules
 from ...security import require_roles
-from ...services import consultations as consultation_service, doctors as doctor_service, appointments as appointment_service, prescriptions as prescription_service
+from ...services import consultations as consultation_service, doctors as doctor_service, appointments as appointment_service, medical_history as history_service, prescriptions as prescription_service
 from ...services.common import now
 
 
@@ -231,6 +231,10 @@ def create_consultation(appointment_id):
         parsed_url = urlsplit(meeting_url)
         if parsed_url.scheme != "https" or not parsed_url.netloc:
             abort(400, description="Liên kết cuộc gọi phải sử dụng HTTPS.")
+    else:
+        appointment = appointment_service.accessible(g.user, appointment_id)
+        if appointment.appointment_type == "Telemedicine":
+            abort(400, description="Phiên khám online cần liên kết cuộc gọi HTTPS.")
     if not isinstance(notes, str) or len(notes) > 8000:
         abort(400, description="Ghi chú phiên khám vượt quá giới hạn.")
     session = consultation_service.create(g.user, appointment_id, {
@@ -277,8 +281,25 @@ def update_consultation(session_id):
 @bp.post("/consultations/<session_id>/finish")
 @require_roles("DOCTOR")
 def finish_consultation(session_id):
-    session = consultation_service.finish(g.user, session_id, now())
-    return jsonify(session_id=session.session_id, status="Hoàn thành")
+    data = request.get_json(silent=True) or {}
+    prescription_data = data.get("prescription")
+    history_data = data.get("medical_history")
+    if prescription_data is not None and not isinstance(prescription_data, dict):
+        abort(400, description="Dữ liệu đơn thuốc không hợp lệ.")
+    if not isinstance(history_data, dict):
+        abort(400, description="Bệnh sử là bắt buộc khi kết thúc phiên khám.")
+    with transaction():
+        session = consultation_service.finish(g.user, session_id, now())
+        history_service.create(g.user, session_id, history_data)
+        prescription = (
+            prescription_service.create(g.user, session_id, prescription_data)
+            if prescription_data is not None else None
+        )
+    return jsonify(
+        session_id=session.session_id,
+        status="Hoàn thành",
+        prescription_id=prescription.prescription_id if prescription else None,
+    )
 
 
 @bp.get("/medications")

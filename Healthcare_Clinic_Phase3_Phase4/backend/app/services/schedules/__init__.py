@@ -34,6 +34,11 @@ def change_availability(user, schedule_id, status):
         return schedules.update(shift)
 
 
+def outside_lunch(begins, ends):
+    lunch = begins.replace(hour=12, minute=0, second=0, microsecond=0)
+    return ends <= lunch or begins >= lunch.replace(hour=13)
+
+
 def available_starts(shift, minutes=30, *, clock=None):
     ensure(minutes in (15, 30, 45, 60), "Thời lượng khám không hợp lệ.")
     if shift.availability_status != "Available":
@@ -44,7 +49,7 @@ def available_starts(shift, minutes=30, *, clock=None):
     clock = clock or now()
     duration = timedelta(minutes=minutes)
     while current + duration <= end:
-        if current >= clock and not any(current < b["appointment_date_time"] + timedelta(minutes=b["estimated_duration_minutes"])
+        if current >= clock and outside_lunch(current, current + duration) and not any(current < b["appointment_date_time"] + timedelta(minutes=b["estimated_duration_minutes"])
                                         and current + duration > b["appointment_date_time"] for b in busy):
             starts.append(current)
         current += timedelta(minutes=15)

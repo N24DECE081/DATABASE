@@ -24,6 +24,11 @@ BEGIN
        OR TIME(DATE_ADD(begins, INTERVAL minutes_value MINUTE)) > schedule_end THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Appointment is outside the working shift.';
     END IF;
+    IF state_value NOT IN ('Cancelled', 'No-show')
+       AND TIME(begins) < '13:00:00'
+       AND TIME(DATE_ADD(begins, INTERVAL minutes_value MINUTE)) > '12:00:00' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Appointment overlaps lunch break 12:00-13:00.';
+    END IF;
     IF state_value NOT IN ('Cancelled', 'No-show') THEN
         IF schedule_state <> 'Available' THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Working schedule is unavailable.';
@@ -44,7 +49,7 @@ BEGIN
     IF parent_id IS NOT NULL AND NOT EXISTS (
         SELECT 1 FROM appointment WHERE appointment_id = parent_id AND appointment_id <> aid
         AND patient_id = pid AND doctor_id = did AND appointment_date_time < begins
-        AND status NOT IN ('Cancelled', 'No-show')) THEN
+        AND status = 'Completed') THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Follow-up must reference a valid preceding appointment.';
     END IF;
 END$$
@@ -55,17 +60,25 @@ BEGIN
 END$$
 CREATE TRIGGER appointment_before_update BEFORE UPDATE ON appointment FOR EACH ROW
 BEGIN
+    IF NEW.status = 'Completed' AND OLD.status <> 'Completed'
+       AND (OLD.status <> 'Checked-In'
+            OR UTC_TIMESTAMP() + INTERVAL 7 HOUR < NEW.appointment_date_time
+            OR UTC_TIMESTAMP() + INTERVAL 7 HOUR > DATE_ADD(NEW.appointment_date_time, INTERVAL NEW.estimated_duration_minutes MINUTE)
+            OR NOT EXISTS (SELECT 1 FROM consultation_session cs
+                           WHERE cs.appointment_id = OLD.appointment_id AND cs.end_time IS NOT NULL)) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Completion requires a finished session inside the appointment window.';
+    END IF;
     IF EXISTS (SELECT 1 FROM consultation_session WHERE appointment_id = OLD.appointment_id)
        AND (NEW.patient_id <> OLD.patient_id OR NEW.doctor_id <> OLD.doctor_id
-            OR NEW.appointment_type <> OLD.appointment_type OR NEW.status IN ('Cancelled','No-show')) THEN
+            OR NEW.appointment_type <> OLD.appointment_type OR NEW.status = 'Cancelled') THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: A consultation protects its appointment context.';
     END IF;
     IF EXISTS (SELECT 1 FROM consultation_session cs JOIN medical_history mh ON mh.session_id = cs.session_id
                WHERE cs.appointment_id = OLD.appointment_id)
        OR EXISTS (SELECT 1 FROM consultation_session cs JOIN prescription rx ON rx.session_id = cs.session_id
                   WHERE cs.appointment_id = OLD.appointment_id) THEN
-        IF NEW.status NOT IN ('Checked-In', 'Completed') THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Clinical records require an in-progress or completed appointment.';
+         IF NEW.status <> 'Completed' THEN
+             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CLINIC: Clinical records require a completed appointment.';
         END IF;
     END IF;
     CALL validate_appointment(NEW.appointment_id, NEW.patient_id, NEW.doctor_id, NEW.schedule_id,
@@ -76,7 +89,12 @@ SQL SECURITY DEFINER
 BEGIN
     UPDATE appointment
     SET status = 'No-show'
-    WHERE status = 'Scheduled'
-      AND DATE_ADD(appointment_date_time, INTERVAL estimated_duration_minutes MINUTE) < NOW();
+    WHERE status IN ('Scheduled', 'Checked-In')
+      AND DATE_ADD(appointment_date_time, INTERVAL 30 MINUTE) < UTC_TIMESTAMP() + INTERVAL 7 HOUR
+      AND NOT EXISTS (SELECT 1 FROM consultation_session cs
+                      WHERE cs.appointment_id = appointment.appointment_id AND cs.end_time IS NOT NULL);
 END$$
+CREATE EVENT IF NOT EXISTS ev_auto_noshow_appointments
+ON SCHEDULE EVERY 1 MINUTE
+DO CALL sp_auto_noshow_appointments()$$
 DELIMITER ;

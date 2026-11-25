@@ -196,15 +196,17 @@ function Button({
   onClick,
   type = "button",
   disabled = false,
+  style,
 }: {
   children: React.ReactNode;
   variant?: "primary" | "secondary" | "ghost" | "danger";
   onClick?: () => void;
   type?: "button" | "submit";
   disabled?: boolean;
+  style?: React.CSSProperties;
 }) {
   return (
-    <button className={`btn btn-${variant}`} onClick={onClick} type={type} disabled={disabled}>
+    <button className={`btn btn-${variant}`} onClick={onClick} type={type} disabled={disabled} style={style}>
       {children}
     </button>
   );
@@ -1225,7 +1227,7 @@ function DoctorForm({
   const [phone, setPhone] = useState(initial?.phone || "");
   const [licenseNumber, setLicenseNumber] = useState(initial?.licenseNumber || "");
   const [gender, setGender] = useState(initial?.gender || "Nam");
-  const [dob, setDob] = useState(initial?.dob || "15/05/1985");
+  const [dob, setDob] = useState(initial?.dob || "");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1246,6 +1248,17 @@ function DoctorForm({
     if (password && password.length < 8) {
       setError("Mật khẩu phải có tối thiểu 8 ký tự.");
       return;
+    }
+    if (!initial) {
+      const parsedDob = new Date(`${dob}T00:00:00`);
+      const today = new Date();
+      const birthdayPending = today.getMonth() < parsedDob.getMonth() ||
+        (today.getMonth() === parsedDob.getMonth() && today.getDate() < parsedDob.getDate());
+      const age = today.getFullYear() - parsedDob.getFullYear() - Number(birthdayPending);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dob) || !Number.isFinite(age) || age < 22 || age > 80) {
+        setError("Ngày sinh bác sĩ phải là ngày hợp lệ, độ tuổi từ 22 đến 80.");
+        return;
+      }
     }
     setError("");
     setSaving(true);
@@ -1361,7 +1374,7 @@ function DoctorForm({
         </label>
         <label>
           Ngày sinh
-          <Input value={dob} onChange={(e) => setDob(e.target.value)} placeholder="15/05/1985" />
+          <Input type={initial ? "text" : "date"} required={!initial} value={dob} onChange={(e) => setDob(e.target.value)} />
         </label>
       </div>
       {error && <p className="form-error" style={{ color: "red", marginTop: "0.5rem" }}>{error}</p>}
@@ -2526,17 +2539,19 @@ function CreateAppointmentModal({
     );
   }, [schedules, doctor, date]);
 
-  const allSlots = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00"];
-
-  const filteredSlots = useMemo(() => {
-    if (!date) return allSlots;
-    if (doctorDayShifts.length === 0) return [];
-    return allSlots.filter((slot) => {
-      return doctorDayShifts.some((shift) => {
-        return slot >= shift.startTime && slot < shift.endTime;
-      });
+  const [filteredSlots, setFilteredSlots] = useState<string[]>([]);
+  const doctorId = doctor?.id;
+  useEffect(() => {
+    setFilteredSlots([]);
+    if (!doctorId || !date) return;
+    let active = true;
+    api.fetchBookingSlots(doctorId, date).then(({ slots }) => {
+      if (active) setFilteredSlots(slots.map((slot) => slot.starts_at.slice(11, 16)));
+    }).catch(() => {
+      if (active) setFilteredSlots([]);
     });
-  }, [date, doctorDayShifts]);
+    return () => { active = false; };
+  }, [doctorId, date]);
 
   const canContinue =
     (step === 1 && Boolean(patient)) ||
@@ -2546,7 +2561,7 @@ function CreateAppointmentModal({
     (step === 5 && Boolean(date && time && filteredSlots.includes(time)));
 
   const handleCreate = async () => {
-    if (!patient || !doctor || !date || !time) return;
+    if (!patient || !doctor || !date || !filteredSlots.includes(time)) return;
     setSubmitting(true);
     setError("");
     try {
@@ -3119,9 +3134,6 @@ function AppointmentDetail({
                   Xác nhận lịch
                 </Button>
               )}
-              <Button variant="secondary" onClick={() => onStatusChange("Hoàn thành")}>
-                Đánh dấu Hoàn thành
-              </Button>
               {!appointment.hasSession && (
                 <Button variant="danger" onClick={() => onStatusChange("Đã hủy")}>
                   Hủy lịch hẹn
@@ -3129,7 +3141,7 @@ function AppointmentDetail({
               )}
             </>
           )}
-          {onReschedule && !appointment.hasSession && appointment.status === "Đã xác nhận" && (
+          {onReschedule && !appointment.hasSession && appointment.status === "Chờ xác nhận" && (
             <Button variant="secondary" onClick={onReschedule}>
               Đổi lịch khám
             </Button>
@@ -3321,13 +3333,12 @@ function AppointmentsPage({
                       </button>
                       {a.status !== "Hoàn thành" && a.status !== "Đã hủy" && a.status !== "Không đến khám" && (
                         <>
-                          <Button
-                            variant="secondary"
-                            onClick={() => onStatusChange(a.id, a.status === "Đã xác nhận" ? "Hoàn thành" : "Đã xác nhận")}
-                          >
-                            {a.status === "Đã xác nhận" ? "Hoàn thành" : "Xác nhận"}
-                          </Button>
-                          {!a.hasSession && a.status === "Đã xác nhận" && (
+                          {a.status === "Chờ xác nhận" && (
+                            <Button variant="secondary" onClick={() => onStatusChange(a.id, "Đã xác nhận")}>
+                              Xác nhận
+                            </Button>
+                          )}
+                          {!a.hasSession && a.status === "Chờ xác nhận" && (
                             <Button
                               variant="ghost"
                               onClick={() => setRescheduling(a)}

@@ -315,6 +315,10 @@ export const updateSpecialty = (specialtyId: string, payload: { name?: string; d
   });
 
 export const fetchAppointments = () => request<{ appointments: Appointment[] }>("/api/admin/appointments");
+export const fetchBookingSlots = (doctorId: string, day: string) =>
+  request<{ slots: Array<{ starts_at: string }> }>(
+    "/api/appointments/options?" + new URLSearchParams({ doctor_id: doctorId, day, duration: "30" }),
+  );
 
 export const createAppointment = (payload: {
   patientId: string;

@@ -30,7 +30,8 @@ def create_account(user, data):
         elif role == "DOCTOR":
             ensure(data.get("email") and data.get("license_number"), "Cần email và số giấy phép bác sĩ.")
             doctor = insert(Doctor(doctor_id=identity("DOC-"), user_id=account.user_id,
-                full_name=data["full_name"], phone=data["phone"], email=data["email"], license_number=data["license_number"]))
+                full_name=data["full_name"], phone=data["phone"], email=data["email"], license_number=data["license_number"],
+                date_of_birth=data.get("date_of_birth")))
             if data["subtype"] == "GENERAL_PRACTITIONER":
                 insert(GeneralPractitioner(doctor_id=doctor.doctor_id))
             else:

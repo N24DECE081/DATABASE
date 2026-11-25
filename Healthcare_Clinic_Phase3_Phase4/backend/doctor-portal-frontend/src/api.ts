@@ -207,10 +207,14 @@ export function updateConsultationNotes(sessionId: string, diagnosisNotes: strin
   );
 }
 
-export function finishConsultation(sessionId: string) {
+export function finishConsultation(
+  sessionId: string,
+  prescription: CreatePrescriptionPayload | undefined,
+  medicalHistory: { diagnosis: string; symptoms: string; progress_notes?: string },
+) {
   return request<{ session_id: string; status: string }>(
     `/api/doctor/consultations/${encodeURIComponent(sessionId)}/finish`,
-    { method: "POST", body: JSON.stringify({}) },
+    { method: "POST", body: JSON.stringify({ prescription, medical_history: medicalHistory }) },
   );
 }
 

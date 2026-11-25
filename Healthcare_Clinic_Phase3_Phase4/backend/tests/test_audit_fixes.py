@@ -66,11 +66,11 @@ def test_admin_can_book_follow_up(app):
         patient_user = auth.find_by_username("patient_one")
         pat = patients.for_user(patient_user.user_id)
 
-        # Find or create a completed/checked-in/scheduled appointment
+        # Follow-ups may only reference a completed appointment.
         all_appts = appointments.list_for(admin_user)
         valid_parent = None
         for a in all_appts:
-            if a["patient_id"] == pat.patient_id and a["status"] not in ("Cancelled", "No-show"):
+            if a["patient_id"] == pat.patient_id and a["status"] == "Completed":
                 valid_parent = a
                 break
 

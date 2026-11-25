@@ -21,16 +21,16 @@ from ...services.common import BusinessError, ensure, identity, now
 bp = Blueprint("admin_portal_api", __name__, url_prefix="/api/admin")
 
 STATUS_MAP_TO_UI = {
-    "Scheduled": "Đã xác nhận",
-    "Checked-In": "Chờ xác nhận",
+    "Scheduled": "Chờ xác nhận",
+    "Checked-In": "Đã xác nhận",
     "Completed": "Hoàn thành",
     "Cancelled": "Đã hủy",
     "No-show": "Không đến khám",
 }
 
 STATUS_MAP_FROM_UI = {
-    "Đã xác nhận": "Scheduled",
-    "Chờ xác nhận": "Checked-In",
+    "Chờ xác nhận": "Scheduled",
+    "Đã xác nhận": "Checked-In",
     "Hoàn thành": "Completed",
     "Đã hủy": "Cancelled",
     "Không đến khám": "No-show",
@@ -240,7 +240,7 @@ def portal_bootstrap():
                END AS status,
                u.account_status AS rawStatus,
                'Nam' AS gender,
-               '15/05/1985' AS dob
+               DATE_FORMAT(d.date_of_birth, '%d/%m/%Y') AS dob
         FROM doctor d
         JOIN user_account u ON d.user_id = u.user_id
         LEFT JOIN specialist s ON d.doctor_id = s.doctor_id
@@ -314,8 +314,8 @@ def portal_bootstrap():
                CASE WHEN a.follow_up_from_appt_id IS NOT NULL OR a.reason LIKE '%tái khám%' THEN TRUE ELSE FALSE END AS isFollowUp,
                250000 AS fee,
                CASE a.status
-                 WHEN 'Scheduled' THEN 'Đã xác nhận'
-                 WHEN 'Checked-In' THEN 'Chờ xác nhận'
+                 WHEN 'Scheduled' THEN 'Chờ xác nhận'
+                 WHEN 'Checked-In' THEN 'Đã xác nhận'
                  WHEN 'Completed' THEN 'Hoàn thành'
                  WHEN 'Cancelled' THEN 'Đã hủy'
                  WHEN 'No-show' THEN 'Không đến khám'
@@ -569,7 +569,7 @@ def list_doctors():
                END AS status,
                u.account_status AS rawStatus,
                'Nam' AS gender,
-               '15/05/1985' AS dob
+               DATE_FORMAT(d.date_of_birth, '%d/%m/%Y') AS dob
         FROM doctor d
         JOIN user_account u ON d.user_id = u.user_id
         LEFT JOIN specialist s ON d.doctor_id = s.doctor_id
@@ -583,6 +583,7 @@ def list_doctors():
 @bp.post("/doctors")
 def create_doctor():
     data = request.get_json(silent=True) or {}
+    dob = _parse_date(data.get("dob") or data.get("date_of_birth"), "ngày sinh")
     name = normalize_vietnamese_name(data.get("name") or data.get("full_name") or "")
     username = (data.get("username") or "").strip()
     password = (data.get("password") or "").strip()
@@ -594,6 +595,11 @@ def create_doctor():
     ensure(name, "Vui lòng nhập họ và tên bác sĩ.")
     ensure(phone, "Vui lòng nhập số điện thoại bác sĩ.")
     ensure(email, "Vui lòng nhập email bác sĩ.")
+
+    ensure(dob is not None, "Vui lòng nhập ngày sinh bác sĩ.")
+    today = now().date()
+    age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+    ensure(22 <= age <= 80, "Tuổi bác sĩ phải từ 22 đến 80.")
 
     if username:
         user_dup = query("SELECT user_id FROM user_account WHERE username = %s", (username,), one=True)
@@ -643,6 +649,7 @@ def create_doctor():
         "phone": phone,
         "email": email,
         "license_number": license_number,
+        "date_of_birth": dob,
         "subtype": subtype,
         "specialty_id": specialty_id,
     }
@@ -663,7 +670,7 @@ def create_doctor():
             "subtype": subtype,
             "status": "Hoạt động",
             "gender": data.get("gender") or "Nam",
-            "dob": data.get("dob") or "15/05/1985",
+            "dob": dob.strftime("%d/%m/%Y"),
         },
     }), 201
 
@@ -855,7 +862,7 @@ def create_patient():
 @bp.patch("/patients/<patient_id>")
 def update_patient(patient_id):
     data = request.get_json(silent=True) or {}
-    pat = query("SELECT user_id FROM patient WHERE patient_id = %s", (patient_id,), one=True)
+    pat = query("SELECT user_id, phone FROM patient WHERE patient_id = %s", (patient_id,), one=True)
     if not pat:
         abort(404, description="Không tìm thấy hồ sơ bệnh nhân.")
 
@@ -865,7 +872,12 @@ def update_patient(patient_id):
     if "full_name" in data:
         allowed["full_name"] = normalize_vietnamese_name(data["full_name"])
     if "phone" in data:
-        allowed["phone"] = validate_vietnamese_phone(data["phone"], "Số điện thoại bệnh nhân")
+        submitted_phone = (data["phone"] or "").strip()
+        allowed["phone"] = (
+            submitted_phone
+            if submitted_phone == pat["phone"]
+            else validate_vietnamese_phone(submitted_phone, "Số điện thoại bệnh nhân")
+        )
     if "email" in data:
         allowed["email"] = data["email"].strip()
     if "address" in data:
@@ -983,8 +995,8 @@ def list_appointments():
                CASE WHEN a.follow_up_from_appt_id IS NOT NULL OR a.reason LIKE '%tái khám%' THEN TRUE ELSE FALSE END AS isFollowUp,
                250000 AS fee,
                CASE a.status
-                 WHEN 'Scheduled' THEN 'Đã xác nhận'
-                 WHEN 'Checked-In' THEN 'Chờ xác nhận'
+                 WHEN 'Scheduled' THEN 'Chờ xác nhận'
+                 WHEN 'Checked-In' THEN 'Đã xác nhận'
                  WHEN 'Completed' THEN 'Hoàn thành'
                  WHEN 'Cancelled' THEN 'Đã hủy'
                  WHEN 'No-show' THEN 'Không đến khám'
@@ -1083,7 +1095,7 @@ def create_appointment():
             "patientId": appt.patient_id,
             "doctorId": appt.doctor_id,
             "scheduleId": appt.schedule_id,
-            "status": "Đã xác nhận",
+            "status": "Chờ xác nhận",
             "date": dt.strftime("%d/%m/%Y"),
             "time": dt.strftime("%H:%M"),
             "reason": appt.reason or reason,
@@ -1098,6 +1110,7 @@ def update_appointment_status(appointment_id):
     data = request.get_json(silent=True) or {}
     raw_status = data.get("status", "")
     target = STATUS_MAP_FROM_UI.get(raw_status, raw_status)
+    ensure(target in STATUS_MAP_TO_UI, "Trạng thái lịch hẹn không hợp lệ.")
     reason = data.get("reason", "")
 
     appt = query("SELECT status, doctor_id FROM appointment WHERE appointment_id = %s", (appointment_id,), one=True)
@@ -1127,15 +1140,9 @@ def update_appointment_status(appointment_id):
         if clinical_exists and target != "Completed":
             raise BusinessError("Lịch hẹn đã có hồ sơ bệnh án hoặc đơn thuốc, trạng thái bắt buộc phải là Hoàn thành.")
 
-    if target in ("Checked-In", "Cancelled", "No-show"):
-        try:
-            appointment_service.change_status(g.user, appointment_id, target)
-        except BusinessError as err:
-            with transaction():
-                execute("UPDATE appointment SET status = %s WHERE appointment_id = %s", (target, appointment_id))
-    else:
-        with transaction():
-            execute("UPDATE appointment SET status = %s WHERE appointment_id = %s", (target, appointment_id))
+    ensure(target in ("Checked-In", "Cancelled", "No-show"),
+           "Trạng thái Completed chỉ được thiết lập khi kết thúc phiên khám.")
+    appointment_service.change_status(g.user, appointment_id, target)
 
     return jsonify({
         "message": "Đã cập nhật trạng thái lịch hẹn.",

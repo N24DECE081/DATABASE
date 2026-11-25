@@ -71,7 +71,7 @@ def create():
     if g.user.role == "DOCTOR":
         prior = appointments.list_for(g.user)
         form.follow_up_from_appt_id.choices += [(a["appointment_id"], f"{a['patient_name']} · {a['appointment_date_time']}")
-                                               for a in prior if a["status"] not in ("Cancelled", "No-show")]
+                                               for a in prior if a["status"] == "Completed"]
     if request.method == "GET":
         form.schedule_id.data = request.args.get("schedule", form.schedule_id.choices[0][0] if form.schedule_id.choices else "")
         value = request.args.get("time")

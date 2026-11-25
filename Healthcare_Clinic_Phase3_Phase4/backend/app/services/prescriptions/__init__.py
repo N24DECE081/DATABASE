@@ -35,7 +35,7 @@ def create(user, session_id, data):
     with transaction():
         session = accessible_session(user, session_id)
         appointment = accessible(user, session.appointment_id, lock=True)
-        ensure(appointment.status in ("Checked-In", "Completed"), "Chỉ kê đơn thuốc khi phiên khám đang diễn ra hoặc đã hoàn thành.")
+        ensure(appointment.status == "Completed", "Chỉ kê đơn thuốc sau khi phiên khám đã hoàn thành.")
         prescription = prescriptions.insert(Prescription(prescription_id=identity("RX-"), session_id=session_id,
             diagnosis_icd=icd, prescription_date=now(),
             instructions=data.get("instructions") or None))

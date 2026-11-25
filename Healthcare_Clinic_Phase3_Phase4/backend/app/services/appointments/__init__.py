@@ -6,6 +6,7 @@ from ...entities import Appointment, DoctorSchedule, Patient
 from ...repositories import appointments, patients, consultations, schedules
 from ..doctors import own_doctor, classified_doctor
 from ..common import ensure, found, identity, now
+from ..schedules import outside_lunch
 
 
 def accessible(user, appointment_id, *, lock=False):
@@ -45,8 +46,11 @@ def book(user, data):
     with transaction():
         classified_doctor(shift.doctor_id, lock=True)
         shift = found(schedules.get(DoctorSchedule, shift.schedule_id, lock=True))
-        found(patients.get(Patient, patient_id))
+        found(patients.get(Patient, patient_id, lock=True))
+        ensure(begins >= now(), "Khung giờ đã qua.")
         end = begins + timedelta(minutes=minutes)
+        ensure(outside_lunch(begins, end),
+               "Lịch hẹn không được chồng lấn giờ nghỉ trưa 12:00-13:00.")
         ensure(shift.availability_status == "Available", "Ca làm không còn khả dụng.")
         ensure(begins.date() == shift.schedule_date
                and begins >= datetime.combine(shift.schedule_date, shift.start_time)
@@ -56,7 +60,7 @@ def book(user, data):
         if parent:
             preceding = accessible(user, parent, lock=True)
             ensure(preceding.patient_id == patient_id and preceding.doctor_id == shift.doctor_id
-                   and preceding.appointment_date_time < begins and preceding.status not in ("Cancelled", "No-show"),
+                   and preceding.appointment_date_time < begins and preceding.status == "Completed",
                    "Lịch tái khám phải tham chiếu lần hẹn trước hợp lệ của cùng bệnh nhân/bác sĩ.")
         return appointments.insert(Appointment(appointment_id=identity("APT-"), patient_id=patient_id,
             doctor_id=shift.doctor_id, schedule_id=shift.schedule_id, booked_by_user_id=user.user_id,
@@ -74,6 +78,9 @@ def change_status(user, appointment_id, target):
     with transaction():
         classified_doctor(current.doctor_id, lock=True)
         current = accessible(user, appointment_id, lock=True)
+        if target == "Checked-In":
+            ensure(now() <= current.appointment_date_time + timedelta(minutes=30),
+                   "Lịch hẹn đã quá thời hạn tiếp nhận.")
         ensure(target in transitions[current.status], "Không thể chuyển trạng thái lịch hẹn như đã yêu cầu.")
         if user.role == "PATIENT":
             ensure(current.status == "Scheduled" and current.appointment_date_time > now(), "Chỉ hủy được lịch hẹn sắp tới chưa check-in.")
@@ -92,11 +99,15 @@ def reschedule(user, appointment_id, data):
         classified_doctor(appointment.doctor_id, lock=True)
         shift = found(schedules.get(DoctorSchedule, data["schedule_id"], lock=True))
         appointment = accessible(user, appointment_id, lock=True)
+        found(patients.get(Patient, appointment.patient_id, lock=True))
         ensure(appointment.status == "Scheduled" and consultations.for_appointment(appointment_id) is None,
                "Chỉ điều chỉnh lịch hẹn Scheduled chưa có phiên khám.")
         ensure(shift.doctor_id == appointment.doctor_id and shift.availability_status == "Available", "Ca làm không hợp lệ cho bác sĩ đã chọn.")
         begins=data["appointment_date_time"]
+        ensure(begins >= now(), "Khung giờ đã qua.")
         ends=begins+timedelta(minutes=data["estimated_duration_minutes"])
+        ensure(outside_lunch(begins, ends),
+               "Lịch hẹn không được chồng lấn giờ nghỉ trưa 12:00-13:00.")
         ensure(begins >= datetime.combine(shift.schedule_date,shift.start_time)
                and ends <= datetime.combine(shift.schedule_date,shift.end_time), "Lịch hẹn phải nằm trong ca làm.")
         ensure(not appointments.overlap(appointment.doctor_id,begins,ends,appointment_id), "Lịch hẹn chồng với lịch đã có.")
@@ -107,16 +118,13 @@ def reschedule(user, appointment_id, data):
 
 
 def auto_noshow_appointments():
-    """BR33: Transition overdue Scheduled appointments to No-show."""
+    """Transition unresolved appointments 30 minutes after their start time."""
     from ...db import get_db
     conn = get_db()
     with conn.cursor() as cur:
-        cur.execute("""
-            UPDATE appointment
-            SET status = 'No-show'
-            WHERE status = 'Scheduled'
-              AND DATE_ADD(appointment_date_time, INTERVAL estimated_duration_minutes MINUTE) < %s
-        """, (now(),))
+        cur.execute("CALL sp_auto_noshow_appointments()")
         affected = cur.rowcount
+        while cur.nextset():
+            pass
     conn.commit()
     return affected
