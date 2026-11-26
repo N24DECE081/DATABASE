@@ -460,7 +460,7 @@ function StatusBadge({ status }: { status: string }) {
       ? "success"
       : status.includes("Chờ")
         ? "pending"
-        : status.includes("hủy") || status === "Hết hạn"
+        : status.includes("hủy") || status.includes("Vắng") || status.includes("Không đến") || status === "Hết hạn"
           ? "danger"
           : "confirmed";
   return (
@@ -1072,7 +1072,7 @@ function AppointmentsPage({
         description="Theo dõi và xử lý các lịch hẹn với bệnh nhân."
       />
       <div className="tabs">
-        {["Tất cả", "Chờ xác nhận", "Đã xác nhận", "Hoàn thành", "Đã hủy"].map((x) => (
+        {["Tất cả", "Chờ xác nhận", "Đã xác nhận", "Hoàn thành", "Đã hủy", "Vắng mặt"].map((x) => (
           <button className={status === x ? "active" : ""} onClick={() => setStatus(x)} key={x}>
             {x}
             <span>
@@ -1109,6 +1109,7 @@ function AppointmentsPage({
             <option>Đã xác nhận</option>
             <option>Hoàn thành</option>
             <option>Đã hủy</option>
+            <option>Vắng mặt</option>
           </select>
           {(date || search) && (
             <Button
@@ -1367,7 +1368,6 @@ function SchedulePage({
   schedules: Schedule[];
   viewAppointment: (a: Appointment) => void;
 }) {
-  const [view, setView] = useState("Tuần");
   const [weekOffset, setWeekOffset] = useState(0);
   const today = new Date();
   const todayKey = new Date(today.getTime() - today.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
@@ -1405,13 +1405,9 @@ function SchedulePage({
           </Button>
           <strong>{weekLabel}</strong>
         </div>
-        <div className="segmented">
-          {["Ngày", "Tuần", "Tháng"].map((x) => (
-            <button key={x} onClick={() => setView(x)} className={view === x ? "active" : ""}>
-              {x}
-            </button>
-          ))}
-        </div>
+        <span style={{ fontSize: "0.875rem", color: "#64748b", fontWeight: 500 }}>
+          Chế độ xem theo tuần · Múi giờ GMT+7
+        </span>
       </div>
       <div className="schedule-layout">
         <section className="card calendar-card">
@@ -1670,7 +1666,15 @@ function PatientDetail({
               </div>
               <div>
                 <span>Ghi nhận bệnh sử</span>
-                <strong>{records.length} mục</strong>
+                <strong>
+                  {(() => {
+                    const ownCount = records.filter((r) => r.isOwnRecord !== false).length;
+                    const sharedCount = records.length - ownCount;
+                    return sharedCount > 0
+                      ? `${records.length} mục (${ownCount} của tôi · ${sharedCount} liên khoa)`
+                      : `${records.length} mục`;
+                  })()}
+                </strong>
               </div>
             </div>
             <Button variant="secondary" onClick={openRecords}>
@@ -1754,6 +1758,7 @@ function ConsultationsPage({
   consultations,
   appointments,
   prescriptions,
+  records,
   medications,
   selected,
   setSelected,
@@ -1766,6 +1771,7 @@ function ConsultationsPage({
   consultations: Consultation[];
   appointments: Appointment[];
   prescriptions: Prescription[];
+  records: MedicalRecord[];
   medications: MedicationCatalogItem[];
   selected: string | null;
   setSelected: (id: string | null) => void;
@@ -1788,6 +1794,7 @@ function ConsultationsPage({
         appointment={appointment}
         consultation={c}
         prescriptions={prescriptions}
+        patientRecords={records.filter((r) => r.patientId === appointment.patientId)}
         medications={medications}
         back={() => setSelected(null)}
         onSave={onSave}
@@ -1896,6 +1903,7 @@ function ConsultationDetail({
   appointment,
   consultation,
   prescriptions,
+  patientRecords,
   medications,
   back,
   onSave,
@@ -1907,6 +1915,7 @@ function ConsultationDetail({
   appointment: Appointment;
   consultation?: Consultation;
   prescriptions: Prescription[];
+  patientRecords: MedicalRecord[];
   medications: MedicationCatalogItem[];
   back: () => void;
   onSave: (appointmentId: string, sessionId: string | null, meetingUrl: string, notes: string) => Promise<void>;
@@ -1916,6 +1925,11 @@ function ConsultationDetail({
   createFollowUp: (payload: FollowUpPayload) => Promise<void>;
 }) {
   const [followUpOpen, setFollowUpOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(true);
+  const priorRecords = useMemo(
+    () => patientRecords.filter((r) => !consultation || r.sessionId !== consultation.id),
+    [patientRecords, consultation],
+  );
   const [form, setForm] = useState({
     complaint: consultation?.complaint || appointment.reason,
     symptoms: consultation?.symptoms || "",
@@ -2430,6 +2444,64 @@ function ConsultationDetail({
               <Info label="Ngày khám" value={displayDate} />
               <Info label="Trạng thái" value={displayStatus} />
             </section>
+            <section className="card patient-side consult-history-card">
+              <button
+                type="button"
+                className="consult-history-toggle"
+                onClick={() => setHistoryOpen((v) => !v)}
+              >
+                <div>
+                  <h2 style={{ margin: 0 }}>Tiền sử bệnh tại TiTiMi ({priorRecords.length})</h2>
+                  <small style={{ color: "#64748b" }}>Bệnh sử các lần khám trước (liên chuyên khoa)</small>
+                </div>
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "#475569" }}>
+                  {historyOpen ? "Thu gọn ▲" : "Mở rộng ▼"}
+                </span>
+              </button>
+              {historyOpen && (
+                priorRecords.length > 0 ? (
+                  <div className="consult-history-list">
+                    {priorRecords.slice(0, 5).map((rec) => {
+                      const isOwn = rec.isOwnRecord !== false;
+                      return (
+                        <div key={rec.id} className={`consult-history-item ${isOwn ? "own" : "shared"}`}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: "6px", marginBottom: "3px" }}>
+                            <strong style={{ color: "#0f172a" }}>{rec.diagnosis}</strong>
+                            <span style={{ color: "#64748b", whiteSpace: "nowrap" }}>
+                              {new Date(rec.date).toLocaleDateString("vi-VN")}
+                            </span>
+                          </div>
+                          <div style={{ color: "#475569", marginBottom: "4px" }}>
+                            Triệu chứng: {rec.symptoms}
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
+                            <span className="timeline-specialty-chip">
+                              {isOwn ? "Tôi khám" : "Liên chuyên khoa"}
+                            </span>
+                            {rec.specialty && <span className="timeline-specialty-chip">{rec.specialty}</span>}
+                            <span style={{ color: "#64748b" }}>BS. {rec.doctor}</span>
+                          </div>
+                          {rec.prescriptionSummary && (
+                            <div className="timeline-rx-note">
+                              💊 {rec.prescriptionSummary}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {priorRecords.length > 5 && (
+                      <small style={{ color: "#64748b" }}>
+                        Đang hiện 5 lần khám gần nhất trong tổng số {priorRecords.length} bệnh sử.
+                      </small>
+                    )}
+                  </div>
+                ) : (
+                  <p style={{ marginTop: "8px", color: "#64748b", fontSize: "11px" }}>
+                    Chưa có tiền sử bệnh được ghi nhận trước phiên khám này.
+                  </p>
+                )
+              )}
+            </section>
             {isOnline && (
               <section className="card patient-side">
                 <h2>Cuộc gọi trực tuyến</h2>
@@ -2748,19 +2820,68 @@ function FollowUpModal({
   );
 }
 
-function MedicalRecordsPage({ patients, records }: { patients: Patient[]; records: MedicalRecord[] }) {
+function MedicalRecordsPage({
+  patients,
+  records,
+  initialPatientId,
+  profileName,
+}: {
+  patients: Patient[];
+  records: MedicalRecord[];
+  initialPatientId?: string | null;
+  profileName?: string;
+}) {
   const [query, setQuery] = useState("");
-  const [patientId, setPatientId] = useState(patients[0]?.id || "");
+  const [patientId, setPatientId] = useState(initialPatientId || patients[0]?.id || "");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "own" | "shared">("all");
+  const [specialtyFilter, setSpecialtyFilter] = useState("Tất cả chuyên khoa");
+
+  useEffect(() => {
+    if (initialPatientId) {
+      setPatientId(initialPatientId);
+    }
+  }, [initialPatientId]);
+
+  useEffect(() => {
+    setSourceFilter("all");
+    setSpecialtyFilter("Tất cả chuyên khoa");
+  }, [patientId]);
+
   const selected = patients.find((p) => p.id === patientId);
   const choices = patients.filter((p) =>
     `${p.name} ${p.id}`.toLowerCase().includes(query.toLowerCase()),
   );
-  const patientRecords = records.filter((record) => record.patientId === selected?.id);
+  const patientRecords = useMemo(
+    () => records.filter((record) => record.patientId === selected?.id),
+    [records, selected?.id],
+  );
+  const isOwnRecord = (record: MedicalRecord) =>
+    record.isOwnRecord ?? (profileName ? record.doctor === profileName : true);
+  const ownCount = patientRecords.filter((r) => isOwnRecord(r)).length;
+  const sharedCount = patientRecords.length - ownCount;
+  const specialties = useMemo(
+    () =>
+      Array.from(new Set(patientRecords.map((r) => r.specialty || "Đa khoa"))).sort((a, b) =>
+        a.localeCompare(b, "vi"),
+      ),
+    [patientRecords],
+  );
+  const visibleRecords = useMemo(() => {
+    return patientRecords.filter((record) => {
+      const own = isOwnRecord(record);
+      if (sourceFilter === "own" && !own) return false;
+      if (sourceFilter === "shared" && own) return false;
+      const sp = record.specialty || "Đa khoa";
+      if (specialtyFilter !== "Tất cả chuyên khoa" && sp !== specialtyFilter) return false;
+      return true;
+    });
+  }, [patientRecords, sourceFilter, specialtyFilter]);
+
   return (
     <div className="page">
       <PageHeading
         title="Hồ sơ bệnh án"
-        description="Tra cứu lịch sử sức khỏe và quá trình điều trị của bệnh nhân."
+        description="Tra cứu lịch sử sức khỏe và quá trình điều trị của bệnh nhân qua các lần khám tại phòng khám."
       />
       <div className="records-layout">
         <aside className="card patient-selector">
@@ -2795,11 +2916,21 @@ function MedicalRecordsPage({ patients, records }: { patients: Patient[]; record
             <div className="record-facts">
               <div>
                 <span>Nhóm máu</span>
-                <strong>                {selected.blood}</strong>
+                <strong>{selected.blood}</strong>
               </div>
               <div>
                 <span>Dị ứng</span>
-                <strong>                {selected.allergies}</strong>
+                <strong>{selected.allergies}</strong>
+              </div>
+              <div>
+                <span>Bệnh nền</span>
+                <strong>{selected.chronicDiseases || "Chưa ghi nhận"}</strong>
+              </div>
+              <div>
+                <span>Tổng lượt bệnh sử</span>
+                <strong>
+                  {patientRecords.length} lượt{sharedCount > 0 ? ` (${ownCount} tôi · ${sharedCount} liên khoa)` : ""}
+                </strong>
               </div>
             </div>
           </section>
@@ -2807,23 +2938,89 @@ function MedicalRecordsPage({ patients, records }: { patients: Patient[]; record
             <div className="card-header">
               <div>
                 <h2>Dòng thời gian y khoa</h2>
-                <p>Các sự kiện sức khỏe đã được ghi nhận</p>
+                <p>Các sự kiện sức khỏe đã được ghi nhận tại TiTiMi Clinic</p>
               </div>
             </div>
-            {patientRecords.length ? <div className="timeline">
-              {patientRecords.map((record) => (
-                <div key={record.id}>
-                  <i />
-                  <time>{new Date(record.date).toLocaleDateString("vi-VN")}</time>
-                  <section>
-                    <span className="timeline-type">BỆNH SỬ</span>
-                    <h3>{record.diagnosis}</h3>
-                    <p>{record.symptoms}{record.notes ? ` · ${record.notes}` : ""}</p>
-                    <small>{record.doctor} · TiTiMi Clinic</small>
-                  </section>
+            {patientRecords.length > 0 && (
+              <div className="timeline-filters">
+                <div className="timeline-filter-pills">
+                  <button
+                    type="button"
+                    className={`timeline-filter-pill ${sourceFilter === "all" ? "active" : ""}`}
+                    onClick={() => setSourceFilter("all")}
+                  >
+                    Tất cả ({patientRecords.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`timeline-filter-pill ${sourceFilter === "own" ? "active" : ""}`}
+                    onClick={() => setSourceFilter("own")}
+                  >
+                    Tôi phụ trách ({ownCount})
+                  </button>
+                  <button
+                    type="button"
+                    className={`timeline-filter-pill ${sourceFilter === "shared" ? "active" : ""}`}
+                    onClick={() => setSourceFilter("shared")}
+                  >
+                    Liên chuyên khoa ({sharedCount})
+                  </button>
                 </div>
-              ))}
-            </div> : <div className="empty">Chưa có bệnh sử được ghi nhận cho bệnh nhân này.</div>}
+                {specialties.length > 1 && (
+                  <select
+                    aria-label="Lọc theo chuyên khoa"
+                    className="timeline-specialty-select"
+                    value={specialtyFilter}
+                    onChange={(e) => setSpecialtyFilter(e.target.value)}
+                  >
+                    <option>Tất cả chuyên khoa</option>
+                    {specialties.map((sp) => (
+                      <option key={sp} value={sp}>
+                        {sp}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+            {visibleRecords.length ? <div className="timeline">
+              {visibleRecords.map((record) => {
+                const own = isOwnRecord(record);
+                return (
+                  <div key={record.id}>
+                    <i />
+                    <time>{new Date(record.date).toLocaleDateString("vi-VN")}</time>
+                    <section className={own ? "timeline-card-own" : "timeline-card-shared"}>
+                      <div className="timeline-head-row">
+                        <span className={`timeline-type ${own ? "" : "shared"}`}>
+                          {own ? "BỆNH SỬ · DO TÔI GHI NHẬN" : "BỆNH SỬ · LIÊN CHUYÊN KHOA (CHỈ XEM)"}
+                        </span>
+                        {record.specialty && (
+                          <span className="timeline-specialty-chip">{record.specialty}</span>
+                        )}
+                        {record.visitType && (
+                          <span className="timeline-specialty-chip">{record.visitType}</span>
+                        )}
+                      </div>
+                      <h3>{record.diagnosis}</h3>
+                      <p>{record.symptoms}{record.notes ? ` · ${record.notes}` : ""}</p>
+                      {record.prescriptionSummary && (
+                        <div className="timeline-rx-note">
+                          💊 <strong>Thuốc đã kê:</strong> {record.prescriptionSummary}
+                        </div>
+                      )}
+                      <small>BS. {record.doctor} · {record.specialty || "Đa khoa"} · TiTiMi Clinic</small>
+                    </section>
+                  </div>
+                );
+              })}
+            </div> : (
+              <div className="empty">
+                {patientRecords.length === 0
+                  ? "Chưa có bệnh sử được ghi nhận cho bệnh nhân này."
+                  : "Không có bệnh sử nào khớp với bộ lọc đang chọn."}
+              </div>
+            )}
           </section>
         </main> : <main className="card"><div className="empty">Chọn bệnh nhân có lịch hẹn được phân công để xem hồ sơ.</div></main>}
       </div>
@@ -3358,6 +3555,7 @@ export default function App() {
   const [portal, setPortal] = useState<DoctorPortalData | null>(null);
   const [appointmentDetail, setAppointmentDetail] = useState<Appointment | null>(null);
   const [patientDetail, setPatientDetail] = useState<Patient | null>(null);
+  const [selectedRecordPatientId, setSelectedRecordPatientId] = useState<string | null>(null);
   const [consultationDetail, setConsultationDetail] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -3380,6 +3578,7 @@ export default function App() {
     setPage(p);
     setAppointmentDetail(null);
     setPatientDetail(null);
+    if (p !== "records") setSelectedRecordPatientId(null);
     if (p !== "consultations") setConsultationDetail(null);
   };
   const toast = (message: string) => {
@@ -3479,6 +3678,7 @@ export default function App() {
             setPage("consultations");
           }}
           openRecords={() => {
+            setSelectedRecordPatientId(patientDetail.id);
             setPatientDetail(null);
             setPage("records");
           }}
@@ -3531,6 +3731,7 @@ export default function App() {
             consultations={consultations}
             appointments={appointments}
             prescriptions={prescriptions}
+            records={records}
             medications={portal.medications || []}
             selected={consultationDetail}
             setSelected={setConsultationDetail}
@@ -3549,7 +3750,14 @@ export default function App() {
           />
         );
       case "records":
-        return <MedicalRecordsPage patients={patients} records={records} />;
+        return (
+          <MedicalRecordsPage
+            patients={patients}
+            records={records}
+            initialPatientId={selectedRecordPatientId}
+            profileName={profile.name}
+          />
+        );
       case "prescriptions":
         return <PrescriptionsPage prescriptions={prescriptions} profile={profile} />;
       case "profile":

@@ -3305,6 +3305,114 @@ function AppointmentDetail({
   );
 }
 
+function RescheduleAppointmentModal({
+  appointment,
+  onClose,
+  onReschedule,
+  notify,
+}: {
+  appointment: Appointment;
+  onClose: () => void;
+  onReschedule: (id: string, payload: any) => Promise<void>;
+  notify: (message: string) => void;
+}) {
+  const [newDate, setNewDate] = useState("");
+  const [newTime, setNewTime] = useState("");
+  const [slots, setSlots] = useState<Array<{ starts_at: string; schedule_id: string }>>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  useEffect(() => {
+    setSlots([]);
+    setNewTime("");
+    if (!appointment.doctorId || !newDate || newDate < clinicTodayIso()) return;
+    const controller = new AbortController();
+    setLoadingSlots(true);
+    api.fetchBookingSlots(appointment.doctorId, newDate, { signal: controller.signal })
+      .then((res) => {
+        if (controller.signal.aborted) return;
+        setSlots(filterValidSlots(res.slots || [], res.server_now));
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
+        setSlots([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingSlots(false);
+      });
+    return () => { controller.abort(); };
+  }, [appointment.doctorId, newDate]);
+
+  const handleSave = async () => {
+    const slotMatch = slots.find((s) => s.starts_at.slice(11, 16) === newTime);
+    if (!newDate || newDate < clinicTodayIso() || !newTime || !slotMatch) {
+      notify("Vui lòng chọn ngày và khung giờ khả dụng hợp lệ.");
+      return;
+    }
+    try {
+      await onReschedule(appointment.id, {
+        scheduleId: slotMatch.schedule_id,
+        dateTime: `${newDate} ${newTime}:00`,
+        duration: 30,
+      });
+      onClose();
+    } catch (err: any) {
+      notify(err?.message || "Không thể dời lịch hẹn.");
+    }
+  };
+
+  return (
+    <Modal title={`Đổi lịch hẹn - ${appointment.id}`} onClose={onClose}>
+      <div style={{ padding: "0.5rem 0" }}>
+        <p>Bệnh nhân: <b>{appointment.patient}</b> · Bác sĩ: <b>BS. {appointment.doctor}</b></p>
+        <div className="form-grid" style={{ marginTop: "1rem" }}>
+          <label>
+            Ngày hẹn mới *
+            <Input
+              type="date"
+              min={clinicTodayIso()}
+              value={newDate}
+              onChange={(e) => {
+                setNewDate(e.target.value);
+                setNewTime("");
+              }}
+              required
+            />
+          </label>
+          <label>
+            Giờ hẹn mới *
+            <Select value={newTime} onChange={(e) => setNewTime(e.target.value)} disabled={loadingSlots || !slots.length}>
+              <option value="">{loadingSlots ? "Đang tải khung giờ..." : slots.length ? "-- Chọn khung giờ --" : "Không có khung giờ trống"}</option>
+              {slots.map((slot) => {
+                const t = slot.starts_at.slice(11, 16);
+                return <option key={slot.starts_at} value={t}>{t}</option>;
+              })}
+            </Select>
+          </label>
+        </div>
+        {newDate && (
+          <div style={{ marginTop: "0.75rem" }}>
+            {newDate < clinicTodayIso() ? (
+              <small style={{ color: "#991b1b" }}>⚠️ Không thể dời lịch về ngày trong quá khứ.</small>
+            ) : slots.length > 0 ? (
+              <small style={{ color: "#166534" }}>✓ Có {slots.length} khung giờ trống khả dụng vào ngày này.</small>
+            ) : !loadingSlots ? (
+              <small style={{ color: "#991b1b" }}>⚠️ Bác sĩ chưa có khung giờ khả dụng vào ngày này (BR26–36).</small>
+            ) : null}
+          </div>
+        )}
+        <div className="modal-actions" style={{ marginTop: "1.5rem" }}>
+          <Button variant="secondary" onClick={onClose}>
+            Hủy
+          </Button>
+          <Button onClick={handleSave} disabled={!newTime}>
+            Lưu lịch hẹn mới
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 function ConsultationSessionModal({
   sessionId,
   onClose,
@@ -3418,34 +3526,8 @@ function AppointmentsPage({
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [rescheduling, setRescheduling] = useState<Appointment | null>(null);
-  const [newDate, setNewDate] = useState("");
-  const [newTime, setNewTime] = useState("");
-  const [rescheduleSlots, setRescheduleSlots] = useState<Array<{ starts_at: string; schedule_id: string }>>([]);
-  const [loadingRescheduleSlots, setLoadingRescheduleSlots] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 10;
-
-  useEffect(() => {
-    setRescheduleSlots([]);
-    setNewTime("");
-    if (!rescheduling?.doctorId || !newDate || newDate < clinicTodayIso()) return;
-    const controller = new AbortController();
-    setLoadingRescheduleSlots(true);
-    api.fetchBookingSlots(rescheduling.doctorId, newDate, { signal: controller.signal })
-      .then((res) => {
-        if (controller.signal.aborted) return;
-        const valid = filterValidSlots(res.slots || [], res.server_now);
-        setRescheduleSlots(valid);
-      })
-      .catch((err) => {
-        if (err?.name === "AbortError" || controller.signal.aborted) return;
-        setRescheduleSlots([]);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoadingRescheduleSlots(false);
-      });
-    return () => { controller.abort(); };
-  }, [rescheduling?.doctorId, newDate]);
 
   const filtered = useMemo(() => {
     return appointments.filter(
@@ -3470,22 +3552,6 @@ function AppointmentsPage({
       cancelled: appointments.filter((a) => a.status === "Đã hủy").length,
     };
   }, [appointments]);
-
-  const handleExecuteReschedule = async () => {
-    const slotMatch = rescheduleSlots.find((s) => s.starts_at.slice(11, 16) === newTime);
-    if (!rescheduling || !newDate || newDate < clinicTodayIso() || !newTime || !slotMatch) {
-      notify("Vui lòng chọn ngày và khung giờ khả dụng hợp lệ.");
-      return;
-    }
-    await onReschedule(rescheduling.id, {
-      scheduleId: slotMatch.schedule_id,
-      dateTime: `${newDate} ${newTime}:00`,
-      duration: 30,
-    });
-    setRescheduling(null);
-    setNewDate("");
-    setNewTime("");
-  };
 
   return (
     <div className="page-stack">
@@ -3544,6 +3610,7 @@ function AppointmentsPage({
               <option>Đã xác nhận</option>
               <option>Hoàn thành</option>
               <option>Đã hủy</option>
+              <option>Không đến khám</option>
             </Select>
             <Select value={specialty} onChange={(e) => { setSpecialty(e.target.value); setPage(1); }}>
               <option>Tất cả</option>
@@ -3584,7 +3651,7 @@ function AppointmentsPage({
                     <small className="block" style={{ color: "#64748b" }}>{formatApptTime(a)}</small>
                   </td>
                   <td>
-                    {(Boolean(a.isFollowUp) || (a.reason && a.reason.toLowerCase().includes("tái khám"))) && (
+                    {Boolean(a.isFollowUp) && (
                       <span className="follow-up-tag">Tái khám</span>
                     )}
                     {a.reason}
@@ -3605,11 +3672,7 @@ function AppointmentsPage({
                           {!a.hasSession && a.status === "Chờ xác nhận" && (
                             <Button
                               variant="ghost"
-                              onClick={() => {
-                                setNewDate("");
-                                setNewTime("");
-                                setRescheduling(a);
-                              }}
+                              onClick={() => setRescheduling(a)}
                             >
                               Dời lịch
                             </Button>
@@ -3650,8 +3713,6 @@ function AppointmentsPage({
           onReschedule={() => {
             const current = selected;
             setSelected(undefined);
-            setNewDate("");
-            setNewTime("");
             setRescheduling(current);
           }}
           onViewSession={(sessionId) => {
@@ -3681,55 +3742,12 @@ function AppointmentsPage({
       )}
 
       {rescheduling && (
-        <Modal title={`Đổi lịch hẹn - ${rescheduling.id}`} onClose={() => setRescheduling(null)}>
-          <div style={{ padding: "0.5rem 0" }}>
-            <p>Bệnh nhân: <b>{rescheduling.patient}</b> · Bác sĩ: <b>BS. {rescheduling.doctor}</b></p>
-            <div className="form-grid" style={{ marginTop: "1rem" }}>
-              <label>
-                Ngày hẹn mới *
-                <Input
-                  type="date"
-                  min={clinicTodayIso()}
-                  value={newDate}
-                  onChange={(e) => {
-                    setNewDate(e.target.value);
-                    setNewTime("");
-                  }}
-                  required
-                />
-              </label>
-              <label>
-                Giờ hẹn mới *
-                <Select value={newTime} onChange={(e) => setNewTime(e.target.value)} disabled={loadingRescheduleSlots || !rescheduleSlots.length}>
-                  <option value="">{loadingRescheduleSlots ? "Đang tải khung giờ..." : rescheduleSlots.length ? "-- Chọn khung giờ --" : "Không có khung giờ trống"}</option>
-                  {rescheduleSlots.map((slot) => {
-                    const t = slot.starts_at.slice(11, 16);
-                    return <option key={slot.starts_at} value={t}>{t}</option>;
-                  })}
-                </Select>
-              </label>
-            </div>
-            {newDate && (
-              <div style={{ marginTop: "0.75rem" }}>
-                {newDate < clinicTodayIso() ? (
-                  <small style={{ color: "#991b1b" }}>⚠️ Không thể dời lịch về ngày trong quá khứ.</small>
-                ) : rescheduleSlots.length > 0 ? (
-                  <small style={{ color: "#166534" }}>✓ Có {rescheduleSlots.length} khung giờ trống khả dụng vào ngày này.</small>
-                ) : !loadingRescheduleSlots ? (
-                  <small style={{ color: "#991b1b" }}>⚠️ Bác sĩ chưa có khung giờ khả dụng vào ngày này (BR26–36).</small>
-                ) : null}
-              </div>
-            )}
-            <div className="modal-actions" style={{ marginTop: "1.5rem" }}>
-              <Button variant="secondary" onClick={() => setRescheduling(null)}>
-                Hủy
-              </Button>
-              <Button onClick={handleExecuteReschedule} disabled={!newTime}>
-                Lưu lịch hẹn mới
-              </Button>
-            </div>
-          </div>
-        </Modal>
+        <RescheduleAppointmentModal
+          appointment={rescheduling}
+          onClose={() => setRescheduling(null)}
+          onReschedule={onReschedule}
+          notify={notify}
+        />
       )}
     </div>
   );
@@ -3838,7 +3856,7 @@ function SchedulePage({
       setAddError("Ca trực phải nằm trong giờ hành chính phòng khám (08:00–17:00).");
       return;
     }
-    const today = new Date().toISOString().split("T")[0];
+    const today = clinicTodayIso();
     if (newDate < today) {
       setAddError("Không thể tạo ca trực trong quá khứ.");
       return;
@@ -3938,7 +3956,7 @@ function SchedulePage({
                   {weekDays.map((d) => {
                     const daySchedules = schedules.filter((s) => {
                       if (selectedDoctor !== "Tất cả bác sĩ" && s.doctorName !== selectedDoctor.replace("BS. ", "")) return false;
-                      if (selectedSpecialty !== "Tất cả chuyên khoa" && s.specialty !== selectedSpecialty) return false;
+                      if (selectedSpecialty !== "Tất cả chuyên khoa" && (s.specialty || "Đa khoa") !== selectedSpecialty) return false;
                       return s.date === d.iso || s.formattedDate?.startsWith(d.dateStr);
                     });
                     return (
@@ -4868,6 +4886,8 @@ export default function App() {
   const [toast, setToast] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedApptDetail, setSelectedApptDetail] = useState<Appointment>();
+  const [globalSessionId, setGlobalSessionId] = useState<string | null>(null);
+  const [globalRescheduleTarget, setGlobalRescheduleTarget] = useState<Appointment | null>(null);
 
   // Live Database State
   const [adminProfile, setAdminProfile] = useState<AdminProfile>({
@@ -4946,10 +4966,16 @@ export default function App() {
     notify(res.message || "Đã tạo tài khoản người dùng thành công.");
   };
 
+  const syncAccountStatus = (userId: string, status: User["status"]) => {
+    setUsers((curr) => curr.map((u) => (u.id === userId ? { ...u, status } : u)));
+    setDoctors((curr) => curr.map((d) => (d.userId === userId ? { ...d, status } : d)));
+    setPatients((curr) => curr.map((p) => (p.userId === userId ? { ...p, status } : p)));
+  };
+
   const handleToggleUserStatus = async (user: User) => {
     const newStatus = user.status === "Hoạt động" ? "Tạm khóa" : "Hoạt động";
     const res = await api.toggleUserStatus(user.id, newStatus);
-    setUsers((curr) => curr.map((u) => (u.id === user.id ? { ...u, status: res.status } : u)));
+    syncAccountStatus(user.id, res.status);
     notify(`Đã cập nhật trạng thái ${user.name} thành ${res.status}.`);
   };
 
@@ -4973,8 +4999,50 @@ export default function App() {
 
   const handleUpdateDoctor = async (doctorId: string, payload: any) => {
     const res = await api.updateDoctor(doctorId, payload);
+    const existingDoc = doctors.find((d) => d.id === doctorId);
+    const formattedDob = payload.dob && payload.dob.includes("-")
+      ? payload.dob.split("-").reverse().join("/")
+      : payload.dob;
     setDoctors((curr) =>
-      curr.map((d) => (d.id === doctorId ? { ...d, ...payload } : d)),
+      curr.map((d) =>
+        d.id === doctorId
+          ? {
+              ...d,
+              name: payload.name ?? d.name,
+              specialty: payload.specialty ?? d.specialty,
+              email: payload.email ?? d.email,
+              phone: payload.phone ?? d.phone,
+              licenseNumber: payload.licenseNumber ?? d.licenseNumber,
+              gender: payload.gender ?? d.gender,
+              ...(payload.dob ? { rawDob: payload.dob, dob: formattedDob || d.dob } : {}),
+            }
+          : d,
+      ),
+    );
+    if (existingDoc?.userId) {
+      setUsers((curr) =>
+        curr.map((u) =>
+          u.id === existingDoc.userId
+            ? {
+                ...u,
+                name: payload.name ?? u.name,
+                email: payload.email ?? u.email,
+                phone: payload.phone ?? u.phone,
+              }
+            : u,
+        ),
+      );
+    }
+    setAppointments((curr) =>
+      curr.map((a) =>
+        a.doctorId === doctorId
+          ? {
+              ...a,
+              doctor: payload.name ?? a.doctor,
+              specialty: payload.specialty ?? a.specialty,
+            }
+          : a,
+      ),
     );
     notify(res.message || "Đã cập nhật thông tin bác sĩ.");
   };
@@ -4999,8 +5067,42 @@ export default function App() {
 
   const handleUpdatePatient = async (patientId: string, payload: any) => {
     const res = await api.updatePatient(patientId, payload);
+    const existingPat = patients.find((p) => p.id === patientId);
+    const formattedDob = payload.dob && payload.dob.includes("-")
+      ? payload.dob.split("-").reverse().join("/")
+      : payload.dob;
     setPatients((curr) =>
-      curr.map((p) => (p.id === patientId ? { ...p, ...payload } : p)),
+      curr.map((p) =>
+        p.id === patientId
+          ? {
+              ...p,
+              ...payload,
+              rawDob: payload.dob || p.rawDob,
+              dob: formattedDob || p.dob,
+            }
+          : p,
+      ),
+    );
+    if (existingPat?.userId) {
+      setUsers((curr) =>
+        curr.map((u) =>
+          u.id === existingPat.userId
+            ? {
+                ...u,
+                name: payload.name ?? u.name,
+                email: payload.email ?? u.email,
+                phone: payload.phone ?? u.phone,
+              }
+            : u,
+        ),
+      );
+    }
+    setAppointments((curr) =>
+      curr.map((a) =>
+        a.patientId === patientId
+          ? { ...a, patient: payload.name ?? a.patient }
+          : a,
+      ),
     );
     notify(res.message || "Đã cập nhật hồ sơ bệnh nhân.");
   };
@@ -5039,6 +5141,7 @@ export default function App() {
       specialty: doc ? doc.specialty : "Đa khoa",
       date: res.appointment.date,
       time: res.appointment.time,
+      rawDateTime: res.appointment.rawDateTime || payload.appointmentDateTime?.slice(0, 16),
       reason: res.appointment?.reason || payload.reason || (payload.followUpFromApptId ? "Tái khám theo hẹn." : "Khám sức khỏe tổng quát"),
       visitType: payload.visitType || "Khám trực tiếp",
       status: (res.appointment?.status as Appointment["status"]) || "Chờ xác nhận",
@@ -5075,8 +5178,13 @@ export default function App() {
 
   const handleRescheduleAppointment = async (appointmentId: string, payload: any) => {
     const res = await api.rescheduleAppointment(appointmentId, payload);
+    const nextRawDateTime = payload.dateTime ? String(payload.dateTime).slice(0, 16) : undefined;
     setAppointments((curr) =>
-      curr.map((a) => (a.id === appointmentId ? { ...a, date: res.date, time: res.time } : a)),
+      curr.map((a) =>
+        a.id === appointmentId
+          ? { ...a, date: res.date, time: res.time, ...(nextRawDateTime ? { rawDateTime: nextRawDateTime } : {}) }
+          : a,
+      ),
     );
     notify(`Đã dời lịch hẹn ${appointmentId} sang ${res.date} lúc ${res.time}.`);
   };
@@ -5150,9 +5258,7 @@ export default function App() {
             onUpdateDoctor={handleUpdateDoctor}
             onToggleStatus={async (userId, st) => {
               const res = await api.toggleUserStatus(userId, st);
-              setDoctors((curr) =>
-                curr.map((d) => (d.userId === userId ? { ...d, status: res.status } : d)),
-              );
+              syncAccountStatus(userId, res.status);
               notify(`Đã cập nhật trạng thái tài khoản bác sĩ thành ${res.status}.`);
             }}
           />
@@ -5165,9 +5271,7 @@ export default function App() {
             onUpdatePatient={handleUpdatePatient}
             onToggleStatus={async (userId, st) => {
               const res = await api.toggleUserStatus(userId, st);
-              setPatients((curr) =>
-                curr.map((p) => (p.userId === userId ? { ...p, status: res.status } : p)),
-              );
+              syncAccountStatus(userId, res.status);
               notify(`Đã cập nhật trạng thái tài khoản bệnh nhân thành ${res.status}.`);
             }}
           />
@@ -5266,8 +5370,28 @@ export default function App() {
           onReschedule={() => {
             const current = selectedApptDetail;
             setSelectedApptDetail(undefined);
-            setPage("appointments");
+            setGlobalRescheduleTarget(current);
           }}
+          onViewSession={(sessionId) => {
+            setSelectedApptDetail(undefined);
+            setGlobalSessionId(sessionId);
+          }}
+        />
+      )}
+
+      {globalSessionId && (
+        <ConsultationSessionModal
+          sessionId={globalSessionId}
+          onClose={() => setGlobalSessionId(null)}
+        />
+      )}
+
+      {globalRescheduleTarget && (
+        <RescheduleAppointmentModal
+          appointment={globalRescheduleTarget}
+          onClose={() => setGlobalRescheduleTarget(null)}
+          onReschedule={handleRescheduleAppointment}
+          notify={notify}
         />
       )}
 

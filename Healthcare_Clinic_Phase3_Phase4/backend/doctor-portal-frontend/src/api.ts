@@ -93,6 +93,11 @@ export type MedicalRecord = {
   symptoms: string;
   notes: string;
   doctor: string;
+  doctorId?: string;
+  specialty?: string;
+  visitType?: string;
+  isOwnRecord?: boolean;
+  prescriptionSummary?: string;
 };
 
 export type DoctorProfile = {
