@@ -5,7 +5,21 @@
 
 ---
 
-## 1. Project Overview
+## 1. Course & Team Members
+
+- **Course Name / Class Code:** `INT1313 - Databases`
+- **Instructor:** Lê Hà Thanh
+- **Academic Term:** Semester 1, Academic Year 2026–2027 (`Team TiTiMi`)
+
+| No. | Full Name | Student ID (MSSV) | Email / GitHub | Role & Assigned Responsibilities (Balanced 3-Pillar Split) |
+|---:|---|---|---|---|
+| 1 | Nguyễn Dương Thanh Mai | `N24DECE081` | `n24dece081@student.ptithcm.edu.vn` / [`@N24DECE081`](https://github.com/N24DECE081) | **Repository Owner, Clinical Data Integrity & DB Security** — PR review & `main` governance; **Tables (5):** `consultation_session`, `medical_history`, `medication`, `prescription`, `prescription_item`; **Design & BCNF:** Clinical BCNF proof (deriving patient/doctor via `session_id` with zero redundancy), nullable `end_time` consultation lifecycle, `>= 1` prescription item invariant & append-only history; **SQL & Security:** `001_session_integrity.sql` (`validate_session` / HTTPS Telemedicine), `001_clinical_integrity.sql`, views `v_patient_history` & `v_prescription_details`, least-privilege role `clinic_application` (`001_application_role.sql` with `DELETE` denied) & Flask RBAC; **Queries:** `Q03`, `Q10`, `Q11`, `Q12` |
+| 2 | La Vĩnh Tiến | `N24DECE095` | `n24dece095@student.ptithcm.edu.vn` | **Identity, Conflict-Free Booking & Appointment BCNF** — **Tables (3):** `user_account`, `patient`, `appointment` (including recursive `follow_up_from_appt_id`); **Design & BCNF:** ISO/IEC 11179 Data Dictionary & domain constraints (`VARCHAR + CHECK`), appointment state lifecycle, recursive 1:1 follow-ups & `appointment` BCNF guard (`doctor_id` synced with `doctor_schedule`); **SQL & Concurrency:** Account/patient triggers (`000_profile_subtype_integrity.sql`), booking triggers & procedure (`001_appointment_integrity.sql`: `validate_appointment`, `sp_auto_noshow_appointments`), `SELECT ... FOR UPDATE` row locking & view `v_appointment_details`; **Queries:** `Q04`, `Q06`, `Q08`, `Q09` |
+| 3 | Nguyễn Thanh Tuyền | `N24DECE103` | `n24dece103@student.ptithcm.edu.vn` | **EER Specialization (Option 8A), Shifts & Query Optimization** — **Tables (5):** `specialty`, `doctor`, `general_practitioner`, `specialist`, `doctor_schedule`; **Design & BCNF:** Elmasri **Option 8A Total & Disjoint Specialization** (`doctor` supertype → `general_practitioner` / `specialist` `N:1` `specialty`), minimum doctor age (`>= 25`) & non-overlapping 30-min shift rules (`08:00–12:00`, `13:00–17:00`); **SQL & Optimization:** Subtype/age/shift triggers (`002_doctor_birth_date.sql`, `000_profile_subtype_integrity.sql`, `001_schedule_integrity.sql`: `validate_schedule`), **4 Composite Indexes** (`001_workflow_indexes.sql`) & `EXPLAIN` execution plan analysis; **Queries:** `Q01`, `Q02`, `Q05`, `Q07` |
+
+---
+
+## 2. Project Overview
 
 ### Objectives & Problem Statement
 
@@ -36,20 +50,6 @@ Outpatient clinics that operate both in-person visits and remote telemedicine co
 | **Frontend SPAs** | React `19.0`, TypeScript `5.7`, Vite `8.0`, Tailwind CSS `4.0` (`admin-portal-frontend`, `doctor-portal-frontend`, `patient-portal-frontend`) |
 | **Database** | MySQL `8.0.16+` / `26.x` (InnoDB, `utf8mb4_0900_ai_ci`, `mysql-connector-python 9.7.0`), Stored Procedures, Triggers, Views, Composite Indexes, SQL Roles |
 | **Testing & QA** | `pytest 8.4.2`, isolated MySQL schema fixtures, `scripts/verify_structure.py`, `scripts/verify_database.py`, optional `scripts/verify_ui.mjs` (Node.js + Chrome CDP) |
-
----
-
-## 2. Course & Team Members
-
-- **Course Name / Class Code:** Database
-- **Instructor:** Lê Hà Thanh
-- **Academic Term:** Semester 1, Academic Year 2026–2027 (`Team TiTiMi`)
-
-| No. | Full Name | Student ID (MSSV) | Email / GitHub | Role & Assigned Responsibilities |
-|---:|---|---|---|---|
-| 1 | Nguyễn Dương Thanh Mai | `N24DECE081` | `n24dece081@student.ptithcm.edu.vn` / [`@N24DECE081`](https://github.com/N24DECE081) | **Repository Owner & Integrity / Clinical Workflows** — PR approval & merge governance; MySQL triggers, views, composite indexes; synthetic workflow seed; clinical services & repositories (`schedules`, `appointments`, `consultations`, `medical_history`, `prescriptions`); queries `Q05–Q08`; Phase 3/4 SQL implementation & performance report |
-| 2 | La Vĩnh Tiến | `N24DECE095` | `n24dece095@student.ptithcm.edu.vn` | **Data Model & Persistence** — Baseline freeze & schema manifest; logical-to-physical DDL (`13` tables), Option 8A specialization mapping, ISO/IEC 11179 data dictionary; isolated MySQL setup; repositories (`auth`, `patients`, `doctors`, `medications`); queries `Q01–Q04`; Phases 2–3 database design report |
-| 3 | Nguyễn Thanh Tuyền | `N24DECE103` | `n24dece103@student.ptithcm.edu.vn` | **Application, Security & Integration Delivery** — Flask app factory, blueprints, WTForms/CSRF, authentication & RBAC ownership; DB role `GRANT`/`REVOKE` scripts; analytics & audit queries `Q09–Q12`; integration tests; Phase 1 SRS/business rules, Phase 3 security report & report consolidation |
 
 ---
 
