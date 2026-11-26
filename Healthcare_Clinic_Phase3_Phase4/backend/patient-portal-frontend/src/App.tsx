@@ -9,6 +9,7 @@ import {
   MedicalRecord,
   PatientProfile,
   Prescription,
+  SpecialtyOption,
   bookAppointment,
   cancelAppointment,
   fetchBookingOptions,
@@ -795,29 +796,43 @@ function FindDoctors({
   const [query, setQuery] = useState("");
   const [specialty, setSpecialty] = useState("Tất cả chuyên khoa");
   const [availability, setAvailability] = useState("Mọi lịch trống");
+  const [sortBy, setSortBy] = useState("recommended");
 
   const specialtiesList = useMemo(() => {
     const list = Array.from(new Set(doctors.map((d) => d.specialty).filter(Boolean))).sort();
     return ["Tất cả chuyên khoa", ...list];
   }, [doctors]);
 
-  const filtered = useMemo(
-    () =>
-      doctors.filter(
-        (d) =>
-          (d.name.toLowerCase().includes(query.toLowerCase()) ||
-            d.specialty.toLowerCase().includes(query.toLowerCase())) &&
-          (specialty === "Tất cả chuyên khoa" || d.specialty === specialty) &&
-          (availability === "Mọi lịch trống" ||
-            (availability === "Có lịch hôm nay" ? d.next.includes("Hôm nay") : d.available))
-      ),
-    [doctors, query, specialty, availability]
-  );
+  const filtered = useMemo(() => {
+    const base = doctors.filter(
+      (d) =>
+        (d.name.toLowerCase().includes(query.toLowerCase()) ||
+          d.specialty.toLowerCase().includes(query.toLowerCase())) &&
+        (specialty === "Tất cả chuyên khoa" || d.specialty === specialty) &&
+        (availability === "Mọi lịch trống" ||
+          (availability === "Có lịch hôm nay" ? d.next.includes("Hôm nay") : d.available))
+    );
+    if (sortBy === "nearest") {
+      const rank = (d: Doctor) => {
+        if (!d.available) return 3;
+        if (d.next.includes("Hôm nay")) return 0;
+        if (d.next.includes("Ngày mai")) return 1;
+        return 2;
+      };
+      return [...base].sort((a, b) => rank(a) - rank(b) || a.next.localeCompare(b.next, "vi"));
+    }
+    if (sortBy === "experience") {
+      const years = (exp: string) => parseInt((exp || "").replace(/\D+/g, ""), 10) || 0;
+      return [...base].sort((a, b) => years(b.experience) - years(a.experience) || a.name.localeCompare(b.name, "vi"));
+    }
+    return base;
+  }, [doctors, query, specialty, availability, sortBy]);
 
   const clear = () => {
     setQuery("");
     setSpecialty("Tất cả chuyên khoa");
     setAvailability("Mọi lịch trống");
+    setSortBy("recommended");
   };
 
   return (
@@ -861,7 +876,7 @@ function FindDoctors({
             <option>Lịch gần nhất</option>
           </select>
         </label>
-        <Button icon="search">Tìm kiếm</Button>
+        <Button icon="search" onClick={() => setQuery((v) => v.trim())}>Tìm kiếm</Button>
       </div>
 
       <div className="results-head">
@@ -869,10 +884,10 @@ function FindDoctors({
           <h2>{filtered.length} bác sĩ có lịch trống</h2>
           <p>Hiển thị các bác sĩ trong cơ sở dữ liệu TiTiMi</p>
         </div>
-        <select aria-label="Sắp xếp bác sĩ">
-          <option>Đề xuất</option>
-          <option>Lịch gần nhất</option>
-          <option>Kinh nghiệm</option>
+        <select aria-label="Sắp xếp bác sĩ" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          <option value="recommended">Đề xuất</option>
+          <option value="nearest">Lịch gần nhất</option>
+          <option value="experience">Kinh nghiệm</option>
         </select>
       </div>
 
@@ -1008,23 +1023,20 @@ function DoctorDetail({
           </section>
         </div>
         <aside className="card schedule-card">
-          <h2>Lịch khám còn trống</h2>
-          <p>Chọn khung giờ để bắt đầu đặt lịch.</p>
-          {["Hôm nay", "Ngày mai", "Ngày kia"].map((d, i) => (
-            <button
-              key={d}
-              onClick={() => {
-                onBookDoctor(doctor);
-                go("booking");
-              }}
-            >
-              <span>
-                <strong>{d}</strong>
-                <small>{i === 0 ? "Còn 3 khung giờ" : "Còn 5 khung giờ"}</small>
-              </span>
-              <Icon name="chevron" size={18} />
-            </button>
-          ))}
+          <h2>Lịch khám khả dụng</h2>
+          <p>Tra cứu trực tiếp khung giờ trống theo ca trực thực tế của bác sĩ.</p>
+          <button
+            onClick={() => {
+              onBookDoctor(doctor);
+              go("booking");
+            }}
+          >
+            <span>
+              <strong>Lịch gần nhất</strong>
+              <small>{doctor.next || "Xem khung giờ trống theo ngày"}</small>
+            </span>
+            <Icon name="chevron" size={18} />
+          </button>
           <div className="consult-fee">
             <span>Phí tư vấn</span>
             <strong>150.000 đ</strong>
@@ -1040,6 +1052,7 @@ function Booking({
   go,
   showToast,
   doctors,
+  specialtiesList = [],
   profile,
   initialDoctor,
   onAppointmentBooked,
@@ -1047,6 +1060,7 @@ function Booking({
   go: (p: Page) => void;
   showToast: (s: string) => void;
   doctors: Doctor[];
+  specialtiesList?: SpecialtyOption[];
   profile: PatientProfile;
   initialDoctor: Doctor | null;
   onAppointmentBooked: (appt: Appointment) => void;
@@ -1130,50 +1144,47 @@ function Booking({
   const [selectedSlot, setSelectedSlot] = useState<AppointmentSlot | null>(null);
   const [time, setTime] = useState("");
 
-  const specialties: { name: string; description: string; icon: IconName; available: boolean }[] = [
-    {
+  const specialties = useMemo(() => {
+    const metaByName: Record<string, { description: string; icon: IconName }> = {
+      "Đa khoa": { description: "Khám sức khỏe ban đầu, tổng quát và tầm soát", icon: "stethoscope" },
+      "Nội tổng quát": { description: "Khám và điều trị các bệnh nội khoa", icon: "stethoscope" },
+      "Tim mạch": { description: "Chăm sóc tim mạch và kiểm soát huyết áp", icon: "activity" },
+      "Da liễu": { description: "Chẩn đoán và điều trị bệnh lý về da", icon: "user" },
+      "Nhi khoa": { description: "Khám và chăm sóc sức khỏe trẻ em", icon: "user" },
+      "Tai Mũi Họng": { description: "Khám và điều trị các bệnh tai, mũi, họng", icon: "activity" },
+      "Cơ xương khớp": { description: "Khám và điều trị bệnh cơ xương khớp", icon: "history" },
+    };
+    const seen = new Map<string, { name: string; description: string; icon: IconName; available: boolean }>();
+    seen.set("Đa khoa", {
       name: "Đa khoa",
-      description: "Khám sức khỏe ban đầu, tổng quát và tầm soát",
+      description: metaByName["Đa khoa"].description,
       icon: "stethoscope",
       available: true,
-    },
-    {
-      name: "Nội tổng quát",
-      description: "Khám và điều trị các bệnh nội khoa",
-      icon: "stethoscope",
-      available: true,
-    },
-    {
-      name: "Tim mạch",
-      description: "Chăm sóc tim mạch và kiểm soát huyết áp",
-      icon: "activity",
-      available: true,
-    },
-    {
-      name: "Da liễu",
-      description: "Chẩn đoán và điều trị bệnh lý về da",
-      icon: "user",
-      available: true,
-    },
-    {
-      name: "Nhi khoa",
-      description: "Khám và chăm sóc sức khỏe trẻ em",
-      icon: "user",
-      available: true,
-    },
-    {
-      name: "Tai Mũi Họng",
-      description: "Khám và điều trị các bệnh tai, mũi, họng",
-      icon: "activity",
-      available: true,
-    },
-    {
-      name: "Cơ xương khớp",
-      description: "Khám và điều trị bệnh cơ xương khớp",
-      icon: "history",
-      available: true,
-    },
-  ];
+    });
+    for (const sp of specialtiesList) {
+      const spName = sp.name === "General Practitioner" || sp.name === "General Practice" ? "Đa khoa" : sp.name;
+      if (!spName || seen.has(spName)) continue;
+      const meta = metaByName[spName];
+      seen.set(spName, {
+        name: spName,
+        description: sp.description || meta?.description || `Khám và điều trị chuyên khoa ${spName}`,
+        icon: meta?.icon || "stethoscope",
+        available: true,
+      });
+    }
+    for (const d of doctors) {
+      const spName = d.specialty || "Đa khoa";
+      if (seen.has(spName)) continue;
+      const meta = metaByName[spName];
+      seen.set(spName, {
+        name: spName,
+        description: meta?.description || `Khám và điều trị chuyên khoa ${spName}`,
+        icon: meta?.icon || "stethoscope",
+        available: true,
+      });
+    }
+    return Array.from(seen.values());
+  }, [specialtiesList, doctors]);
 
   const availableDoctors = useMemo(() => {
     return doctors.filter(
@@ -1486,6 +1497,7 @@ function Booking({
         doctorId: selectedDoctorObj.id,
         specialty: selectedDoctorObj.specialty,
         date: dateDisplay,
+        rawDate: selectedDateIso,
         time: time,
         type: type,
         status: "Đã xác nhận",
@@ -2361,9 +2373,11 @@ function AppointmentDetail({
               tone={
                 appointment.status === "Đã hoàn thành"
                   ? "blue"
-                  : appointment.status === "Đã hủy"
+                  : appointment.status === "Đã hủy" || appointment.status === "Không đến khám"
                     ? "red"
-                    : "green"
+                    : appointment.status === "Đã tiếp nhận"
+                      ? "amber"
+                      : "green"
               }
             >
               {appointment.status}
@@ -2542,7 +2556,7 @@ function Consultations({
                 <span className="consult-date">{c.date}</span>
                 <h3>{c.doctor}</h3>
                 <p>
-                  {c.specialty} · {c.modality} · Thời lượng: {c.duration} phút
+                  {c.specialty} · {c.modality} · {c.isActive ? `Đang khám (tối thiểu ${c.duration} phút)` : `Thời lượng: ${c.duration} phút`}
                 </p>
               </div>
               <Badge tone="blue">{c.status}</Badge>
@@ -2778,7 +2792,7 @@ function ConsultationDetail({
           </div>
           <div>
             <span>Thời lượng</span>
-            <strong>{consultation.duration} phút</strong>
+            <strong>{consultation.isActive ? `Đang khám (tối thiểu ${consultation.duration} phút)` : `${consultation.duration} phút`}</strong>
           </div>
           <div>
             <span>Hình thức</span>
@@ -3339,6 +3353,7 @@ export default function App() {
   // Live Data States
   const [profile, setProfile] = useState<PatientProfile>(defaultProfile);
   const [doctors, setDoctors] = useState<Doctor[]>(defaultDoctors);
+  const [specialtiesList, setSpecialtiesList] = useState<SpecialtyOption[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [records, setRecords] = useState<MedicalRecord[]>([]);
@@ -3361,6 +3376,7 @@ export default function App() {
           setDoctors(data.doctors);
           setSelectedDoctor(data.doctors[0]);
         }
+        if (data.specialties) setSpecialtiesList(data.specialties);
         if (data.appointments) {
           setAppointments(data.appointments);
           if (data.appointments.length > 0) setSelectedAppointment(data.appointments[0]);
@@ -3623,6 +3639,7 @@ export default function App() {
               go={go}
               showToast={showToast}
               doctors={doctors}
+              specialtiesList={specialtiesList}
               profile={profile}
               initialDoctor={bookingDoctor}
               onAppointmentBooked={(newAppt) => {

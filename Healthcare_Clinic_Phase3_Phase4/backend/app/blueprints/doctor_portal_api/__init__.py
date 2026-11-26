@@ -155,8 +155,34 @@ def portal_data():
         follow_up_by_parent.setdefault(row["follow_up_from_appt_id"], row["appointment_id"])
     session_data = [_consultation(row, follow_up_by_parent) for row in session_rows]
 
-    history_data = [
-        {
+    history_rows = medical_history.list_for(g.user)
+    history_session_ids = list(dict.fromkeys(row["session_id"] for row in history_rows if row.get("session_id")))
+    rx_summary_by_session = {}
+    if history_session_ids:
+        placeholders = ", ".join(["%s"] * len(history_session_ids))
+        rx_rows = query(
+            f"""SELECT rx.session_id, m.medication_name, ri.dosage
+                FROM prescription rx
+                JOIN prescription_item ri ON ri.prescription_id = rx.prescription_id
+                JOIN medication m ON m.medication_id = ri.medication_id
+                WHERE rx.session_id IN ({placeholders})
+                ORDER BY rx.prescription_date DESC, m.medication_name ASC""",
+            tuple(history_session_ids),
+        )
+        grouped = {}
+        for rx_row in rx_rows:
+            grouped.setdefault(rx_row["session_id"], []).append(
+                f"{rx_row['medication_name']} ({rx_row['dosage']})"
+            )
+        rx_summary_by_session = {sid: ", ".join(items) for sid, items in grouped.items()}
+
+    history_data = []
+    for row in history_rows:
+        sp_name = row.get("specialty_name") or "Đa khoa"
+        if sp_name in ("General Practitioner", "General Practice"):
+            sp_name = "Đa khoa"
+        row_doc_id = row.get("doctor_id") or ""
+        history_data.append({
             "id": row["medical_history_id"],
             "sessionId": row["session_id"],
             "patientId": row["patient_id"],
@@ -166,9 +192,12 @@ def portal_data():
             "symptoms": row["symptoms"],
             "notes": row["progress_notes"] or "",
             "doctor": row["doctor_name"],
-        }
-        for row in medical_history.list_for(g.user)
-    ]
+            "doctorId": row_doc_id,
+            "specialty": sp_name,
+            "visitType": "Tư vấn trực tuyến" if row.get("appointment_type") == "Telemedicine" else "Khám trực tiếp",
+            "isOwnRecord": (row_doc_id == doctor.doctor_id) if row_doc_id else (row["doctor_name"] == doctor.full_name),
+            "prescriptionSummary": rx_summary_by_session.get(row["session_id"], ""),
+        })
     prescription_data = []
     for row in prescriptions.list_for(g.user):
         items = prescriptions.items(row["prescription_id"])
@@ -255,7 +284,7 @@ def create_consultation(appointment_id):
     session = consultation_service.create(g.user, appointment_id, {
         "start_time": now(),
         "end_time": None,
-        "actual_duration_minutes": None,
+        "actual_duration_minutes": 5,
         "meeting_url": meeting_url.strip() or None,
         "diagnosis_notes": notes.strip() or None,
     })

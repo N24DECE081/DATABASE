@@ -294,3 +294,71 @@ def test_3_role_slot_sync_and_doctor_followup_and_session_link(app, client):
         )
     missing_html = client.get(f"/appointments/{sid_completed}").get_data(as_text=True)
     assert "Chưa có phiên khám liên kết" in missing_html
+
+
+@pytest.mark.mysql
+def test_phase1_phase2_audit_hardening_fixes(app, client):
+    import mysql.connector
+    from app.services import consultations as consultation_service
+    from app.services import medical_history as history_service
+    from app.services import prescriptions as prescription_service
+    from app.repositories import auth
+
+    # 1. Atomic admin patient creation: invalid blood_type rolls back user_account & patient
+    login(client, "admin")
+    csrf = client.get("/api/csrf").get_json()["csrf_token"]
+    headers = {"X-CSRFToken": csrf}
+
+    res_bad_blood = client.post("/api/admin/patients", json={
+        "name": "Bệnh Nhân Nhóm Máu Sai",
+        "username": "pat_bad_blood_atomic",
+        "password": "Password123",
+        "phone": "0933444555",
+        "dob": "1995-05-05",
+        "blood_type": "INVALID",
+    }, headers=headers)
+    assert res_bad_blood.status_code == 400
+    assert sql(app, "SELECT user_id FROM user_account WHERE username='pat_bad_blood_atomic'", one=True) is None
+    assert sql(app, "SELECT patient_id FROM patient WHERE phone='0933444555'", one=True) is None
+
+    # 2. Medication creation preserves chemical/unit casing & enforces length <= 100
+    res_med = client.post("/api/admin/medications", json={
+        "name": "  Vitamin   D3   1000   IU  ",
+        "description": "Bổ sung vitamin D3",
+    }, headers=headers)
+    assert res_med.status_code == 201, res_med.get_json()
+    assert res_med.get_json()["medication"]["name"] == "Vitamin D3 1000 IU"
+
+    res_med_long = client.post("/api/admin/medications", json={
+        "name": "X" * 101,
+    }, headers=headers)
+    assert res_med_long.status_code == 400
+
+    # 3. Admin appointment invalid duration returns 400 instead of 500
+    res_bad_dur = client.post("/api/admin/appointments", json={
+        "patientId": "PAT-001",
+        "doctorId": "DOC-001",
+        "dateTime": (now() + timedelta(days=1)).strftime("%Y-%m-%d 09:00:00"),
+        "duration": "not-a-number",
+    }, headers=headers)
+    assert res_bad_dur.status_code == 400
+
+    # 4. doctor_birth_date_before_update trigger rejects underage/invalid DOB updates
+    with pytest.raises(mysql.connector.Error) as doc_upd_err:
+        sql(app, "UPDATE doctor SET date_of_birth = %s WHERE doctor_id = 'DOC-001'", (now().date(),))
+    assert doc_upd_err.value.errno == 1644
+
+    # 5. History & Prescription service validations + Telemedicine URL validation
+    with app.app_context():
+        doc_user = auth.find_by_username("doctor_gp")
+        with pytest.raises(BusinessError):
+            history_service.create(doc_user, "SES-001", {"diagnosis": "  ", "symptoms": "Ho"})
+        with pytest.raises(BusinessError):
+            history_service.create(doc_user, "SES-001", {"diagnosis": "D" * 256, "symptoms": "Ho"})
+        with pytest.raises(BusinessError):
+            prescription_service.create(doc_user, "SES-001", {
+                "items": [{"medication_id": "MED-001", "dosage": "D" * 51, "frequency": "2/d", "duration": "5d"}]
+            })
+        assert consultation_service._validate_telemedicine_meeting_url("Telemedicine", "https://meet.example.com/abc") == "https://meet.example.com/abc"
+        with pytest.raises(BusinessError):
+            consultation_service._validate_telemedicine_meeting_url("Telemedicine", "")

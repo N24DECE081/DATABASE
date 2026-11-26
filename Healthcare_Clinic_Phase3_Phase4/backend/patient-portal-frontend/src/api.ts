@@ -108,9 +108,16 @@ export type PatientProfile = {
   emergencyContactPhone: string;
 };
 
+export type SpecialtyOption = {
+  id: string;
+  name: string;
+  description: string;
+};
+
 export type PatientPortalData = {
   profile: PatientProfile;
   doctors: Doctor[];
+  specialties?: SpecialtyOption[];
   appointments: Appointment[];
   consultations: Consultation[];
   records: MedicalRecord[];

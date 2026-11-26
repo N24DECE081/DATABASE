@@ -210,7 +210,7 @@ def portal_data():
             "time": _format_time_vi(s["start_time"]),
             "startedAt": _iso(s["start_time"]),
             "endedAt": _iso(s["end_time"]),
-            "duration": s["actual_duration_minutes"] or 20,
+            "duration": s["actual_duration_minutes"] if s["actual_duration_minutes"] is not None else 5,
             "status": "Đang khám" if is_active else "Đã hoàn thành",
             "isActive": is_active,
             "modality": "Tư vấn trực tuyến" if s["session_type"] == "Virtual" else "Khám trực tiếp",
@@ -261,16 +261,21 @@ def portal_data():
                     "name": it["medication_name"],
                     "dosage": it["dosage"],
                     "frequency": it["frequency"],
-                    "duration": str(it["duration"]) if "ngày" in str(it["duration"]) else f"{it['duration']} ngày",
+                    "duration": f"{str(it['duration']).strip()} ngày" if str(it["duration"]).strip().isdigit() else str(it["duration"]).strip(),
                     "instructions": it["special_instructions"] or "Uống sau ăn",
                 }
                 for it in items
             ],
         })
 
+    specialty_rows = query(
+        "SELECT specialty_id AS id, specialty_name AS name, COALESCE(description, '') AS description FROM specialty ORDER BY specialty_id ASC"
+    )
+
     return jsonify(
         profile=profile_data,
         doctors=doctor_list,
+        specialties=specialty_rows,
         appointments=appointment_list,
         consultations=consultation_list,
         records=history_list,

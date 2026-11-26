@@ -14,6 +14,7 @@ from ...security import require_roles
 from ...services import admin as admin_service
 from ...services import appointments as appointment_service
 from ...services import doctors as doctor_service
+from ...services import medications as medication_service
 from ...services import patients as patient_service
 from ...services import schedules as schedule_service
 from ...services.schedules import validate_clinic_slot
@@ -124,12 +125,43 @@ def _parse_time(value, field="giờ"):
         raise BusinessError(f"{field.capitalize()} không đúng định dạng HH:MM.")
 
 
+def _parse_duration(value) -> int:
+    try:
+        duration = int(30 if value in (None, "") else value)
+    except (TypeError, ValueError):
+        raise BusinessError("Thời lượng khám không hợp lệ.")
+    return duration
+
+
 def normalize_vietnamese_name(name: str) -> str:
     return normalize_person_name(name)
 
 
 def validate_vietnamese_phone(phone: str, field="Số điện thoại") -> str:
     return validate_phone(phone, field=field)
+
+
+def _parse_gender(value) -> str:
+    if value in (None, ""):
+        return "Male"
+    if value in ("Nam", "Male"):
+        return "Male"
+    if value in ("Nữ", "Female"):
+        return "Female"
+    if value in ("Khác", "Other"):
+        return "Other"
+    raise BusinessError("Giới tính không hợp lệ (chỉ chấp nhận Nam, Nữ hoặc Khác).")
+
+
+def _parse_schedule_status(value, default="Available") -> str:
+    raw = default if value in (None, "") else value
+    if raw in ("Hoạt động", "Khả dụng", "Available"):
+        return "Available"
+    if raw in ("Tạm ngưng", "Bận", "Busy"):
+        return "Busy"
+    if raw in ("Nghỉ phép", "Nghỉ", "On Leave"):
+        return "On Leave"
+    raise BusinessError("Trạng thái ca làm việc không hợp lệ.")
 
 
 def _fetch_admin_appointments():
@@ -149,7 +181,7 @@ def _fetch_admin_appointments():
                  ELSE 'Khám trực tiếp'
                END AS visitType,
                a.appointment_type AS rawType,
-               CASE WHEN a.follow_up_from_appt_id IS NOT NULL OR a.reason LIKE '%tái khám%' THEN TRUE ELSE FALSE END AS isFollowUp,
+               CASE WHEN a.follow_up_from_appt_id IS NOT NULL THEN TRUE ELSE FALSE END AS isFollowUp,
                250000 AS fee,
                CASE a.status
                  WHEN 'Scheduled' THEN 'Chờ xác nhận'
@@ -480,13 +512,7 @@ def create_user():
     else:
         dob = None
 
-    gender = data.get("gender") or "Male"
-    if gender in ("Nam", "Male"):
-        gender = "Male"
-    elif gender in ("Nữ", "Female"):
-        gender = "Female"
-    else:
-        gender = "Other"
+    gender = _parse_gender(data.get("gender"))
 
     subtype = data.get("subtype") or "GENERAL_PRACTITIONER"
     specialty_id = data.get("specialty_id") or data.get("specialtyId") or None
@@ -769,13 +795,7 @@ def create_patient():
     raw_dob = data.get("dob") or data.get("date_of_birth")
     dob = validate_dob(raw_dob if raw_dob not in (None, "") else date(1995, 1, 1), "Ngày sinh")
 
-    gender = data.get("gender") or "Male"
-    if gender in ("Nam", "Male"):
-        gender = "Male"
-    elif gender in ("Nữ", "Female"):
-        gender = "Female"
-    else:
-        gender = "Other"
+    gender = _parse_gender(data.get("gender"))
 
     if username:
         ensure(len(username) <= 50, "Tên đăng nhập không được vượt quá 50 ký tự.")
@@ -807,27 +827,21 @@ def create_patient():
         "email": email,
         "date_of_birth": dob,
         "gender": gender,
+        "address": data.get("address"),
+        "blood_type": data.get("blood_type") or data.get("bloodType"),
+        "allergies": data.get("allergies"),
+        "chronic_diseases": data.get("chronic_diseases") or data.get("chronicDiseases"),
         "emergency_contact_name": em_name,
         "emergency_contact_phone": em_phone,
     }
 
     account = admin_service.create_account(g.user, user_payload)
-    pat_row = query("SELECT patient_id FROM patient WHERE user_id = %s", (account.user_id,), one=True)
+    pat_row = query(
+        "SELECT patient_id, address, blood_type, allergies, chronic_diseases FROM patient WHERE user_id = %s",
+        (account.user_id,),
+        one=True,
+    )
     pat_id = pat_row["patient_id"] if pat_row else "PAT-NEW"
-
-    # Optional clinical & address fields
-    if any(k in data for k in ("address", "blood_type", "bloodType", "allergies", "chronic_diseases", "chronicDiseases")):
-        execute("""
-            UPDATE patient
-            SET address = %s, blood_type = %s, allergies = %s, chronic_diseases = %s
-            WHERE patient_id = %s
-        """, (
-            data.get("address") or None,
-            data.get("blood_type") or data.get("bloodType") or None,
-            data.get("allergies") or None,
-            data.get("chronic_diseases") or data.get("chronicDiseases") or None,
-            pat_id,
-        ))
 
     return jsonify({
         "message": "Đã tạo hồ sơ bệnh nhân thành công.",
@@ -841,10 +855,10 @@ def create_patient():
             "rawDob": dob.strftime("%Y-%m-%d"),
             "phone": phone,
             "email": email,
-            "address": data.get("address") or "",
-            "bloodType": data.get("blood_type") or data.get("bloodType") or "",
-            "allergies": data.get("allergies") or "Không",
-            "chronicDiseases": data.get("chronic_diseases") or data.get("chronicDiseases") or "Không",
+            "address": (pat_row or {}).get("address") or "",
+            "bloodType": (pat_row or {}).get("blood_type") or "",
+            "allergies": (pat_row or {}).get("allergies") or "Không",
+            "chronicDiseases": (pat_row or {}).get("chronic_diseases") or "Không",
             "emergencyContactName": em_name,
             "emergencyContactPhone": em_phone,
             "created": now().strftime("%d/%m/%Y"),
@@ -889,8 +903,7 @@ def update_patient(patient_id):
     if "dob" in data or "date_of_birth" in data:
         allowed["date_of_birth"] = validate_dob(data.get("dob") or data.get("date_of_birth"), "Ngày sinh")
     if "gender" in data:
-        g_val = data["gender"]
-        allowed["gender"] = "Male" if g_val in ("Nam", "Male") else "Female" if g_val in ("Nữ", "Female") else "Other"
+        allowed["gender"] = _parse_gender(data["gender"])
 
     patient_service.update_by_admin(g.user, pat["user_id"], allowed)
     return jsonify({"message": "Đã cập nhật hồ sơ bệnh nhân.", "patientId": patient_id})
@@ -944,6 +957,9 @@ def create_specialty():
 
 @bp.patch("/specialties/<specialty_id>")
 def update_specialty(specialty_id):
+    sp = query("SELECT specialty_id FROM specialty WHERE specialty_id = %s", (specialty_id,), one=True)
+    if not sp:
+        abort(404, description="Không tìm thấy chuyên khoa.")
     data = request.get_json(silent=True) or {}
     name = data.get("name") or data.get("specialty_name")
     desc = data.get("description")
@@ -981,7 +997,7 @@ def create_appointment():
     dt = _parse_datetime(data.get("appointment_date_time") or data.get("dateTime"), "ngày giờ hẹn")
     visit_type_raw = data.get("appointment_type") or data.get("visitType") or "In-person"
     visit_type = "Telemedicine" if visit_type_raw in ("Telemedicine", "Tư vấn trực tuyến") else "In-person"
-    duration = int(data.get("estimated_duration_minutes") or data.get("duration") or 30)
+    duration = _parse_duration(data.get("estimated_duration_minutes") or data.get("duration"))
     reason = (data.get("reason") or "Khám sức khỏe").strip()
 
     ensure(patient_id, "Vui lòng chọn bệnh nhân.")
@@ -1040,9 +1056,10 @@ def create_appointment():
             "status": "Chờ xác nhận",
             "date": dt.strftime("%d/%m/%Y"),
             "time": dt.strftime("%H:%M"),
+            "rawDateTime": dt.strftime("%Y-%m-%d %H:%M"),
             "reason": appt.reason or reason,
             "visitType": "Tư vấn trực tuyến" if visit_type == "Telemedicine" else "Khám trực tiếp",
-            "isFollowUp": bool(appt.follow_up_from_appt_id or (appt.reason and "tái khám" in appt.reason.lower())),
+            "isFollowUp": bool(appt.follow_up_from_appt_id),
             "sessionId": None,
             "hasSession": False,
         },
@@ -1055,7 +1072,6 @@ def update_appointment_status(appointment_id):
     raw_status = data.get("status", "")
     target = STATUS_MAP_FROM_UI.get(raw_status, raw_status)
     ensure(target in STATUS_MAP_TO_UI, "Trạng thái lịch hẹn không hợp lệ.")
-    reason = data.get("reason", "")
 
     appt = query("SELECT status, doctor_id FROM appointment WHERE appointment_id = %s", (appointment_id,), one=True)
     if not appt:
@@ -1084,8 +1100,18 @@ def update_appointment_status(appointment_id):
         if clinical_exists and target != "Completed":
             raise BusinessError("Lịch hẹn đã có hồ sơ bệnh án hoặc đơn thuốc, trạng thái bắt buộc phải là Hoàn thành.")
 
+    if target == current_status:
+        return jsonify({
+            "message": "Trạng thái lịch hẹn giữ nguyên.",
+            "appointmentId": appointment_id,
+            "status": STATUS_MAP_TO_UI.get(current_status, current_status),
+        })
+
+    if target == "Completed":
+        raise BusinessError("Trạng thái Hoàn thành chỉ được thiết lập khi kết thúc phiên khám.")
+
     ensure(target in ("Checked-In", "Cancelled", "No-show"),
-           "Trạng thái Completed chỉ được thiết lập khi kết thúc phiên khám.")
+           "Chỉ có thể chuyển lịch hẹn sang Đã xác nhận, Đã hủy hoặc Không đến khám.")
     appointment_service.change_status(g.user, appointment_id, target)
 
     return jsonify({
@@ -1100,7 +1126,7 @@ def reschedule_appointment(appointment_id):
     data = request.get_json(silent=True) or {}
     dt = _parse_datetime(data.get("appointment_date_time") or data.get("dateTime"), "ngày giờ hẹn")
     schedule_id = data.get("schedule_id") or data.get("scheduleId")
-    duration = int(data.get("estimated_duration_minutes") or data.get("duration") or 30)
+    duration = _parse_duration(data.get("estimated_duration_minutes") or data.get("duration"))
     reason = (data.get("reason") or "").strip()
 
     ensure(dt, "Vui lòng chọn ngày và giờ mới.")
@@ -1192,13 +1218,7 @@ def create_schedule():
     ensure(end > start, "Giờ kết thúc ca phải sau giờ bắt đầu.")
     ensure(start >= time(8, 0) and end <= time(17, 0), "Ca làm việc phải nằm trong giờ hành chính phòng khám (08:00–17:00).")
 
-    status = data.get("availability_status") or data.get("status") or "Available"
-    if status in ("Hoạt động", "Khả dụng", "Available"):
-        status = "Available"
-    elif status in ("Tạm ngưng", "Bận", "Busy"):
-        status = "Busy"
-    else:
-        status = "On Leave"
+    status = _parse_schedule_status(data.get("availability_status") or data.get("status"), default="Available")
 
     # BR21-25: Working schedules overlap check
     overlap = query("""
@@ -1263,28 +1283,22 @@ def list_medications():
 @bp.post("/medications")
 def create_medication():
     data = request.get_json(silent=True) or {}
-    name = (data.get("name") or data.get("medication_name") or "").strip()
-    description = (data.get("description") or "").strip()
+    name = " ".join(str(data.get("name") or data.get("medication_name") or "").strip().split())
+    description = str(data.get("description") or "").strip()
 
     ensure(name, "Vui lòng nhập tên thuốc.")
-    name = normalize_vietnamese_name(name)
-
-    existing = query("SELECT medication_id FROM medication WHERE medication_name = %s", (name,), one=True)
-    if existing:
-        raise BusinessError(f"Thuốc '{name}' đã tồn tại trong danh mục thuốc.")
-
-    med_id = identity("MED-")
-    execute("""
-        INSERT INTO medication (medication_id, medication_name, description)
-        VALUES (%s, %s, %s)
-    """, (med_id, name, description or "Danh mục minh họa; không phải chỉ định điều trị."))
+    med = medication_service.create(
+        g.user,
+        name,
+        description or "Danh mục minh họa; không phải chỉ định điều trị.",
+    )
 
     return jsonify({
         "message": "Đã thêm thuốc mới vào danh mục thành công.",
         "medication": {
-            "id": med_id,
-            "name": name,
-            "description": description or "Danh mục minh họa; không phải chỉ định điều trị.",
+            "id": med.medication_id,
+            "name": med.medication_name,
+            "description": med.description or "Danh mục minh họa; không phải chỉ định điều trị.",
             "status": "Hoạt động",
         },
     }), 201
@@ -1293,13 +1307,7 @@ def create_medication():
 @bp.patch("/schedules/<schedule_id>/status")
 def update_schedule_status(schedule_id):
     data = request.get_json(silent=True) or {}
-    status_raw = data.get("status", "")
-    if status_raw in ("Hoạt động", "Khả dụng", "Available"):
-        target = "Available"
-    elif status_raw in ("Tạm ngưng", "Bận", "Busy"):
-        target = "Busy"
-    else:
-        target = "On Leave"
+    target = _parse_schedule_status(data.get("status"), default="")
 
     schedule_service.change_availability(g.user, schedule_id, target)
     return jsonify({
